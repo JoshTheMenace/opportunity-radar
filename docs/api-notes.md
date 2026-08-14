@@ -78,11 +78,6 @@ Everything below was verified by direct calls. Follow exactly; don't guess.
 
 - `GET https://api.nsf.gov/services/v1/awards.json?awardeeStateCode=UT&keyword=SBIR&printFields=id,title,awardeeName,awardeeCity,fundsObligatedAmt,date,abstractText,piEmail`
 
-## Codex app server (LLM backend)
-
-- Endpoint docs pending from Josh. Until wired, run with LLM_BACKEND=mock
-  or LLM_BACKEND=anthropic (needs ANTHROPIC_API_KEY in .env.local).
-
 ## Codex app server — WIRED (verified live, codex-cli 0.146.0)
 
 - Adapter: src/lib/llm-codex.ts. Spawns `codex app-server` (stdio JSON-RPC,
