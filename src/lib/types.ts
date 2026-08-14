@@ -135,6 +135,23 @@ export interface MatchReport {
   honestNoExplanation: string | null;
   meter: EligibilityMeter;
   questions: InterviewQuestion[]; // next questions worth asking (may be empty)
+  /** Historical-award evidence keyed by opportunityId (top matches only). */
+  evidence?: Record<string, EvidenceSummary>;
+}
+
+/** Serializable subset of the evidence module's bundle for the report/UI. */
+export interface EvidenceSummary {
+  totalAwards: number | null;
+  totalUsd: number | null;
+  medianUsd: number | null;
+  utahCount: number | null;
+  similarAwards: Array<{
+    recipient: string;
+    amountUsd: number;
+    year: number;
+    state: string | null;
+    link: string | null;
+  }>;
 }
 
 // ---------- Eligibility meter + interview ----------

@@ -10,6 +10,7 @@
 // ============================================================
 
 import { getDb, rowToOpportunity } from "../src/lib/db";
+import { localIsoDate } from "../src/lib/engine/dates";
 import { completeJSON } from "../src/lib/llm";
 import type { EvalCase, EvalScore, MatchReport, Opportunity } from "../src/lib/types";
 
@@ -122,7 +123,7 @@ export async function judgeReport(evalCase: EvalCase, report: MatchReport): Prom
   const honesty = evalCase.expectHonestNo ? (report.honestNo ? 1 : 0) : report.honestNo ? 0 : 1;
 
   // no dead opportunities (closeDate strictly before today)
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localIsoDate();
   const dead = report.matches.filter((m) => {
     const close = lookupOpportunity(m.opportunityId)?.closeDate;
     return close != null && close < today;

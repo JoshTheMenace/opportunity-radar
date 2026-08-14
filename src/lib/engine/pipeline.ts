@@ -40,8 +40,20 @@ export async function runAnalysis(
   prior: Partial<CompanyProfile> | null = null,
   emit: (e: AnalyzeEvent) => void = () => {},
 ): Promise<MatchReport> {
-  emit({ type: "activity", message: "Reading your company description..." });
-  const profile = await extractProfile(founderText, prior ?? undefined);
+  // A complete prior profile (interview follow-up) skips re-extraction.
+  const priorComplete =
+    prior != null &&
+    Array.isArray(prior.technologyKeywords) &&
+    prior.technologyKeywords.length > 0 &&
+    typeof prior.description === "string";
+  let profile: CompanyProfile;
+  if (priorComplete) {
+    emit({ type: "activity", message: "Updating your profile..." });
+    profile = { ...(prior as CompanyProfile), description: founderText };
+  } else {
+    emit({ type: "activity", message: "Reading your company description..." });
+    profile = await extractProfile(founderText, prior ?? undefined);
+  }
   emit({ type: "profile", profile });
 
   const counts = countBySource();
@@ -62,7 +74,7 @@ export async function runAnalysis(
   const gated = candidates.map((opp) => evaluateGates(profile, opp));
 
   const meter = buildMeter(gated);
-  const questions = buildQuestions(meter, profile);
+  const questions = buildQuestions(gated, profile);
   emit({ type: "questions", questions, meter });
 
   emit({
@@ -71,17 +83,30 @@ export async function runAnalysis(
   });
   const { matches, honestNo, honestNoExplanation } = await rankOpportunities(profile, gated);
 
-  // Historical-award evidence for the top matches. Surfaced as activity
-  // lines only — MatchReport has no evidence field yet (see
-  // NOTES-integration.md); do not mutate the shared contract here.
+  // Historical-award evidence for the top matches: surfaced live as
+  // activity lines AND attached to the report (MatchReport.evidence).
   const byId = new Map(gated.map((g) => [g.opportunity.id, g.opportunity]));
   const top = matches.slice(0, EVIDENCE_TOP_N);
+  const evidence: NonNullable<MatchReport["evidence"]> = {};
   await Promise.all(
     top.map(async (m) => {
       const opp = byId.get(m.opportunityId);
       if (!opp) return;
       try {
         const ev = await getEvidence(opp, profile);
+        evidence[m.opportunityId] = {
+          totalAwards: ev.alnStats?.totalAwards ?? null,
+          totalUsd: ev.alnStats?.totalUsd ?? null,
+          medianUsd: ev.alnStats?.medianUsd ?? null,
+          utahCount: ev.alnStats?.utahCount ?? null,
+          similarAwards: ev.similarAwards.slice(0, 5).map((a) => ({
+            recipient: a.recipient,
+            amountUsd: a.amountUsd,
+            year: a.year,
+            state: a.state,
+            link: a.link,
+          })),
+        };
         const bits: string[] = [];
         if (ev.similarAwards.length) bits.push(`${ev.similarAwards.length} similar awards`);
         if (ev.alnStats) bits.push(`${formatUsdCompact(ev.alnStats.medianUsd)} median award`);
@@ -95,7 +120,8 @@ export async function runAnalysis(
     }),
   );
 
-  const report: MatchReport = {
+  // NOTE: the API facade owns the final {type:"report"} SSE event.
+  return {
     profile,
     matches,
     rejected: pickRejected(gated),
@@ -103,7 +129,6 @@ export async function runAnalysis(
     honestNoExplanation,
     meter,
     questions,
+    evidence,
   };
-  emit({ type: "report", report });
-  return report;
 }

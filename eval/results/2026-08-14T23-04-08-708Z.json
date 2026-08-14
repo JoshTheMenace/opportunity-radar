@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-08-14T23:04:08.708Z",
+  "backend": "codex",
+  "averageTotal": 0.914,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.8,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.92,
+      "total": 0.914,
+      "notes": "missed themes: NSF | The explanations consistently connect the company’s Utah location, healthcare AI product, funding range, product-development needs, and hospital-pilot goals to each opportunity, while flagging uncertainties and offering concrete next steps, with only minor unsupported characterizations such as “in-market,” “active R&D,” and “near-bankable.”"
+    }
+  ]
+}

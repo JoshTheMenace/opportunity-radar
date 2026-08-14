@@ -116,8 +116,11 @@ export function rowToOpportunity(r: Record<string, unknown>): Opportunity {
   };
 }
 
+// UPSERT (not INSERT OR REPLACE): REPLACE deletes+reinserts the row without
+// firing the AFTER UPDATE trigger, which corrupts the external-content FTS
+// index. ON CONFLICT DO UPDATE keeps the rowid so opp_au fires correctly.
 export const INSERT_OPPORTUNITY_SQL = `
-  INSERT OR REPLACE INTO opportunities (
+  INSERT INTO opportunities (
     id, source, kind, title, agency, agency_code, description,
     aln_numbers, eligibility_codes, eligibility_text, open_to_small_business,
     award_floor_usd, award_ceiling_usd, estimated_total_usd,
@@ -129,7 +132,22 @@ export const INSERT_OPPORTUNITY_SQL = `
     @award_floor_usd, @award_ceiling_usd, @estimated_total_usd,
     @expected_awards, @expected_applications,
     @open_date, @close_date, @status, @url, @contact_name, @contact_email, @raw
-  )`;
+  ) ON CONFLICT(id) DO UPDATE SET
+    source=excluded.source, kind=excluded.kind, title=excluded.title,
+    agency=excluded.agency, agency_code=excluded.agency_code,
+    description=excluded.description, aln_numbers=excluded.aln_numbers,
+    eligibility_codes=excluded.eligibility_codes,
+    eligibility_text=excluded.eligibility_text,
+    open_to_small_business=excluded.open_to_small_business,
+    award_floor_usd=excluded.award_floor_usd,
+    award_ceiling_usd=excluded.award_ceiling_usd,
+    estimated_total_usd=excluded.estimated_total_usd,
+    expected_awards=excluded.expected_awards,
+    expected_applications=excluded.expected_applications,
+    open_date=excluded.open_date, close_date=excluded.close_date,
+    status=excluded.status, url=excluded.url,
+    contact_name=excluded.contact_name, contact_email=excluded.contact_email,
+    raw=excluded.raw`;
 
 export function opportunityToRow(o: Opportunity): Record<string, unknown> {
   return {

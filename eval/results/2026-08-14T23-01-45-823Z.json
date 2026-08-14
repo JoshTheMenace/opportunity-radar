@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-08-14T23:01:45.823Z",
+  "backend": "mock",
+  "averageTotal": 0.20999999999999996,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0,
+      "total": 0.15,
+      "notes": "missed themes: NIH, NSF, HHS, SBIR, workforce | honesty wrong: expected honestNo=false, got true | explanationQuality n/a (mock backend)"
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 0,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0,
+      "total": 0.15,
+      "notes": "missed themes: DoD, NASA, DOE, procurement | honesty wrong: expected honestNo=false, got true | explanationQuality n/a (mock backend)"
+    },
+    {
+      "caseId": "water",
+      "coverage": 0,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0,
+      "total": 0.15,
+      "notes": "missed themes: EPA, DOE, infrastructure | honesty wrong: expected honestNo=false, got true | explanationQuality n/a (mock backend)"
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 0,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0,
+      "total": 0.15,
+      "notes": "missed themes: DoD, DHS, SBIR, procurement | honesty wrong: expected honestNo=false, got true | explanationQuality n/a (mock backend)"
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 0,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0,
+      "total": 0.44999999999999996,
+      "notes": "missed themes: workforce, education, small business, community | explanationQuality n/a (mock backend)"
+    }
+  ]
+}

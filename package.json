@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "watch": "tsx scripts/watch.ts",
+    "watch:loop": "tsx scripts/watch.ts --loop 15 --ingest-first",
+    "demo:inject": "tsx scripts/demo-inject.ts",
+    "eval": "tsx eval/run.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

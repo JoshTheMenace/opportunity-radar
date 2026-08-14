@@ -107,7 +107,16 @@ function parseCsv(text: string): string[][] {
 // ---------- Field mapping ----------
 
 /** "Types of Assistance (060)" → FundingKind. Multi-valued (";"-separated); best kind wins. */
-function mapKind(typesText: string): FundingKind {
+function mapKind(typesText: string, titleAndObjectives = ""): FundingKind {
+  // SBIR/STTR programs are typed as plain grants in the catalog; detect them
+  // from the title/objectives so they hit the SBIR gates (takes precedence).
+  if (
+    /\bSBIR\b|\bSTTR\b|small business innovation research|small business technology transfer/i.test(
+      titleAndObjectives,
+    )
+  ) {
+    return "sbir_sttr";
+  }
   const kinds = typesText
     .toUpperCase()
     .split(";")
@@ -153,10 +162,22 @@ function parseRange(rangeText: string): { floor: number | null; ceiling: number 
 
 function deriveOpenToSmallBusiness(elig: string | null): boolean | null {
   if (!elig) return null;
-  if (/small business|profit organization|private/i.test(elig)) return true;
-  const restricted = /\b(states?|tribal|tribes?|federally recognized|non-?profit|local government|municipalit)/i.test(elig);
-  const broad = /\b(individuals?|anyone|general public|business|compan|firms?)/i.test(elig);
-  if (restricted && !broad) return false; // states/tribes/nonprofits only
+  const t = elig.toLowerCase();
+  // Nonprofit trap: "profit organization" is a substring of "Nonprofit
+  // organization", so strip nonprofit phrases BEFORE testing for positives —
+  // otherwise nonprofit-only programs read as open to for-profits.
+  // Also strip "public or private" modifiers so "private nonprofit org"
+  // doesn't leave a dangling "private" that reads as a positive signal.
+  const cleaned = t
+    .replace(/(?:\b(?:public|private|or|and)[, ]+)*non-?profit[a-z ]*organizations?/g, " ")
+    .replace(/(?:\b(?:public|private|or|and)[, ]+)*non-?profit/g, " ");
+  const positive =
+    /\bsmall business|for-profit|for profit|\bprofit organization|\bprivate\b|\banyone\b|individuals and organizations/.test(
+      cleaned,
+    );
+  if (positive) return true;
+  // Original text clearly restricts to govt/tribes/nonprofits/states only.
+  if (/non-?profit|state governments|federally recognized|interstate|intrastate/.test(t)) return false;
   return null;
 }
 
@@ -203,7 +224,7 @@ async function main() {
     byId.set(`assistance_listing:${programNumber}`, {
       id: `assistance_listing:${programNumber}`,
       source: "assistance_listing",
-      kind: mapKind(r[iTypes] ?? ""),
+      kind: mapKind(r[iTypes] ?? "", `${title} ${clean(r[iObjectives])}`),
       title,
       agency: clean(r[iAgency]) || "Unknown",
       agencyCode: null,

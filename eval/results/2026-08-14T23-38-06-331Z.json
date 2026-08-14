@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-08-14T23:38:06.331Z",
+  "backend": "codex",
+  "averageTotal": 0.9045000000000001,
+  "scores": [
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.9045000000000001,
+      "notes": "missed themes: community | The report is consistently grounded in the company’s Utah location, revenue stage, team size, expansion goal, and weak federal fit, while clearly distinguishing adjacent resources, identifying opportunity-specific uncertainties, and providing practical next steps without obvious unsupported inventions."
+    }
+  ]
+}

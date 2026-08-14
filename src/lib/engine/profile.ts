@@ -119,7 +119,26 @@ export async function extractProfile(
     }
   }
   merged.description = founderText; // verbatim, always
-  return merged;
+  return deriveFields(merged);
+}
+
+// ---------- Deterministic derivation (never ask what we can infer) ----------
+
+/**
+ * Pure: fill in gate fields implied by others so they never get asked.
+ * - employees settles isSmallBusiness (SBA-ish: <500 heads, <$50M revenue).
+ * - raised capital / a funding stage implies a for-profit company.
+ */
+export function deriveFields(p: CompanyProfile): CompanyProfile {
+  const d = { ...p };
+  if (d.isSmallBusiness === null && d.employees !== null) {
+    if (d.employees >= 500) d.isSmallBusiness = false;
+    else if (d.annualRevenueUsd === null || d.annualRevenueUsd < 50_000_000)
+      d.isSmallBusiness = true;
+  }
+  if (d.isForProfit === null && (d.fundingStage !== null || (d.capitalRaisedUsd ?? 0) > 0))
+    d.isForProfit = true;
+  return d;
 }
 
 // ---------- Interview answer application ----------
@@ -206,5 +225,123 @@ export function applyAnswer(
       p.location = parseLocation(String(answer));
       break;
   }
-  return p;
+  return deriveFields(p);
+}
+
+// ---------- Freeform (chat) answer application ----------
+
+const MATURITY = ["concept", "prototype", "pilot", "in-market"] as const;
+
+/** What one chat message may settle. null = the message doesn't address it. */
+const FREEFORM_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "employees", "annualRevenueUsd", "isForProfit", "isSmallBusiness",
+    "majorityUsOwned", "hasActiveRnD", "samRegistered", "productMaturity",
+    "locationCity", "locationState",
+  ],
+  properties: {
+    employees: nullable("number"),
+    annualRevenueUsd: nullable("number"),
+    isForProfit: nullable("boolean"),
+    isSmallBusiness: nullable("boolean"),
+    majorityUsOwned: nullable("boolean"),
+    hasActiveRnD: nullable("boolean"),
+    samRegistered: nullable("boolean"),
+    productMaturity: nullable("string"),
+    locationCity: nullable("string"),
+    locationState: nullable("string"),
+  },
+} as const;
+
+interface FreeformAnswers {
+  employees: number | null;
+  annualRevenueUsd: number | null;
+  isForProfit: boolean | null;
+  isSmallBusiness: boolean | null;
+  majorityUsOwned: boolean | null;
+  hasActiveRnD: boolean | null;
+  samRegistered: boolean | null;
+  productMaturity: string | null;
+  locationCity: string | null;
+  locationState: string | null;
+}
+
+const FREEFORM_SYSTEM =
+  "You read a founder's chat message and extract eligibility answers for US " +
+  "government-funding matching. Only extract what the message states or " +
+  "clearly implies. Never guess. Unaddressed means null.";
+
+const yesNo = (b: boolean) => (b ? "yes" : "no");
+
+/**
+ * Parse one chat message into any number of gate-field answers (one fast LLM
+ * call), merge them into the profile, and derive implied fields. Returns the
+ * human-readable list of what was recorded, for the activity feed.
+ */
+export async function applyFreeformAnswer(
+  profile: CompanyProfile,
+  message: string,
+): Promise<{ profile: CompanyProfile; answered: string[] }> {
+  const a = await completeJSON<FreeformAnswers>(
+    `A founder answering eligibility questions wrote:
+"""
+${message}
+"""
+
+Extract any of these facts the message settles (null when not addressed):
+- employees: headcount (full-time equivalents)
+- annualRevenueUsd: last year's revenue in USD
+- isForProfit: is the company for-profit?
+- isSmallBusiness: small business under SBA size rules (<500 employees)?
+- majorityUsOwned: majority-owned by US citizens/permanent residents?
+- hasActiveRnD: actively doing research & development?
+- samRegistered: registered in SAM.gov?
+- productMaturity: exactly one of "concept" | "prototype" | "pilot" | "in-market"
+- locationCity / locationState: HQ city and 2-letter USPS state code`,
+    FREEFORM_SCHEMA,
+    { system: FREEFORM_SYSTEM, effort: "low", maxTokens: 500 },
+  );
+
+  const p: CompanyProfile = { ...profile };
+  const answered: string[] = [];
+  if (a.employees !== null) {
+    p.employees = a.employees;
+    answered.push(`team size (${a.employees})`);
+  }
+  if (a.annualRevenueUsd !== null) {
+    p.annualRevenueUsd = a.annualRevenueUsd;
+    answered.push(`revenue ($${a.annualRevenueUsd.toLocaleString("en-US")})`);
+  }
+  if (a.isForProfit !== null) {
+    p.isForProfit = a.isForProfit;
+    answered.push(`for-profit (${yesNo(a.isForProfit)})`);
+  }
+  if (a.isSmallBusiness !== null) {
+    p.isSmallBusiness = a.isSmallBusiness;
+    answered.push(`small business (${yesNo(a.isSmallBusiness)})`);
+  }
+  if (a.majorityUsOwned !== null) {
+    p.majorityUsOwned = a.majorityUsOwned;
+    answered.push(`US ownership (${yesNo(a.majorityUsOwned)})`);
+  }
+  if (a.hasActiveRnD !== null) {
+    p.hasActiveRnD = a.hasActiveRnD;
+    answered.push(`active R&D (${yesNo(a.hasActiveRnD)})`);
+  }
+  if (a.samRegistered !== null) {
+    p.samRegistered = a.samRegistered;
+    answered.push(`SAM.gov (${yesNo(a.samRegistered)})`);
+  }
+  if (a.productMaturity !== null && (MATURITY as readonly string[]).includes(a.productMaturity)) {
+    p.productMaturity = a.productMaturity;
+    answered.push(`product stage (${a.productMaturity})`);
+  }
+  if (a.locationState !== null || a.locationCity !== null) {
+    const state = a.locationState !== null ? toStateCode(a.locationState) : null;
+    p.location = { city: a.locationCity, state: state ?? p.location?.state ?? null };
+    answered.push(`location (${[a.locationCity, state].filter(Boolean).join(", ")})`);
+  }
+  return { profile: deriveFields(p), answered };
 }

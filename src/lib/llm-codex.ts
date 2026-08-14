@@ -16,6 +16,12 @@ import type { LlmBackend, CompleteOptions } from "./llm";
 const CODEX_BIN = process.env.CODEX_BIN ?? "codex";
 const CODEX_MODEL = process.env.CODEX_MODEL ?? "gpt-5.6-sol";
 const TURN_TIMEOUT_MS = Number(process.env.CODEX_TURN_TIMEOUT_MS ?? 240_000);
+/** RPC round-trip cap (thread/start etc). Without it a wedged app-server hangs callers forever. */
+const RPC_TIMEOUT_MS = Number(process.env.CODEX_RPC_TIMEOUT_MS ?? 120_000);
+const DEBUG = process.env.CODEX_DEBUG === "1";
+const dbg = (...a: unknown[]) => {
+  if (DEBUG) console.error(`[codex ${new Date().toISOString()}]`, ...a);
+};
 
 type Pending = { resolve: (v: unknown) => void; reject: (e: Error) => void };
 type ThreadWaiter = {
@@ -73,7 +79,23 @@ class CodexAppServer {
   private request(method: string, params: object): Promise<unknown> {
     return new Promise((resolve, reject) => {
       const id = this.nextId++;
-      this.pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        dbg(`rpc timeout id=${id} ${method}`);
+        reject(new Error(`codex rpc timed out after ${RPC_TIMEOUT_MS}ms: ${method}`));
+      }, RPC_TIMEOUT_MS);
+      this.pending.set(id, {
+        resolve: (v) => {
+          clearTimeout(timer);
+          dbg(`rpc ok id=${id} ${method}`);
+          resolve(v);
+        },
+        reject: (e) => {
+          clearTimeout(timer);
+          reject(e);
+        },
+      });
+      dbg(`rpc -> id=${id} ${method}`);
       this.send({ jsonrpc: "2.0", id, method, params });
     });
   }
@@ -125,6 +147,7 @@ class CodexAppServer {
     } else if (method === "turn/completed") {
       const threadId = params.threadId as string;
       const w = this.waiters.get(threadId);
+      dbg(`turn/completed thread=${threadId} waiter=${!!w}`);
       if (w) {
         this.waiters.delete(threadId);
         clearTimeout(w.timer);
@@ -165,6 +188,7 @@ class CodexAppServer {
     const textPromise = new Promise<string>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.waiters.delete(threadId);
+        dbg(`turn timeout thread=${threadId}`);
         reject(new Error(`codex turn timed out after ${TURN_TIMEOUT_MS}ms`));
       }, TURN_TIMEOUT_MS);
       this.waiters.set(threadId, { resolve, reject, lastAgentText: "", timer });

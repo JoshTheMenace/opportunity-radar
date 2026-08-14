@@ -6,6 +6,7 @@
 // ============================================================
 
 import { complete, completeJSON } from "../llm";
+import { localIsoDate } from "./dates";
 import type {
   CompanyProfile,
   FitTier,
@@ -15,6 +16,11 @@ import type {
 
 const BATCH_SIZE = 15;
 const MAX_MATCHES = 25;
+
+// Score thresholds — single source of truth for tierFor, honestNo, and the prompt.
+const TIER_LIKELY = 70;
+const TIER_VERIFY = 50;
+const TIER_ADJACENT = 30;
 
 export interface RankResult {
   matches: RankedMatch[];
@@ -32,36 +38,44 @@ interface ScoredItem {
   nextSteps: string;
 }
 
-/** JSON Schema for one batch response: an array of scored items. */
+/** JSON Schema for one batch response. Root must be an OBJECT (structured-output
+ * backends reject array roots), so the scored items live under "matches". */
 export const RANK_BATCH_SCHEMA = {
-  type: "array",
-  items: {
-    type: "object",
-    properties: {
-      opportunityId: { type: "string" },
-      score: { type: "number", minimum: 0, maximum: 100 },
-      whyFit: { type: "string" },
-      whatCouldDisqualify: { type: "string" },
-      whatToVerify: { type: "string" },
-      nextSteps: { type: "string" },
+  type: "object",
+  properties: {
+    matches: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          opportunityId: { type: "string" },
+          score: { type: "number", minimum: 0, maximum: 100 },
+          whyFit: { type: "string" },
+          whatCouldDisqualify: { type: "string" },
+          whatToVerify: { type: "string" },
+          nextSteps: { type: "string" },
+        },
+        required: [
+          "opportunityId",
+          "score",
+          "whyFit",
+          "whatCouldDisqualify",
+          "whatToVerify",
+          "nextSteps",
+        ],
+        additionalProperties: false,
+      },
     },
-    required: [
-      "opportunityId",
-      "score",
-      "whyFit",
-      "whatCouldDisqualify",
-      "whatToVerify",
-      "nextSteps",
-    ],
-    additionalProperties: false,
   },
+  required: ["matches"],
+  additionalProperties: false,
 } as const;
 
 /** Pure tier mapping from score + gate verdict. Exported for tests. */
 export function tierFor(score: number, gateVerdict: "pass" | "unknown"): FitTier {
-  if (score >= 70) return gateVerdict === "unknown" ? "verify_eligibility" : "likely_fit";
-  if (score >= 50) return "verify_eligibility";
-  if (score >= 30) return "adjacent";
+  if (score >= TIER_LIKELY) return gateVerdict === "unknown" ? "verify_eligibility" : "likely_fit";
+  if (score >= TIER_VERIFY) return "verify_eligibility";
+  if (score >= TIER_ADJACENT) return "adjacent";
   return "not_a_fit";
 }
 
@@ -120,14 +134,15 @@ Score each opportunity 0-100 on genuine fit across four dimensions:
 4. Use-of-funds fit — does what the company needs money for match what the award pays for?
 
 CALIBRATION (follow strictly):
-- Most opportunities are NOT a fit. Scores above 70 should be rare and defensible.
+- Most opportunities are NOT a fit. Scores above ${TIER_LIKELY} should be rare and defensible.
 - Do not inflate scores to seem helpful.
-- A generic small-business program that merely does not exclude the company is "adjacent" (30-50), not a fit.
+- A generic small-business program that merely does not exclude the company is "adjacent" (${TIER_ADJACENT}-${TIER_VERIFY - 1}), not a fit.
+- Generic capital-access programs (loans, loan participation/guarantees, revolving loan funds, co-investment, tax credits, counseling/mentoring services) that any small business could use score at most ${TIER_VERIFY - 1} — a genuine fit requires the program to specifically target the company's technology, industry, or mission.
 
 For each opportunity write 1-2 sentences each for whyFit, whatCouldDisqualify, whatToVerify, nextSteps.
 Ground every statement ONLY in the data provided above. Never invent numbers, deadlines, dollar amounts, or program details that are not given. If something is unknown, say it is unknown.
 
-Return a JSON array with one entry per opportunity, using each opportunity's exact "id" as opportunityId.`;
+Return a JSON object {"matches": [...]} with one entry per opportunity, using each opportunity's exact "id" as opportunityId.`;
 
 async function scoreBatch(
   profile: CompanyProfile,
@@ -142,11 +157,11 @@ async function scoreBatch(
     "",
     RUBRIC,
   ].join("\n");
-  const raw = await completeJSON<ScoredItem[]>(prompt, RANK_BATCH_SCHEMA, {
+  const raw = await completeJSON<{ matches: ScoredItem[] }>(prompt, RANK_BATCH_SCHEMA, {
     system: "You are a rigorous, skeptical government-funding analyst. Honesty over helpfulness.",
     effort: "medium",
   });
-  return Array.isArray(raw) ? raw : [];
+  return Array.isArray(raw?.matches) ? raw.matches : [];
 }
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -165,12 +180,24 @@ export async function rankOpportunities(
   );
   const byId = new Map(candidates.map((g) => [g.opportunity.id, g]));
 
-  const scored: ScoredItem[] = [];
-  for (const batch of chunk(candidates, BATCH_SIZE)) {
-    scored.push(...(await scoreBatch(profile, batch)));
+  // Score batches in parallel; one failed batch degrades, all failing throws.
+  const chunks = chunk(candidates, BATCH_SIZE);
+  let failed = 0;
+  const results = await Promise.all(
+    chunks.map((batch) =>
+      scoreBatch(profile, batch).catch((err) => {
+        failed++;
+        console.error(`rank: scoreBatch failed (${batch.length} items):`, err);
+        return [] as ScoredItem[];
+      }),
+    ),
+  );
+  if (chunks.length > 0 && failed === chunks.length) {
+    throw new Error(`rank: all ${chunks.length} scoring batches failed`);
   }
+  const scored: ScoredItem[] = results.flat();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localIsoDate();
   const matches: RankedMatch[] = [];
   for (const item of scored) {
     const g = byId.get(item.opportunityId);
@@ -195,7 +222,7 @@ export async function rankOpportunities(
   matches.sort((a, b) => b.score - a.score);
   const top = matches.slice(0, MAX_MATCHES);
 
-  const honestNo = !top.some((m) => m.score >= 50);
+  const honestNo = !top.some((m) => m.score >= TIER_VERIFY);
   let honestNoExplanation: string | null = null;
   if (honestNo) {
     const adjacent = top.filter((m) => m.tier === "adjacent");
@@ -212,7 +239,7 @@ export async function rankOpportunities(
           profileSummary(profile),
           "",
           adjacentTitles.length
-            ? `Closest adjacent (weak, 30-49 score) programs found: ${adjacentTitles.join("; ")}.`
+            ? `Closest adjacent (weak, ${TIER_ADJACENT}-${TIER_VERIFY - 1} score) programs found: ${adjacentTitles.join("; ")}.`
             : "Not even adjacent programs were found.",
           "",
           "In 3-5 sentences, explain honestly WHY federal funding fit is weak for this company (e.g. consumer market, no federal R&D angle, agency missions don't cover it), and what adjacent federal or state/local/private options might be worth exploring instead. Be direct, not apologetic. Ground your reasoning only in the profile above — do not invent specific programs, dollar amounts, or deadlines.",

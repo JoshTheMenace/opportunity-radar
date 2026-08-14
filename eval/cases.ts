@@ -1,13 +1,15 @@
 // ============================================================
-// The 5 standard eval cases from the hackathon brief.
-// founderInput is written the way a founder would actually type it.
-// mustSee themes come from the brief's "WE WANT TO SEE" lists and are
-// matched (with synonyms) by eval/judge.ts.
+// The 5 standard eval cases from the hackathon brief — LOCKED.
+// These mirror the brief's published test set verbatim (employee
+// counts, revenue, raise, need ranges verified against the brief
+// 2026-08-14). Judges score against exactly these five: DO NOT
+// edit facts or thresholds to make scores look better. Add new
+// cases in a separate file if you need extra coverage.
 // ============================================================
 
 import type { EvalCase } from "../src/lib/types";
 
-export const EVAL_CASES: EvalCase[] = [
+export const EVAL_CASES: readonly EvalCase[] = Object.freeze([
   {
     id: "ai-healthcare",
     founderInput:
@@ -64,7 +66,7 @@ export const EVAL_CASES: EvalCase[] = [
     mustSee: ["workforce", "education", "small business", "community"],
     expectHonestNo: true,
   },
-];
+]);
 
 export function getCase(id: string): EvalCase | undefined {
   return EVAL_CASES.find((c) => c.id === id);

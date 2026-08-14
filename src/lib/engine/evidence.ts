@@ -70,6 +70,10 @@ function cachePut(key: string, payload: unknown): void {
     .run(key, JSON.stringify(payload), new Date().toISOString());
 }
 
+/** In-flight requests by cache key: concurrent cold-cache callers share
+ * one promise instead of stampeding the API. Entries clear on settle. */
+const inflight = new Map<string, Promise<unknown>>();
+
 /** Cache-first JSON fetch with a 10s AbortController timeout. */
 async function cachedFetchJson<T>(
   key: string,
@@ -78,16 +82,26 @@ async function cachedFetchJson<T>(
 ): Promise<T> {
   const hit = cacheGet<T>(key);
   if (hit !== null) return hit;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  const pending = inflight.get(key);
+  if (pending) return pending as Promise<T>;
+  const p = (async () => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { ...init, signal: ctrl.signal });
+      if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
+      const json = (await res.json()) as T;
+      cachePut(key, json);
+      return json;
+    } finally {
+      clearTimeout(timer);
+    }
+  })();
+  inflight.set(key, p);
   try {
-    const res = await fetch(url, { ...init, signal: ctrl.signal });
-    if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
-    const json = (await res.json()) as T;
-    cachePut(key, json);
-    return json;
+    return await p;
   } finally {
-    clearTimeout(timer);
+    inflight.delete(key);
   }
 }
 
@@ -188,39 +202,46 @@ async function fetchAlnStats(
     program_numbers: alns,
     time_period: last3FyPeriod(),
   };
-  const amounts: number[] = [];
-  for (let page = 1; page <= 2; page++) {
-    const resp = await cachedFetchJson<UsaResponse>(
-      alnKey(alns, page),
+  const fetchAmounts = async (): Promise<number[]> => {
+    const amounts: number[] = [];
+    for (let page = 1; page <= 2; page++) {
+      const resp = await cachedFetchJson<UsaResponse>(
+        alnKey(alns, page),
+        USASPENDING_URL,
+        postJson({
+          filters,
+          fields: GRANT_FIELDS,
+          limit: 100,
+          page,
+          sort: "Award Amount",
+          order: "desc",
+        }),
+      );
+      const rows = resp.results ?? [];
+      for (const r of rows) amounts.push(Number(r["Award Amount"] ?? 0));
+      if (rows.length < 100 || !resp.page_metadata?.hasNext) break;
+    }
+    return amounts;
+  };
+  // The UT count is independent of the page loop — run both in parallel.
+  const [amounts, utResp] = await Promise.all([
+    fetchAmounts(),
+    cachedFetchJson<UsaResponse>(
+      alnUtKey(alns),
       USASPENDING_URL,
       postJson({
-        filters,
+        filters: {
+          ...filters,
+          recipient_locations: [{ country: "USA", state: "UT" }],
+        },
         fields: GRANT_FIELDS,
         limit: 100,
-        page,
+        page: 1,
         sort: "Award Amount",
         order: "desc",
       }),
-    );
-    const rows = resp.results ?? [];
-    for (const r of rows) amounts.push(Number(r["Award Amount"] ?? 0));
-    if (rows.length < 100 || !resp.page_metadata?.hasNext) break;
-  }
-  const utResp = await cachedFetchJson<UsaResponse>(
-    alnUtKey(alns),
-    USASPENDING_URL,
-    postJson({
-      filters: {
-        ...filters,
-        recipient_locations: [{ country: "USA", state: "UT" }],
-      },
-      fields: GRANT_FIELDS,
-      limit: 100,
-      page: 1,
-      sort: "Award Amount",
-      order: "desc",
-    }),
-  );
+    ),
+  ]);
   const sorted = [...amounts].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   const medianUsd =

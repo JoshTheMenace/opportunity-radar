@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-08-14T23:34:49.946Z",
+  "backend": "codex",
+  "averageTotal": 0.6045,
+  "scores": [
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 0.75,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.6045,
+      "notes": "missed themes: workforce | honesty wrong: expected honestNo=true, got false | The explanations are consistently grounded in the founder’s Utah location, revenue, funding target, marketplace model, and expansion plans, distinguish uncertain eligibility from known fit, avoid unsupported certainty, and provide opportunity-specific verification tasks and actionable financing next steps."
+    }
+  ]
+}

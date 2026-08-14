@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import type {
   CompanyProfile,
   EligibilityMeter,
+  EvidenceSummary,
   FitTier,
   GateField,
   GatedOpportunity,
@@ -15,6 +16,7 @@ import type {
   Opportunity,
   RankedMatch,
 } from "@/lib/types";
+import { formatUsdCompact } from "@/lib/engine/meter";
 
 /** The report event carries an id→Opportunity lookup added by the API facade. */
 type UiReport = MatchReport & { opportunities?: Record<string, Opportunity> };
@@ -28,11 +30,9 @@ type Ev =
 
 // ---------- formatting helpers ----------
 
+/** Null-guarded wrapper around the engine's shared USD formatter. */
 function fmtUsd(n: number | null | undefined): string {
-  if (n == null) return "—";
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(n % 1e6 === 0 ? 0 : 1)}M`;
-  if (n >= 1e3) return `$${Math.round(n / 1e3)}K`;
-  return `$${n}`;
+  return n == null ? "—" : formatUsdCompact(n);
 }
 
 function daysUntil(iso: string | null): number | null {
@@ -56,6 +56,7 @@ export default function OpportunityMap() {
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [report, setReport] = useState<UiReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [chat, setChat] = useState("");
   const profileRef = useRef<CompanyProfile | null>(null);
 
   function handle(ev: Ev) {
@@ -126,6 +127,13 @@ export default function OpportunityMap() {
     void stream("/api/answer", { profile: profileRef.current, field, answer: value });
   };
 
+  const answerFreeform = () => {
+    if (!profileRef.current || !chat.trim()) return;
+    const message = chat.trim();
+    setChat("");
+    void stream("/api/answer", { profile: profileRef.current, message });
+  };
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-10">
@@ -191,7 +199,7 @@ export default function OpportunityMap() {
                     key={u.field}
                     className="rounded-full border border-green-500/40 bg-green-500/10 px-2.5 py-0.5 text-xs text-green-400"
                   >
-                    +{fmtUsd(u.unlockUsd)} · {u.opportunityCount} opp
+                    up to +{fmtUsd(u.unlockUsd)} · {u.opportunityCount} opp
                   </span>
                 ))}
               </div>
@@ -204,6 +212,26 @@ export default function OpportunityMap() {
                 {questions.map((q) => (
                   <QuestionCard key={q.field} q={q} disabled={busy} onAnswer={answer} />
                 ))}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    answerFreeform();
+                  }}
+                  className="flex gap-2 pt-1"
+                >
+                  <input
+                    value={chat}
+                    onChange={(e) => setChat(e.target.value)}
+                    placeholder="Or answer in your own words — one message can cover several questions…"
+                    className="flex-1 rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm placeholder:text-neutral-600 focus:border-neutral-500 focus:outline-none"
+                  />
+                  <button
+                    disabled={busy || !chat.trim()}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Send
+                  </button>
+                </form>
               </div>
             )}
           </section>
@@ -328,7 +356,12 @@ function ReportView({ report }: { report: UiReport }) {
               {label} · {group.length}
             </span>
             {group.map((m) => (
-              <MatchCard key={m.opportunityId} match={m} opp={opps[m.opportunityId]} />
+              <MatchCard
+                key={m.opportunityId}
+                match={m}
+                opp={opps[m.opportunityId]}
+                evidence={report.evidence?.[m.opportunityId]}
+              />
             ))}
           </div>
         );
@@ -346,7 +379,15 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MatchCard({ match, opp }: { match: RankedMatch; opp?: Opportunity }) {
+function MatchCard({
+  match,
+  opp,
+  evidence,
+}: {
+  match: RankedMatch;
+  opp?: Opportunity;
+  evidence?: EvidenceSummary;
+}) {
   const close = daysUntil(opp?.closeDate ?? null);
   const odds =
     opp?.expectedAwards != null
@@ -383,6 +424,7 @@ function MatchCard({ match, opp }: { match: RankedMatch; opp?: Opportunity }) {
         )}
       </p>
       {odds && <p className="text-xs text-neutral-500">{odds}</p>}
+      {evidence && <EvidenceStrip evidence={evidence} />}
       <dl className="space-y-1.5 text-sm">
         <CardRow label="Why it fits" text={match.whyFit} tone="text-green-400" />
         <CardRow label="Could disqualify" text={match.whatCouldDisqualify} tone="text-red-400" />
@@ -398,6 +440,52 @@ function MatchCard({ match, opp }: { match: RankedMatch; opp?: Opportunity }) {
         >
           View opportunity ↗
         </a>
+      )}
+    </div>
+  );
+}
+
+/** Compact "who wins this money" strip built from historical-award evidence. */
+function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
+  const stats: string[] = [];
+  if (evidence.totalAwards != null) stats.push(`${evidence.totalAwards} awards`);
+  if (evidence.medianUsd != null) stats.push(`${fmtUsd(evidence.medianUsd)} median`);
+  if (evidence.utahCount != null && evidence.utahCount > 0)
+    stats.push(`${evidence.utahCount} in Utah`);
+  const similar = evidence.similarAwards.slice(0, 3);
+  if (stats.length === 0 && similar.length === 0) return null;
+
+  return (
+    <div className="space-y-1 rounded-md border border-neutral-800 bg-neutral-950 p-2.5">
+      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        Who wins this money
+      </p>
+      {stats.length > 0 && (
+        <p className="text-xs text-neutral-300">{stats.join(" · ")}</p>
+      )}
+      {similar.length > 0 && (
+        <p className="text-xs text-neutral-400">
+          {similar.map((a, i) => {
+            const label = `${a.recipient} · ${fmtUsd(a.amountUsd)}${a.year ? ` · ${a.year}` : ""}`;
+            return (
+              <span key={i}>
+                {i > 0 && " · "}
+                {a.link ? (
+                  <a
+                    href={a.link}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline hover:text-blue-300"
+                  >
+                    {label}
+                  </a>
+                ) : (
+                  label
+                )}
+              </span>
+            );
+          })}
+        </p>
       )}
     </div>
   );
@@ -426,7 +514,12 @@ function HonestNoPanel({ report }: { report: UiReport }) {
             Adjacent & state options worth a look
           </p>
           {report.matches.map((m) => (
-            <MatchCard key={m.opportunityId} match={m} opp={opps[m.opportunityId]} />
+            <MatchCard
+              key={m.opportunityId}
+              match={m}
+              opp={opps[m.opportunityId]}
+              evidence={report.evidence?.[m.opportunityId]}
+            />
           ))}
         </div>
       )}

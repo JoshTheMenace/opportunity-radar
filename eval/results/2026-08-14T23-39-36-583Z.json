@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-08-14T23:39:36.583Z",
+  "backend": "codex",
+  "averageTotal": 0.9179999999999999,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.8,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.9179999999999999,
+      "notes": "missed themes: NSF | The explanations are consistently tailored to the company’s nursing-workflow AI, funding target, R&D stage, and hospital-pilot goals, while using verification caveats and concrete next steps; only a few assertions about program scope, award ranges, and agency fit risk exceeding the visible evidence."
+    }
+  ]
+}

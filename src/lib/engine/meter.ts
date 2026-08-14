@@ -2,11 +2,12 @@
 // Eligibility meter + interview question builder. Deterministic,
 // NO LLM calls, NO network. Consumes GatedOpportunity[] from gates.ts.
 //
-// Attribution note: an opportunity with several missing fields counts
-// toward EACH field's unlock total (answering any one field moves it
-// closer to unlocking), so unlock sums can overlap and exceed
-// potentialUsd - unlockedUsd. potentialUsd itself counts every
-// unknown opportunity exactly once.
+// Attribution note (simulated unlock): a field's unlockUsd counts only
+// opportunities where it is the SOLE missing field — i.e. what answering
+// it favorably would actually flip to "pass". Opportunities missing 2+
+// fields count toward no chip (so chip sums never exceed
+// potentialUsd - unlockedUsd) but DO feed question ranking as shared
+// progress at half weight.
 // ============================================================
 
 import type {
@@ -93,29 +94,51 @@ const TEMPLATES: Record<GateField, QuestionTemplate> = {
   },
 };
 
-const ALL_GATE_FIELDS = Object.keys(TEMPLATES) as GateField[];
+export const ALL_GATE_FIELDS = Object.keys(TEMPLATES) as GateField[];
+
+interface FieldStat {
+  fullUsd: number; // opportunities where this is the ONLY missing field
+  fullCount: number;
+  sharedUsd: number; // opportunities also missing other fields
+  sharedCount: number;
+}
+
+/** Per-field simulated unlock: what answering it flips outright vs. advances. */
+function fieldStats(unknowns: GatedOpportunity[]): Map<GateField, FieldStat> {
+  const stats = new Map<GateField, FieldStat>();
+  for (const g of unknowns) {
+    for (const field of g.missingFields) {
+      const s =
+        stats.get(field) ?? { fullUsd: 0, fullCount: 0, sharedUsd: 0, sharedCount: 0 };
+      if (g.missingFields.length === 1) {
+        s.fullUsd += g.meterValueUsd;
+        s.fullCount += 1;
+      } else {
+        s.sharedUsd += g.meterValueUsd;
+        s.sharedCount += 1;
+      }
+      stats.set(field, s);
+    }
+  }
+  return stats;
+}
 
 export function buildMeter(gated: GatedOpportunity[]): EligibilityMeter {
   const passing = gated.filter((g) => g.verdict === "pass");
   const unknowns = gated.filter((g) => g.verdict === "unknown");
 
   const unlockedUsd = passing.reduce((sum, g) => sum + g.meterValueUsd, 0);
-  // Each unknown opportunity counted exactly once here...
   const potentialUsd = unlockedUsd + unknowns.reduce((sum, g) => sum + g.meterValueUsd, 0);
 
-  // ...but may count toward multiple fields below (see attribution note).
-  const unlocks: MeterUnlock[] = [];
-  for (const field of ALL_GATE_FIELDS) {
-    const opps = unknowns.filter((g) => g.missingFields.includes(field));
-    if (opps.length === 0) continue;
-    unlocks.push({
+  const unlocks: MeterUnlock[] = [...fieldStats(unknowns)]
+    .filter(([, s]) => s.fullUsd > 0)
+    .map(([field, s]) => ({
       field,
       question: TEMPLATES[field].question,
-      unlockUsd: opps.reduce((sum, g) => sum + g.meterValueUsd, 0),
-      opportunityCount: opps.length,
-    });
-  }
-  unlocks.sort((a, b) => b.unlockUsd - a.unlockUsd);
+      unlockUsd: s.fullUsd,
+      opportunityCount: s.fullCount,
+    }))
+    .sort((a, b) => b.unlockUsd - a.unlockUsd);
 
   return { unlockedUsd, unlockedCount: passing.length, potentialUsd, unlocks };
 }
@@ -126,20 +149,53 @@ function fieldUnanswered(profile: CompanyProfile, field: GateField): boolean {
   return profile[field] === null;
 }
 
+/** Cheaper answers win near-ties: a yes/no costs the founder less than a lookup. */
+const EFFORT_WEIGHT: Record<InterviewQuestion["answerType"], number> = {
+  boolean: 1,
+  choice: 0.95,
+  number: 0.9,
+  text: 0.85,
+};
+
+function programs(n: number): string {
+  return n === 1 ? "1 program" : `${n} programs`;
+}
+
+/**
+ * Pick the top 3 questions by simulated unlock: full unlocks count whole,
+ * shared progress (opportunities needing other answers too) counts half,
+ * scaled by answer effort. Copy stays honest about direct vs. partial.
+ */
 export function buildQuestions(
-  meter: EligibilityMeter,
+  gated: GatedOpportunity[],
   profile: CompanyProfile,
 ): InterviewQuestion[] {
-  return meter.unlocks
-    .filter((u) => fieldUnanswered(profile, u.field))
+  const stats = fieldStats(gated.filter((g) => g.verdict === "unknown"));
+  return [...stats]
+    .filter(([field]) => fieldUnanswered(profile, field))
+    .map(([field, s]) => ({
+      field,
+      s,
+      score:
+        (s.fullUsd + 0.5 * s.sharedUsd) * EFFORT_WEIGHT[TEMPLATES[field].answerType],
+    }))
+    .sort((a, b) => b.score - a.score)
     .slice(0, 3)
-    .map((u) => {
-      const t = TEMPLATES[u.field];
-      const programs = u.opportunityCount === 1 ? "1 program" : `${u.opportunityCount} programs`;
+    .map(({ field, s }) => {
+      const t = TEMPLATES[field];
+      const parts: string[] = [];
+      if (s.fullUsd > 0)
+        parts.push(
+          `directly unlocks up to ${formatUsdCompact(s.fullUsd)} across ${programs(s.fullCount)}`,
+        );
+      if (s.sharedUsd > 0)
+        parts.push(
+          `moves ${formatUsdCompact(s.sharedUsd)} across ${programs(s.sharedCount)} one answer closer`,
+        );
       return {
-        field: u.field,
+        field,
         question: t.question,
-        whyAsking: `${t.why} — answering unlocks up to ${formatUsdCompact(u.unlockUsd)} across ${programs}`,
+        whyAsking: `${t.why} — ${parts.join("; ")}`,
         answerType: t.answerType,
         choices: t.choices,
       };

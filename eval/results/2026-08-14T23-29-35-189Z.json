@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-08-14T23:29:35.189Z",
+  "backend": "codex",
+  "averageTotal": 0.912,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.8,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.91,
+      "total": 0.912,
+      "notes": "missed themes: NSF | The explanations are highly tailored to the company’s nursing-workflow AI, Utah location, funding target, and hospital-pilot goals, with opportunity-specific verification and actionable framing, though a few assertions such as “strongest” fit, active R&D, and award sufficiency appear somewhat more confident than the supplied evidence supports."
+    }
+  ]
+}

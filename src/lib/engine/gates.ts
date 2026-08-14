@@ -3,6 +3,7 @@
 // Pure function of (CompanyProfile, Opportunity) -> GatedOpportunity.
 // ============================================================
 
+import { localIsoDate } from "./dates";
 import type {
   CompanyProfile,
   FundingKind,
@@ -51,12 +52,6 @@ function gate(
   missingField: GateField | null = null,
 ): GateResult {
   return { gate: name, verdict, missingField, detail };
-}
-
-function localIsoDate(d: Date): string {
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
 }
 
 export function evaluateGates(profile: CompanyProfile, opp: Opportunity): GatedOpportunity {
@@ -152,12 +147,14 @@ export function evaluateGates(profile: CompanyProfile, opp: Opportunity): GatedO
 
     if (profile.employees !== null && profile.employees > 500) {
       gates.push(gate("sbir:employees", "fail", "SBIR caps company size at 500 employees"));
-    } else if (profile.employees === null) {
+    } else if (profile.employees !== null) {
+      gates.push(gate("sbir:employees", "pass", `${profile.employees} employees (≤500)`));
+    } else if (profile.isSmallBusiness === true) {
+      gates.push(gate("sbir:employees", "pass", "Small business (≤500 employees implied)"));
+    } else {
       gates.push(
         gate("sbir:employees", "unknown", "SBIR caps company size at 500 employees", "employees"),
       );
-    } else {
-      gates.push(gate("sbir:employees", "pass", `${profile.employees} employees (≤500)`));
     }
 
     if (profile.hasActiveRnD === false) {

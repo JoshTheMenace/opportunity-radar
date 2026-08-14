@@ -132,7 +132,12 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main().then(
+  // Explicit exit: the codex app-server child keeps the event loop alive
+  // after results are written, so without this the process never exits.
+  () => process.exit(0),
+  (err) => {
+    console.error(err);
+    process.exit(1);
+  },
+);
