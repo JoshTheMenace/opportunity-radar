@@ -366,9 +366,11 @@ function MatchCard({ match, opp }: { match: RankedMatch; opp?: Opportunity }) {
         {opp ? (
           <>
             {opp.agency} · {opp.kind.replace(/_/g, "/")} ·{" "}
-            {opp.awardFloorUsd != null || opp.awardCeilingUsd != null
+            {opp.awardFloorUsd != null && opp.awardCeilingUsd != null
               ? `${fmtUsd(opp.awardFloorUsd)}–${fmtUsd(opp.awardCeilingUsd)}`
-              : "award size unlisted"}
+              : opp.awardCeilingUsd != null
+                ? `up to ${fmtUsd(opp.awardCeilingUsd)}`
+                : "award size unlisted"}
             {opp.closeDate && (
               <span className={close != null && close <= 30 ? " text-red-400" : ""}>
                 {" "}· closes {opp.closeDate}
