@@ -82,3 +82,16 @@ Everything below was verified by direct calls. Follow exactly; don't guess.
 
 - Endpoint docs pending from Josh. Until wired, run with LLM_BACKEND=mock
   or LLM_BACKEND=anthropic (needs ANTHROPIC_API_KEY in .env.local).
+
+## Codex app server — WIRED (verified live, codex-cli 0.146.0)
+
+- Adapter: src/lib/llm-codex.ts. Spawns `codex app-server` (stdio JSON-RPC,
+  newline-delimited, jsonrpc 2.0 envelope). Flow: initialize -> initialized
+  notification -> thread/start {model:"gpt-5.6-sol", ephemeral:true,
+  sandbox:"read-only", approvalPolicy:"never", config:{mcp_servers:{}}} ->
+  turn/start {threadId, input:[{type:"text",text,text_elements:[]}],
+  effort, outputSchema?} -> notifications item/completed
+  (item.type==="agentMessage" -> .text) and turn/completed terminate the call.
+- outputSchema constrains the final message to a JSON Schema (verified).
+- ~4-5s/call at effort "low". Concurrent calls OK (one thread per call).
+- Auth: Josh's ChatGPT subscription via ~/.codex/auth.json — no API key needed.
