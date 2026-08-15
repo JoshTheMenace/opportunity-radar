@@ -2,6 +2,7 @@
 // PATCH = {taskId, done} toggles a task, {status} updates the pursuit.
 
 import { getOpportunityById } from "@/lib/engine/retrieve";
+import { getDossier } from "@/lib/pursuit/dissector";
 import {
   getPursuit,
   listTasks,
@@ -26,6 +27,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     pursuit,
     tasks: listTasks(id),
     opportunity: getOpportunityById(pursuit.opportunityId),
+    dossier: getDossier(id),
   });
 }
 

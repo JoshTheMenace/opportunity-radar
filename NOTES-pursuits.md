@@ -23,6 +23,18 @@ submission plan → track it to submission with per-task AI help.
 - UI: `/opportunity/[id]` (server detail page + client PursuitPanel tracker),
   `/pursuits` dashboard, nav link, match cards link to the detail page.
 
+## Public-source requirements dossier
+
+- `src/lib/pursuit/dissector.ts` owns its own SQLite tables for a pursuit's
+  official-source dossier, discovered document links, and explicit requirement
+  statements. It never accesses applicant portal credentials.
+- API: `GET/POST /api/pursuits/[id]/dissect`. POST refreshes the official
+  notice page and public document links; GET returns the saved dossier.
+- The dossier is intentionally conservative: it remains
+  `incomplete_source_packet` until linked documents and the official portal
+  package have been checked. Do not relabel it as a complete submission
+  checklist without portal evidence.
+
 ## Related report change
 
 `components/report-view.tsx` hides matches with score < 50 (MIN_SCORE)
