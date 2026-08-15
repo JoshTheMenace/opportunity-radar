@@ -319,6 +319,44 @@ assert(
     "Phase II awards 25% more over 24 months.",
 );
 
+// 11c. Institution-restricted prose gate (the land-grant honesty bug).
+const instOpp = (text: string) =>
+  makeOpp({ eligibilityCodes: ["25"], eligibilityText: text });
+assert(
+  "institution gate: land-grant-only prose => unknown (never a clean pass)",
+  evaluateGates(
+    makeProfile({ isForProfit: true }),
+    instOpp(
+      "Eligibility Requirements: Land-grant Institutions and other colleges and universities having a demonstrable capacity to carry out the teaching of food and agricultural sciences.",
+    ),
+  ).gates.find((g) => g.gate === "eligibility:institution_only")?.verdict === "unknown",
+);
+assert(
+  "institution gate: code 25 alone no longer reads as a business-friendly pass",
+  evaluateGates(
+    makeProfile({ isForProfit: true }),
+    instOpp("Proposals may only be submitted by federally recognized tribal colleges and universities."),
+  ).verdict === "unknown",
+);
+assert(
+  "institution gate: business escape hatch present => does NOT fire",
+  !evaluateGates(
+    makeProfile({ isForProfit: true }),
+    instOpp(
+      "Eligible applicants may be institutions of higher education, nonprofits, commercial organizations, or small business concerns.",
+    ),
+  ).gates.some((g) => g.gate === "eligibility:institution_only"),
+);
+assert(
+  "institution gate: thin/absent prose => does NOT fire (no false accusation)",
+  !evaluateGates(makeProfile(), instOpp("See NOFO.")).gates.some(
+    (g) => g.gate === "eligibility:institution_only",
+  ) &&
+    !evaluateGates(makeProfile(), makeOpp({ eligibilityText: null })).gates.some(
+      (g) => g.gate === "eligibility:institution_only",
+    ),
+);
+
 // 12. deriveFields: derive instead of ask.
 assert(
   "derive: 12 employees => isSmallBusiness true",

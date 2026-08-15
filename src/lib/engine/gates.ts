@@ -76,8 +76,11 @@ export function isInstitutionRestricted(opp: Opportunity): boolean {
 // must be an explicit limiter, and any business-inclusive term wins outright.
 const INSTITUTION_TERMS =
   /land[- ]grant|institutions? of higher education|\bIHEs?\b|universit|\bcolleges?\b|academic institution|K-12|local educational agenc|state educational agenc|school district|state governments?|local governments?|municipalit|county governments?|federally recognized tribe|tribal government|non-?profit/i;
+// Applicant-context phrases only: bare "business"/"industry" boilerplate
+// ("benefits industry") appears in institution-only prose and was vetoing
+// the fail almost everywhere (4/861 grants.gov prose rows fired).
 const BUSINESS_TERMS =
-  /small business|for[- ]profit|business(es)?\b|industry|commercial|private sector|compan(y|ies)|\bfirms?\b|entrepreneurs?/i;
+  /small business|for[- ]profit|business concern|commercial organization|private business|businesses (?:are|may|can) (?:eligible|apply)/i;
 const RESTRICTION_PHRASE =
   /(limited to|restricted to|must be an?\b|only the following|eligible applicants?\s*(are|is|:))/i;
 
@@ -305,6 +308,10 @@ export function evaluateGates(profile: CompanyProfile, opp: Opportunity): GatedO
   const codesAdmitBusiness = opp.eligibilityCodes.some((c) => BUSINESS_FRIENDLY.has(c));
   if (
     prose &&
+    // Machine-ingested prose only: the hand-curated utah layer is vetted and
+    // founder-targeted by construction (PIVOT's "University of Utah" prose
+    // false-failed), and sbir topics are small-business by statute.
+    (opp.source === "grants_gov" || opp.source === "assistance_listing") &&
     !codesAdmitBusiness &&
     profile.isForProfit !== false &&
     !BUSINESS_TERMS.test(prose) &&

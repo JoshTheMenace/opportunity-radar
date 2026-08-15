@@ -45,3 +45,6 @@ data/*.db-wal
 data/*.db-shm
 data/outbox/
 .claude/settings.local.json
+
+# git worktrees created by agent sessions
+.claude/worktrees/
