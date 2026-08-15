@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-15T01:36:50.837Z",
+  "backend": "codex",
+  "provider": "live",
+  "averageTotal": 0.976,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.88,
+      "total": 0.976,
+      "notes": "all mustSee themes covered | The reply is specific, accurate, naturally spoken, and asks the key ownership question, but it omits that the $314K ceiling falls below the founder’s $500K minimum and does not mention the R&D-versus-deployment or pilot-cost eligibility checks."
+    }
+  ],
+  "transcripts": {
+    "ai-healthcare": "That's helpful background, thank you.\n\nI've run the analysis, and your strongest potential match pending an eligibility check is an opportunity from the National Institutes of Health titled \"FY26 SBIR Phase I: AI Tools to Reduce Clinical Administrative Burden.\" It offers awards up to about three hundred fourteen thousand dollars, and the deadline is December 14th, 2026. That's one of twenty-five matches found.\n\nTo qualify for that program, we need to confirm a couple of details. First, is your company majority-owned by U.S. citizens or permanent residents? Answering yes could unlock up to about eighty-six million dollars across dozens of other programs."
+  }
+}

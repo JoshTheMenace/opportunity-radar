@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-15T01:34:28.078Z",
+  "backend": "codex",
+  "provider": "live",
+  "averageTotal": 0.814,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.8,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.42,
+      "total": 0.814,
+      "notes": "missed themes: NSF | The reply is concise, uses the real 25-match count, asks the key ownership question, and suggests bounded R&D, but it invents NIH attribution, a $314,000 award, and a December-next-year deadline absent from the report, while overstating an eligibility-verification match as the best fit and omitting stronger, honest context such as LEAP."
+    }
+  ],
+  "transcripts": {
+    "ai-healthcare": "I've run the analysis, and there are 25 matches on your screen.\n\nThe best fit is an opportunity specifically for AI tools to reduce clinical administrative burden, from NIH. It offers up to three hundred and fourteen thousand dollars, and the deadline is December of next year. The next step would be to define a specific technical R\\&D project.\n\nTo qualify for that and many others, I need to know: is your company majority-owned by U.S. citizens or permanent residents?"
+  }
+}

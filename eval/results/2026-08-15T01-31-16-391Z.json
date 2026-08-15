@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-15T01:31:16.391Z",
+  "backend": "codex",
+  "provider": "live",
+  "averageTotal": 0.816,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.08,
+      "total": 0.816,
+      "notes": "all mustSee themes covered | The reply asks one relevant SBIR eligibility question, but otherwise contradicts the report’s prioritization and invents an NIH program description, award amount, deadline, 130 additional opportunities, and an unsupported $86 million figure."
+    }
+  ],
+  "transcripts": {
+    "ai-healthcare": "Your strongest match is the NIH SBIR for clinical AI tools, with awards up to about three hundred thousand dollars, closing mid-December. The next step is mapping your product work to their R&D scope.\n\nThere are 130 other opportunities on your screen too, though some might not cover the full amount you're looking for.\n\nNow, to get more specific, is your company majority-owned by U.S. citizens or permanent residents? That could unlock up to eighty-six million dollars."
+  }
+}

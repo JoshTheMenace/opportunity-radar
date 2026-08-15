@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-15T01:38:52.713Z",
+  "backend": "codex",
+  "provider": "live",
+  "averageTotal": 0.686,
+  "scores": [
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.93,
+      "total": 0.686,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The reply is concise, natural, and fully grounded in the report, accurately flags the $200,000 ceiling as below the founder’s minimum and asks the highest-value eligibility question, though it could be more actionable by specifying a quantified Utah hiring plan and the need to verify software/IT qualification."
+    }
+  ],
+  "transcripts": {
+    "youth-marketplace": "I've found a few relevant options for you. Your strongest potential match is the GOEO Economic Assistance Grant, through the state of Utah. It offers up to $200,000 to support Utah business expansion and job creation. The next step would be to contact them with your growth plan, keeping in mind that the max award is below your stated minimum. That's one of 25 matches.\n\nTo unlock more opportunities, could you tell me if your company is majority-owned by U.S. citizens or permanent residents?"
+  }
+}

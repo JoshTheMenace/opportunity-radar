@@ -135,7 +135,8 @@ export async function runAnalysis(
         };
         const bits: string[] = [];
         if (ev.similarAwards.length) bits.push(`${ev.similarAwards.length} similar awards`);
-        if (ev.alnStats) bits.push(`${formatUsdCompact(ev.alnStats.medianUsd)} median award`);
+        if (ev.alnStats?.medianUsd != null)
+          bits.push(`${formatUsdCompact(ev.alnStats.medianUsd)} median award`);
         if (ev.nearbyWinners.length) bits.push(`${ev.nearbyWinners.length} nearby winners`);
         if (bits.length) {
           emit({ type: "activity", message: `Evidence: ${bits.join(", ")} for ${opp.title}` });

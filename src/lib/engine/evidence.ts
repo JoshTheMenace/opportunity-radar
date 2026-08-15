@@ -12,7 +12,8 @@ export interface EvidenceBundle {
   alnStats: {
     totalAwards: number;
     totalUsd: number;
-    medianUsd: number;
+    /** null when no positive awards or the median is implausible for this opp. */
+    medianUsd: number | null;
     utahCount: number;
   } | null;
   similarAwards: Array<{
@@ -242,17 +243,30 @@ async function fetchAlnStats(
       }),
     ),
   ]);
-  const sorted = [...amounts].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  const medianUsd =
-    sorted.length === 0
-      ? 0
-      : sorted.length % 2
-        ? sorted[mid]
-        : (sorted[mid - 1] + sorted[mid]) / 2;
+  // Zero/negative rows are de-obligations, not awards — they'd show a
+  // "$0 median" that reads as broken data. Median from positive rows only.
+  const positive = amounts.filter((n) => n > 0).sort((a, b) => a - b);
+  const mid = Math.floor(positive.length / 2);
+  let medianUsd: number | null =
+    positive.length === 0
+      ? null
+      : positive.length % 2
+        ? positive[mid]
+        : (positive[mid - 1] + positive[mid]) / 2;
+  // Some ALNs mix startup grants with state block grants; a median wildly
+  // above this opportunity's own ceiling describes a different population,
+  // so suppress it rather than mislead.
+  if (
+    medianUsd != null &&
+    opp.awardCeilingUsd != null &&
+    opp.awardCeilingUsd > 0 &&
+    medianUsd > 20 * opp.awardCeilingUsd
+  ) {
+    medianUsd = null;
+  }
   return {
-    totalAwards: amounts.length,
-    totalUsd: amounts.reduce((s, n) => s + n, 0),
+    totalAwards: positive.length,
+    totalUsd: positive.reduce((s, n) => s + n, 0),
     medianUsd,
     utahCount: (utResp.results ?? []).length,
   };

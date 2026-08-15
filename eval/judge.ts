@@ -93,7 +93,38 @@ async function judgeExplanations(
         "",
         `HONEST NO: ${report.honestNo}${report.honestNoExplanation ? ` — ${report.honestNoExplanation}` : ""}`,
         "",
-        `REPORT DATA the agent saw (JSON):\n${JSON.stringify(excerpts, null, 2)}`,
+        // The agent also saw the meter and interview questions — include them
+        // so real figures it quotes aren't scored as inventions.
+        `REPORT DATA the agent saw (JSON):\n${JSON.stringify(
+          {
+            totalMatches: report.matches.length,
+            meter: {
+              unlockedUsd: report.meter.unlockedUsd,
+              potentialUsd: report.meter.potentialUsd,
+              eligibleCount: report.meter.unlockedCount,
+            },
+            questionsToAsk: report.questions.map((q) => ({
+              field: q.field,
+              question: q.question,
+              whyAsking: q.whyAsking,
+            })),
+            // Merge in the opportunity fields the voice agent reads (title,
+            // agency, amounts, deadline) so quoting them isn't "invention".
+            topMatches: excerpts.map((e) => {
+              const opp = lookupOpportunity(e.opportunityId);
+              return {
+                ...e,
+                title: opp?.title ?? null,
+                agency: opp?.agency ?? null,
+                awardFloorUsd: opp?.awardFloorUsd ?? null,
+                awardCeilingUsd: opp?.awardCeilingUsd ?? null,
+                closeDate: opp?.closeDate ?? null,
+              };
+            }),
+          },
+          null,
+          2,
+        )}`,
         "",
         `AGENT'S SPOKEN REPLIES:\n${spokenTranscript}`,
         "",

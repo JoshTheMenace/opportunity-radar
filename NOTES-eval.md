@@ -29,3 +29,6 @@ runner passes only the founder paragraph.)
   results JSON and judge explanationQuality on the transcript. `backend` still
   records the engine LLM — the pipeline runs underneath both providers, so
   cross-run comparisons should hold both `backend` and `provider` constant.
+- Spoken-transcript judging (live provider) sees the same data the voice agent
+  sees — meter, totalMatches, questions, and each top match's title/agency/
+  amounts/closeDate — so quoting real figures isn't scored as invention.

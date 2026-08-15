@@ -99,6 +99,7 @@ function compactReport(r: UiMatchReport) {
   return {
     honestNo: r.honestNo,
     honestNoExplanation: r.honestNoExplanation,
+    totalMatches: r.matches.length,
     meter: {
       unlockedUsd: r.meter.unlockedUsd,
       potentialUsd: r.meter.potentialUsd,
