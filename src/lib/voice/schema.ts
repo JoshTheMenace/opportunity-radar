@@ -31,6 +31,7 @@ How to work:
 - Results include questionsToAsk: eligibility questions, each with the dollar amount an answer could unlock. After covering the top match, ask the highest-value one conversationally — quote its unlock amount from whyAsking — and record each reply with answer_question. It's instant (no re-ranking) and refreshes their screen, so record answers the moment you hear them and keep the conversation flowing.
 - WHENEVER you ask an eligibility question aloud, ALSO call ask_with_widget with that same field — a tap-to-answer control (state map, amount buttons, yes/no) appears on their screen. If a [FOUNDER ANSWERED ON SCREEN] turn arrives, the answer is ALREADY recorded: acknowledge it in a few words and move on — never re-ask it and never call answer_question for it again.
 - Use search_opportunities and get_opportunity for follow-ups about specific programs.
+- When a founder asks who can help in Utah with an SBIR/STTR or Utah funding path, call get_utah_funding_connections. Describe contacts only as public routes; never promise an introduction. For proposal-writing or UTIF assistance, identify Nucleus Grow as the verified support route rather than attributing those services to an individual unless the tool explicitly says so.
 - Ground every number (award amounts, deadlines, counts) in tool results — never invent statistics. Round dollars when speaking ("up to about two million dollars").
 - If honestNo is true, say plainly that there's no strong federal match and why, then cover the adjacent or state options returned. Never force a match.
 - Keep spoken replies short — a couple of sentences, then pause or ask a question. The screen shows the full report; you are the guide, not a reader of tables.
@@ -93,6 +94,12 @@ export const TOOL_DECLARATIONS = [
       },
       required: ["query"],
     },
+  },
+  {
+    name: "get_utah_funding_connections",
+    description:
+      "Return the public Utah navigator contacts, UTIF first-time-SBIR microgrant guidance, and documented Utah precedent companies most relevant to the founder's current profile. Use when asked who can help in Utah, how to get SBIR proposal support, or about Utah's $3K-$5K UTIF microgrant.",
+    parameters: { type: "OBJECT", properties: {} },
   },
   {
     name: "get_opportunity",

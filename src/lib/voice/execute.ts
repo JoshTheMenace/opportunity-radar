@@ -11,6 +11,7 @@ import { ALL_GATE_FIELDS } from "@/lib/engine/meter";
 import { profileReadiness } from "@/lib/engine/readiness";
 import { refineReport } from "@/lib/engine/refine";
 import { getOpportunityById } from "@/lib/engine/retrieve";
+import { getUtahContext } from "@/lib/engine/utah-intelligence";
 import { getDb, rowToOpportunity } from "@/lib/db";
 import { runAnalysis, withOpportunities, type UiMatchReport } from "@/app/api/engine-facade";
 
@@ -110,6 +111,49 @@ export async function executeVoiceTool(
           url: opp.url,
           contactName: opp.contactName,
           contactEmail: opp.contactEmail,
+        },
+      };
+    }
+    case "get_utah_funding_connections": {
+      if (!profile)
+        return {
+          result: {
+            error: "Analyze the company first so Utah connections can be matched to its funding path.",
+          },
+        };
+      const context = getUtahContext(profile);
+      return {
+        result: {
+          note: "These are public routing options and documented precedents, not endorsements or promised introductions.",
+          utif: {
+            amount: "$3,000-$5,000",
+            purpose:
+              "First-time SBIR/STTR Phase I proposal preparation for eligible Utah small businesses.",
+            supportRoute: "Nucleus Grow — grow@nucleusutah.org",
+            requirement:
+              "Use a specific Phase I solicitation and seek Nucleus Grow pre-approval before applying; apply at least four weeks before the federal deadline.",
+            url: "https://www.nucleusutah.org/utif",
+          },
+          navigators: context.navigators.map((item) => ({
+            name: item.name,
+            organization: item.organization,
+            title: item.title,
+            summary: item.summary,
+            email: item.publicContact?.email ?? null,
+            sourceUrl: item.sourceUrl,
+          })),
+          grantPrecedents: context.grantPrecedents.map((item) => ({
+            company: item.company,
+            city: item.city,
+            summary: item.summary,
+            sourceUrl: item.sourceUrl,
+          })),
+          contractPrecedents: context.contractPrecedents.map((item) => ({
+            company: item.company,
+            city: item.city,
+            summary: item.summary,
+            sourceUrl: item.sourceUrl,
+          })),
         },
       };
     }

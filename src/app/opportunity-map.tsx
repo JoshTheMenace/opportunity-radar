@@ -24,6 +24,7 @@ import ProfileCard from "./components/profile-card";
 import ActionPlan from "./components/action-plan";
 import UnlockPanel from "./components/unlock-panel";
 import { HonestNoPanel, HowItWorks, ReportSkeleton, ReportView } from "./components/report-view";
+import UtahPathways from "./components/utah-pathways";
 import type { QuickReply, Spotlight, UiReport } from "./components/shared";
 import type { EligibilityMeter, InterviewQuestion } from "@/lib/types";
 
@@ -299,6 +300,7 @@ export default function OpportunityMap() {
             ) : (
               <ReportView report={report} spotlight={spotlight} busy={busy} />
             ))}
+          {report?.utahContext && !busy && <UtahPathways context={report.utahContext} />}
           {report && !busy && <SaveMonitor profile={report.profile} />}
         </div>
 
