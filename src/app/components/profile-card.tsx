@@ -77,7 +77,9 @@ export default function ProfileCard({
   const rs = rows(profile);
   const readiness = profileReadiness(profile);
   const confidence = readiness.ready ? "High" : readiness.knownCount >= 3 ? "Medium" : "Low";
-  const pct = Math.round((readiness.knownCount / readiness.requiredCount) * 100);
+  // Completeness = the ledger the founder is looking at, not just the 5
+  // ranking-required facts (which hit 100% while half the rows say Unknown).
+  const pct = Math.round((rs.filter((r) => r.value != null).length / rs.length) * 100);
   const loc = profile.location?.state ? `${profile.location.state}, USA` : "Location unknown";
 
   return (
@@ -117,29 +119,22 @@ export default function ProfileCard({
       ) : (
         <>
           <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8, textAlign: "left" }}>
-            {rs.map((r) => {
-              const missing = r.value == null;
-              return (
-                <KeyValueRow
-                  key={r.label}
-                  label={r.label}
-                  tone={missing && r.critical ? "danger" : "default"}
-                  pulse={missing && r.critical}
-                  value={
-                    r.value != null ? (
-                      // key on the value so a fresh fact re-triggers the entrance animation
-                      <span key={r.value} className="card-in tnum">
-                        {r.value}
-                      </span>
-                    ) : r.critical ? (
-                      "Unknown"
-                    ) : (
-                      <span className="italic text-faint">Unknown</span>
-                    )
-                  }
-                />
-              );
-            })}
+            {rs.map((r) => (
+              <KeyValueRow
+                key={r.label}
+                label={r.label}
+                value={
+                  r.value != null ? (
+                    // key on the value so a fresh fact re-triggers the entrance animation
+                    <span key={r.value} className="card-in tnum">
+                      {r.value}
+                    </span>
+                  ) : (
+                    <span className="italic text-faint">Unknown</span>
+                  )
+                }
+              />
+            ))}
           </div>
           <div className="mk-meter">
             <div className="mk-meter__head">
@@ -157,7 +152,7 @@ export default function ProfileCard({
               <div className="mk-meter__fill" style={{ width: `${pct}%` }} />
             </div>
             <p className="mk-meter__note">
-              {readiness.knownCount} of {readiness.requiredCount} key facts answered.
+              {rs.filter((r) => r.value != null).length} of {rs.length} facts known.
               {readiness.missing.length > 0 &&
                 ` Still blocking ranking: ${readiness.missing[0].label}.`}
             </p>

@@ -80,11 +80,21 @@ export function visibleMatches(
 
 /** Prose → short bullet list (the rank LLM writes sentences; the kit shows bullets). */
 export function bullets(s: string, max = 4): string[] {
-  return s
-    .split(/(?<=[.!?])\s+/)
+  const parts = s
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9"'($])/)
     .map((x) => x.trim())
-    .filter(Boolean)
-    .slice(0, max);
+    .filter(Boolean);
+  // Re-join false splits after abbreviations ("U.S. Department", "e.g. NSF").
+  const out: string[] = [];
+  for (const p of parts) {
+    const prev = out[out.length - 1];
+    if (prev && /\b(?:[A-Z]|e\.g|i\.e|vs|etc|approx|No)\.$/.test(prev)) {
+      out[out.length - 1] = `${prev} ${p}`;
+    } else {
+      out.push(p);
+    }
+  }
+  return out.slice(0, max);
 }
 
 /**

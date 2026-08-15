@@ -58,8 +58,17 @@ export function injectUtif(
   matches: RankedMatch[],
   profile: CompanyProfile,
   honestNo: boolean,
+  /** True when the ranked matches already include an SBIR/STTR program. */
+  recommendsSbir = false,
 ): RankedMatch[] {
-  if (honestNo || !utifQualifies(profile)) return matches;
+  // Recommending an SBIR/STTR already implies the small-business + R&D
+  // conditions, so the microgrant rides along for any Utah company even
+  // while those profile fields are still null. Utah HQ stays required —
+  // it is Utah money.
+  const qualifies =
+    utifQualifies(profile) ||
+    (recommendsSbir && profile.location?.state === "UT" && profile.isForProfit !== false);
+  if (honestNo || !qualifies) return matches;
   const rest = matches.filter((m) => m.opportunityId !== UTIF_ID);
   return [...rest, utifMatch()].sort((a, b) => b.score - a.score);
 }

@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T19:24:49.085Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.988,
+  "scores": [
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.988,
+      "notes": "all mustSee themes covered | The explanations consistently connect the founder’s Utah location, water-loss technology, municipal pilot model, funding need, and revenue to opportunity-specific requirements, while clearly flagging uncertainties and offering concrete next steps without obvious unsupported invention."
+    }
+  ]
+}

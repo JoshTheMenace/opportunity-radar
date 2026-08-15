@@ -7,7 +7,7 @@
 //                  auto-fit columns, then the full-width "Who else got this
 //                  money" evidence + YOUR FUNDING TWIN block, then the
 //                  plan-backward and program-officer collapsibles
-//   foot         — odds/next-step line, Save for Later, Start Pre-flight
+//   foot         — odds/next-step line, official notice, Details
 // Collapse: data-expanded + mk-opp__toggle (CSS hides body/foot/lede). The
 // agent's spotlight force-expands the card before firing the attention ring.
 
@@ -23,13 +23,6 @@ import { TIER_META, bullets, daysUntil, dedupeAgency, fmtDate, fmtUsd, humanize,
 function shortId(id: string): string {
   const tail = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
   return tail.length > 18 ? `${tail.slice(0, 18)}…` : tail;
-}
-
-/** Save for Later: point the founder at the standing-watch card below. */
-function goToSaveMonitor() {
-  const el = document.getElementById("save-monitor");
-  el?.scrollIntoView({ behavior: "smooth", block: "center" });
-  el?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
 }
 
 export default function MatchCard({
@@ -331,11 +324,8 @@ export default function MatchCard({
               <Icon name="open_in_new" size={16} aria-hidden />
             </a>
           )}
-          <button type="button" className="or-btn or-btn--outline" onClick={goToSaveMonitor}>
-            Save for Later
-          </button>
           <Link className="or-btn or-btn--filled" href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}>
-            Start Pre-flight
+            Details
             <Icon name="arrow_forward" size={18} aria-hidden />
           </Link>
         </div>

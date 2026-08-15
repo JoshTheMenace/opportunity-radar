@@ -20,7 +20,7 @@ import { meterValueUsd } from "@/lib/engine/gates";
 import VoicePanel from "./voice-panel";
 import SaveMonitor from "./save-monitor";
 import IntakePanel from "./components/intake-panel";
-import AgentDock from "./components/agent-dock";
+import StatusStrip from "./components/status-strip";
 import ProfileCard from "./components/profile-card";
 import ActionPlan from "./components/action-plan";
 import UnlockPanel from "./components/unlock-panel";
@@ -147,11 +147,6 @@ export default function OpportunityMap() {
     }
   }
 
-  /** The agent's pointing power: spotlight a card on the canvas. */
-  const focusMatch = (opportunityId: string) => {
-    setSpotlight({ id: opportunityId, nonce: Date.now() });
-  };
-
   // When a run completes with matches, the agent presents its top pick:
   // spotlight + scroll the strongest card the founder can actually see.
   useEffect(() => {
@@ -213,7 +208,10 @@ export default function OpportunityMap() {
     // compare against the founder's own words (pre-follow-up) — the textarea
     // never shows appended interview answers anymore
     const ownWords = p?.description?.split("\nFounder follow-up:")[0].trim() ?? "";
-    if (p && !(ownWords && text.trim().startsWith(ownWords.slice(0, 80)))) {
+    // Rescan path: the intake box is gone after onboarding, so an empty
+    // textarea means "re-run from the saved profile", not "blank company".
+    const founderText = text.trim() || ownWords;
+    if (p && !(ownWords && founderText.startsWith(ownWords.slice(0, 80)))) {
       p = null;
       profileRef.current = null;
       setRestored(false);
@@ -229,7 +227,7 @@ export default function OpportunityMap() {
       productMaturity: p.productMaturity,
       location: p.location,
     };
-    void stream("/api/analyze", { founderText: text, prior });
+    void stream("/api/analyze", { founderText, prior });
   };
 
   const answer = (field: GateField, value: unknown) => {
@@ -336,7 +334,6 @@ export default function OpportunityMap() {
       ? "scan in progress…"
       : "awaiting scan";
   const collapsed = bulk?.mode === "collapse";
-  const dockLive = busy || activity.length > 0;
 
   return (
     <main className="mk-page">
@@ -353,6 +350,19 @@ export default function OpportunityMap() {
           <h2 className="mk-h3">Top Matches</h2>
           <div className="mk-row" style={{ gap: 16 }}>
             <span className="mk-label">{headLabel}</span>
+            {/* Profile edits and answers don't re-rank on their own — this does. */}
+            <button
+              type="button"
+              className="or-btn or-btn--outline"
+              onClick={analyze}
+              disabled={busy}
+              title="Run the scan again with your current profile"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 18 }} aria-hidden>
+                refresh
+              </span>
+              Rescan
+            </button>
             <MapControls
               counts={tierCounts}
               filters={filters}
@@ -390,17 +400,24 @@ export default function OpportunityMap() {
             VoicePanel keeps its live session across the onboarding→dashboard
             flip — a remount would kill the WebSocket mid-conversation. */}
         <div id="canvas" className={onboarding ? "flex min-w-0 flex-col gap-6" : "mk-c6 min-w-0"}>
-          {!onboarding && dockLive && (
-            <AgentDock lines={activity} busy={busy} report={report} onFocusMatch={focusMatch} />
+          {/* Slim run progress — the old agent dock's one useful line. */}
+          {!onboarding && busy && (
+            <div className="or-card">
+              <StatusStrip lines={activity} busy={busy} />
+            </div>
           )}
-          <IntakePanel
-            text={text}
-            busy={busy}
-            restored={restored}
-            hero={onboarding}
-            onText={setText}
-            onAnalyze={analyze}
-          />
+          {/* Intake is for arrival only: once a profile exists the assistant
+              drawer takes over and the box would just be dead weight. */}
+          {onboarding && (
+            <IntakePanel
+              text={text}
+              busy={busy}
+              restored={restored}
+              hero
+              onText={setText}
+              onAnalyze={analyze}
+            />
+          )}
           {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
           <VoicePanel
             getProfile={() => profileRef.current}

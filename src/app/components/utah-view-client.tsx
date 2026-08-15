@@ -151,7 +151,7 @@ export default function UtahViewClient({ data }: { data: UtahViewData }) {
 
   usePageAssistantContext({
     page: "utah",
-    title: "Utah View",
+    title: "Utah Connections",
     data: {
       winnersCount: data.winnersCount,
       medianAwardUsd: data.medianGrantUsd,
@@ -167,7 +167,7 @@ export default function UtahViewClient({ data }: { data: UtahViewData }) {
   return (
     <main className="mk-page">
       <div className="mk-pagehead">
-        <h2 className="mk-h3">Utah Winners</h2>
+        <h2 className="mk-h3">Utah Connections</h2>
         <span className="mk-label">
           USAspending + SBIR.gov{data.cachedOn ? ` · cached ${data.cachedOn}` : ""}
         </span>

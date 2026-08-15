@@ -19,7 +19,7 @@ import { retrieveCandidates, countBySource, corpusRefreshedAt } from "./retrieve
 import { evaluateGates } from "./gates";
 import { buildMeter, buildQuestions, formatUsdCompact } from "./meter";
 import { profileReadiness, sortQuestionsRequiredFirst } from "./readiness";
-import { rankOpportunities } from "./rank";
+import { rankOpportunities, isSbirOpportunity } from "./rank";
 import { injectUtif } from "./utif";
 import { classifyFutureFits } from "./future";
 import { getEvidence } from "./evidence";
@@ -168,8 +168,14 @@ export async function runAnalysis(
   );
   const { honestNo, honestNoExplanation } = ranked;
   // UTIF special case: a qualified Utah first-timer's microgrant is
-  // deterministic money — inject it over the LLM's read of that row.
-  const matches = injectUtif(ranked.matches, profile, honestNo);
+  // deterministic money — inject it over the LLM's read of that row, and
+  // ALWAYS alongside any recommended SBIR/STTR (it pays for preparing one).
+  const oppById = new Map(gated.map((g) => [g.opportunity.id, g.opportunity]));
+  const recommendsSbir = ranked.matches.some((m) => {
+    const o = oppById.get(m.opportunityId);
+    return o != null && isSbirOpportunity(o);
+  });
+  const matches = injectUtif(ranked.matches, profile, honestNo, recommendsSbir);
   // "Not yet" matches: hard-fails whose only blockers are time-solvable.
   const futureFits = classifyFutureFits(gated);
   if (futureFits.length > 0) {

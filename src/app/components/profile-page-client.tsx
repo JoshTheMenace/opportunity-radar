@@ -292,7 +292,13 @@ export default function ProfilePageClient() {
   }, [profile == null]);
 
   const readiness = profile ? profileReadiness(profile) : null;
-  const pct = readiness ? Math.round((readiness.knownCount / readiness.requiredCount) * 100) : 0;
+  // Completeness over EVERY field this page displays — the required-only
+  // fraction hit 100% while the ledger still showed Unknowns.
+  const pct = profile
+    ? Math.round(
+        (ALL_DEFS.filter((d) => d.display(profile) != null).length / ALL_DEFS.length) * 100,
+      )
+    : 0;
   const missingKeys = useMemo(
     () => new Set((readiness?.missing ?? []).map((m) => m.key)),
     [readiness],
@@ -421,10 +427,6 @@ export default function ProfilePageClient() {
 
   /* ---------- derived view state ---------- */
 
-  const editedKeys = Object.keys(edits).filter((k) => ALL_DEFS.some((d) => d.key === k));
-  const hasEdited = editedKeys.length > 0;
-  const hasInferred = ALL_DEFS.some((d) => !edits[d.key] && inferredNote(profile, d.key) != null);
-  const hasUnknown = ALL_DEFS.some((d) => d.display(profile) == null);
 
   // Top remaining ask: report questions (required first) whose field is still
   // unknown; else a readiness basic; else nothing is blocking.
@@ -497,22 +499,17 @@ export default function ProfilePageClient() {
               {pct}% complete
             </Badge>
             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
-              {dossierRows.map((r) => {
-                const danger = r.value == null && !!r.missingKey && missingKeys.has(r.missingKey);
-                return (
-                  <KeyValueRow
-                    key={r.label}
-                    label={r.label}
-                    tone={danger ? "danger" : "default"}
-                    pulse={danger}
-                    value={
-                      r.value ?? (
-                        <span style={{ fontStyle: "italic", fontWeight: 400 }}>Unknown</span>
-                      )
-                    }
-                  />
-                );
-              })}
+              {dossierRows.map((r) => (
+                <KeyValueRow
+                  key={r.label}
+                  label={r.label}
+                  value={
+                    r.value ?? (
+                      <span style={{ fontStyle: "italic", fontWeight: 400 }}>Unknown</span>
+                    )
+                  }
+                />
+              ))}
             </div>
             <div className="mk-meter">
               <div className="mk-meter__head">
@@ -534,18 +531,8 @@ export default function ProfilePageClient() {
           </div>
         </div>
 
-        {/* ------- center: provenance + editable facts + own words ------- */}
+        {/* ------- center: editable facts + own words ------- */}
         <div className="mk-c6">
-          <div className="or-card or-card--sunken" style={{ padding: "12px 16px" }}>
-            <div className="mk-row" style={{ gap: 16 }}>
-              <span className="mk-label">Where each answer came from</span>
-              {hasEdited && <Badge tone="secondary">You edited</Badge>}
-              {hasInferred && <Badge tone="neutral">We inferred</Badge>}
-              {hasUnknown && <Badge tone="danger">Unknown</Badge>}
-              <span style={anno}>unbadged facts were read straight from your words by the scan</span>
-            </div>
-          </div>
-
           <FactSection
             title="Eligibility"
             defs={ELIGIBILITY}

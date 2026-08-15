@@ -72,6 +72,16 @@ export const RANK_BATCH_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/** SBIR/STTR detection — the sbir source plus grants.gov NOFOs whose titles
+ *  carry the program name. Exported for the pipeline's UTIF trigger. */
+const SBIR_RE = /\bSBIR\b|\bSTTR\b|small business (?:innovation research|technology transfer)/i;
+export function isSbirOpportunity(o: { source: string; title: string }): boolean {
+  return o.source === "sbir" || SBIR_RE.test(o.title);
+}
+/** Deterministic priority: a gate-passing SBIR/STTR is the primary federal
+ *  funding vehicle for a small business — it outranks a same-score program. */
+const SBIR_BOOST = 15;
+
 /** Pure tier mapping from score + gate verdict. Exported for tests. */
 export function tierFor(score: number, gateVerdict: "pass" | "unknown"): FitTier {
   if (score >= TIER_LIKELY) return gateVerdict === "unknown" ? "verify_eligibility" : "likely_fit";
@@ -142,6 +152,8 @@ Anchors:
 - below ${TIER_ADJACENT} — not a fit.
 
 The swap test: if another company from the same city or sector could be dropped into your whyFit and it would read just as well, the program is generic — score it below ${TIER_VERIFY}, whatever its form (loan, tax credit, economic-development grant, counseling, co-investment). A program that funds a CLASS of company (small businesses, tech startups, high-growth firms) rather than a field of work is generic by definition; "targets technology companies" names a class, not this company's work.
+
+SBIR/STTR exception: SBIR (Small Business Innovation Research) and STTR (Small Business Technology Transfer) awards fund a specific R&D topic, not a class of company — the swap test does not make them generic — and they are where most federal money for small companies actually lives. When this company's R&D could credibly serve the solicitation's topic, score the fit generously: an imperfect SBIR/STTR topic match still beats a generic program.
 
 For each opportunity write 1-2 sentences each for whyFit, whatCouldDisqualify, whatToVerify, nextSteps — in plain founder language: expand any acronym or grant term of art on first use in a few words, e.g. "SBIR (federal R&D grants for small companies)".
 Ground every claim in the data above. Anything unknown (a profile field, a number, a date) stays unknown: it belongs in whatToVerify, never asserted in whyFit. Do not attribute customers, partnerships, or capabilities the profile does not state.
@@ -270,7 +282,9 @@ function toMatches(
     // Deterministic guard: never surface a closed opportunity.
     const close = g.opportunity.closeDate;
     if (close != null && close < today) continue;
-    const score = Math.max(0, Math.min(100, Math.round(Number(item.score) || 0)));
+    let score = Math.max(0, Math.min(100, Math.round(Number(item.score) || 0)));
+    // Boost before tiering so a near-miss SBIR can cross into verify/likely.
+    if (isSbirOpportunity(g.opportunity)) score = Math.min(100, score + SBIR_BOOST);
     const tier = tierFor(score, g.verdict === "unknown" ? "unknown" : "pass");
     if (tier === "not_a_fit" && score < 20) continue; // clear misses dropped entirely
     const allowed = allowedAmounts(g, profile);

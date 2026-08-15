@@ -51,7 +51,7 @@ function suggestionsFor(page: string | undefined): string[] {
 }
 
 export default function AssistantDrawer() {
-  const { open, setOpen, thread, busy, ask, pageContext } = useAssistant();
+  const { open, setOpen, thread, busy, ask, pageContext, voice } = useAssistant();
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -202,7 +202,7 @@ export default function AssistantDrawer() {
           )}
         </div>
 
-        {/* composer */}
+        {/* composer (voice lives here too: mic icon + live field widget) */}
         <div
           style={{
             padding: 16,
@@ -210,6 +210,25 @@ export default function AssistantDrawer() {
             background: "var(--color-background)",
           }}
         >
+          {voice?.extra}
+          {voice && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <IconButton
+                icon={voice.status === "live" ? "stop_circle" : "mic"}
+                aria-label={voice.status === "live" ? "Stop voice" : "Talk to Radar"}
+                title={voice.status === "live" ? "Stop voice" : "Talk to Radar"}
+                onClick={voice.status === "idle" ? voice.start : voice.stop}
+              />
+              {voice.status !== "idle" && (
+                <span
+                  className={voice.status === "connecting" ? "mk-label animate-pulse" : "mk-label"}
+                  style={voice.status === "live" ? { color: "var(--color-fit-strong)" } : undefined}
+                >
+                  {voice.status === "live" ? "● Live — just talk" : "Connecting…"}
+                </span>
+              )}
+            </div>
+          )}
           <ChatComposer
             value={draft}
             onChange={setDraft}

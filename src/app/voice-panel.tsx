@@ -22,9 +22,9 @@ import { formatUsdCompact } from "@/lib/engine/meter";
 import { profileReadiness } from "@/lib/engine/readiness";
 import { SYSTEM_INSTRUCTION, TOOL_DECLARATIONS } from "@/lib/voice/schema";
 import FieldWidget, { type WidgetAnswer } from "./components/field-widgets";
+import { useAssistant } from "./components/assistant/context";
 
 type Status = "off" | "idle" | "connecting" | "live";
-type LogLine = { who: "you" | "radar" | "sys"; text: string };
 
 interface FunctionCall {
   id?: string;
@@ -74,9 +74,11 @@ export default function VoicePanel({
 }) {
   const [status, setStatus] = useState<Status>("off");
   const [err, setErr] = useState<string | null>(null);
-  const [log, setLog] = useState<LogLine[]>([]);
   /** Widget the agent pushed on screen via ask_with_widget (one at a time). */
   const [stage, setStage] = useState<{ field: string; question: string } | null>(null);
+  // Voice lives inside the agent chat: a mic icon in the drawer composer,
+  // transcription as ordinary thread bubbles. This component is headless.
+  const { setVoice, postLive, post } = useAssistant();
 
   const wsRef = useRef<WebSocket | null>(null);
   const readyRef = useRef(false); // setupComplete received
@@ -102,28 +104,17 @@ export default function VoicePanel({
     return stop; // teardown on unmount
   }, []);
 
-  // ---------- transcript ----------
+  // ---------- transcript (streams into the drawer thread) ----------
 
   function pushSys(text: string) {
-    setLog((l) => [...l, { who: "sys", text }]);
+    post({ role: "assistant", text });
   }
 
-  /** Transcription arrives in fragments; extend the open line for that
-   *  speaker. Fragments often omit the space at chunk boundaries ("looks
-   *  likeyour strongest") — glue with a space unless one side already has
-   *  whitespace or the fragment opens with punctuation. */
+  /** Transcription arrives in fragments; extend the speaker's open bubble
+   *  in the drawer thread (postLive owns the chunk-boundary glue). */
   function appendLine(who: "you" | "radar", text: string) {
-    setLog((l) => {
-      const i = l.length - 1;
-      if (openLineRef.current[who] && i >= 0 && l[i].who === who) {
-        const prev = l[i].text;
-        const glue =
-          prev && !/\s$/.test(prev) && !/^[\s.,!?;:%)\]'"’”—-]/.test(text) ? " " : "";
-        return [...l.slice(0, i), { who, text: prev + glue + text }];
-      }
-      openLineRef.current[who] = true;
-      return [...l, { who, text }];
-    });
+    postLive(who === "you" ? "user" : "assistant", text, openLineRef.current[who]);
+    openLineRef.current[who] = true;
   }
 
   // ---------- audio out (24kHz PCM16 -> scheduled buffers) ----------
@@ -532,7 +523,6 @@ export default function VoicePanel({
 
   async function start() {
     setErr(null);
-    setLog([]);
     setStatus("connecting");
     updatesRef.current = [];
     pendingAnswersRef.current = [];
@@ -601,58 +591,37 @@ export default function VoicePanel({
     setStatus((s) => (s === "off" ? "off" : "idle"));
   }
 
-  if (status === "off") return null;
+  // Surface connection errors as a thread message — there is no panel chrome.
+  useEffect(() => {
+    if (err) post({ role: "assistant", text: `Voice: ${err}` });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [err]);
 
-  const busy = status === "connecting" || status === "live";
-  return (
-    <section className="card space-y-3 p-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={busy ? stop : () => void start()}
-          className={`rounded-full px-5 py-2.5 text-[14px] font-semibold transition-colors ${
-            busy
-              ? "border border-line bg-card text-risk hover:bg-risk-soft"
-              : "bg-brand text-white shadow-sm hover:bg-brand-strong"
-          }`}
-        >
-          {status === "live" ? "Stop" : status === "connecting" ? "Connecting…" : "Start voice"}
-        </button>
-        {status === "live" && (
-          <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-good">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-good" />
-            Live — Radar will greet you
-          </span>
-        )}
-        {err && <span className="text-[12.5px] text-risk">{err}</span>}
-      </div>
-      {stage && status === "live" && (
-        <div className="card-in space-y-2 rounded-2xl bg-soft/70 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
-            Radar is asking — tap or just say it
-          </p>
-          <p className="text-[14px] font-semibold text-ink">{stage.question}</p>
-          <FieldWidget field={stage.field} onPick={(a) => void submitWidgetAnswer(a)} />
-        </div>
-      )}
-      {log.length > 0 && (
-        <div className="max-h-40 space-y-1.5 overflow-y-auto border-t border-hairline pt-3 text-[12.5px]">
-          {log.map((line, i) => (
-            <p
-              key={i}
-              className={
-                line.who === "you"
-                  ? "w-fit max-w-[92%] rounded-xl bg-surface-low px-3 py-1.5 text-ink"
-                  : line.who === "radar"
-                    ? "w-fit max-w-[92%] rounded-xl bg-soft px-3 py-1.5 text-ink"
-                    : "text-[12px] text-faint"
-              }
-            >
-              {line.who === "you" ? "You: " : line.who === "radar" ? "Radar: " : ""}
-              {line.text}
+  // Register with the agent chat: the drawer shows a mic icon while this
+  // page is mounted, and the live field widget rides above its composer.
+  useEffect(() => {
+    if (status === "off") {
+      setVoice(null);
+      return;
+    }
+    setVoice({
+      status,
+      start: () => void start(),
+      stop,
+      extra:
+        stage && status === "live" ? (
+          <div className="card-in space-y-2 rounded-2xl bg-soft/70 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+              Radar is asking — tap or just say it
             </p>
-          ))}
-        </div>
-      )}
-    </section>
-  );
+            <p className="text-[14px] font-semibold text-ink">{stage.question}</p>
+            <FieldWidget field={stage.field} onPick={(a) => void submitWidgetAnswer(a)} />
+          </div>
+        ) : undefined,
+    });
+    return () => setVoice(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, stage, setVoice]);
+
+  return null;
 }

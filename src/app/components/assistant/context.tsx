@@ -30,6 +30,17 @@ export interface PageContext {
   data?: unknown;
 }
 
+/** Voice mode's handle, registered by whichever page hosts the live session
+ *  (the Opportunity Map). The drawer renders it as a mic icon in the composer
+ *  row — voice is part of the agent chat, not a separate widget. */
+export interface VoiceControls {
+  status: "idle" | "connecting" | "live";
+  start: () => void;
+  stop: () => void;
+  /** Live interactive ask (field widget) rendered above the composer. */
+  extra?: ReactNode;
+}
+
 interface AssistantApi {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -39,9 +50,14 @@ interface AssistantApi {
   ask: (question: string) => void;
   /** Append a message without calling the LLM. */
   post: (msg: AssistantMsg) => void;
+  /** Streamed voice transcription: extend the last message when it's the same
+   *  role and the speaker's line is still open, else start a new bubble. */
+  postLive: (role: AssistantMsg["role"], text: string, extend: boolean) => void;
   /** Open the drawer, show `userText` as the founder's turn, run `worker`
    *  for the reply — how "Help me" buttons pipe task guidance in. */
   runTask: (userText: string, worker: () => Promise<string>) => void;
+  voice: VoiceControls | null;
+  setVoice: (v: VoiceControls | null) => void;
   pageContext: PageContext | null;
   setPageContext: (ctx: PageContext | null) => void;
 }
@@ -91,6 +107,22 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   pageRef.current = pageContext;
 
   const post = useCallback((msg: AssistantMsg) => setThread((t) => [...t, msg]), []);
+  const [voice, setVoice] = useState<VoiceControls | null>(null);
+
+  // Voice fragments often omit the space at chunk boundaries ("looks
+  // likeyour strongest") — glue with a space unless one side has whitespace
+  // or the fragment opens with punctuation.
+  const postLive = useCallback((role: AssistantMsg["role"], text: string, extend: boolean) => {
+    setThread((t) => {
+      const last = t[t.length - 1];
+      if (extend && last && last.role === role) {
+        const glue =
+          last.text && !/\s$/.test(last.text) && !/^[\s.,!?;:%)\]'"’”—-]/.test(text) ? " " : "";
+        return [...t.slice(0, -1), { role, text: last.text + glue + text }];
+      }
+      return [...t, { role, text }];
+    });
+  }, []);
 
   const ask = useCallback(
     (question: string) => {
@@ -143,8 +175,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   );
 
   const api = useMemo(
-    () => ({ open, setOpen, thread, busy, ask, post, runTask, pageContext, setPageContext }),
-    [open, thread, busy, ask, post, runTask, pageContext],
+    () => ({ open, setOpen, thread, busy, ask, post, postLive, runTask, voice, setVoice, pageContext, setPageContext }),
+    [open, thread, busy, ask, post, postLive, runTask, voice, pageContext],
   );
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

@@ -7,7 +7,7 @@ import UtahViewClient from "../components/utah-view-client";
 import { getUtahViewData } from "./data";
 
 export const metadata: Metadata = {
-  title: "Utah View",
+  title: "Utah Connections",
   description:
     "Documented Utah grant and federal-contract winners, public navigators, and Utah-only programs.",
 };

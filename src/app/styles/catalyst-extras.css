@@ -233,6 +233,11 @@
 .mk-pop__row input { accent-color: var(--color-primary); }
 .mk-pop__row span:nth-of-type(1) { flex: 1; }
 
+/* Tailwind's preflight strips list markers; the kit's opp-card lists
+   ("Why it fits", "What to verify"…) are real bullet lists — restore them. */
+.or-opp__list { list-style: disc; }
+.or-opp__list li::marker { color: var(--color-outline); }
+
 /* Small type roles shared across pages. */
 .mk-h3 { margin: 0; font: 600 24px/32px var(--font-headline); color: var(--color-text-deep); }
 .mk-h4 { margin: 0 0 24px; font: 600 20px/28px var(--font-headline); color: var(--color-text-deep); }

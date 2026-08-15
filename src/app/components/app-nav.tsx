@@ -15,14 +15,14 @@ const LINKS = [
   { label: "Opportunity Map", href: "/" },
   { label: "Profile", href: "/profile" },
   { label: "Screening", href: "/radar" },
-  { label: "Utah View", href: "/utah" },
+  { label: "Utah Connections", href: "/utah" },
 ] as const;
 
 function activeFor(pathname: string): string {
   if (pathname === "/") return "Opportunity Map";
   if (pathname.startsWith("/profile")) return "Profile";
   if (pathname.startsWith("/radar") || pathname.startsWith("/dream")) return "Screening";
-  if (pathname.startsWith("/utah") || pathname.startsWith("/people")) return "Utah View";
+  if (pathname.startsWith("/utah") || pathname.startsWith("/people")) return "Utah Connections";
   return ""; // pursuits + opportunity detail: no tab highlights
 }
 
