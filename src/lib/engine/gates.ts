@@ -82,7 +82,10 @@ const INSTITUTION_TERMS =
 const BUSINESS_TERMS =
   // "(?<![a-z-])profit organization" = SAM's "Profit organization" applicant
   // category without matching "nonprofit"/"non-profit organization".
-  /small business|for[- ]profit|business concern|commercial organization|private business|(?<![a-z-])profit organizations?|businesses (?:are|may|can) (?:eligible|apply)/i;
+  // "private[- ]sector" carries the hyphen alternation deliberately: CHIPS
+  // Incentives says "a private-sector entity" and nothing else business-ish,
+  // so a space-only pattern would hard-fail a program built for manufacturers.
+  /small business|for[- ]profit|business concern|commercial organization|private business|private[- ]sector|(?<![a-z-])profit organizations?|businesses (?:are|may|can) (?:eligible|apply)/i;
 const RESTRICTION_PHRASE =
   /(limited to|restricted to|must be an?\b|only the following|eligible applicants?\s*(are|is|:))/i;
 
