@@ -90,3 +90,53 @@ Everything below was verified by direct calls. Follow exactly; don't guess.
 - outputSchema constrains the final message to a JSON Schema (verified).
 - ~4-5s/call at effort "low". Concurrent calls OK (one thread per call).
 - Auth: Josh's ChatGPT subscription via ~/.codex/auth.json — no API key needed.
+
+## DSIP — DoD SBIR/STTR Innovation Portal (no auth; verified live 2026-08-15)
+
+- What Josh called "DCIP" — the actual DoD SBIR portal is DSIP at dodsbirsttr.mil.
+  (The real DCIP — Defense Community Infrastructure Program, OLDCC — funds local
+  governments near bases, not businesses: not relevant to founder matching.)
+- `GET https://www.dodsbirsttr.mil/topics/api/public/topics/search?searchParam=<urlencoded JSON>&size=200&page=0`
+  searchParam: {"searchText":null,"component":null,"programYear":null,
+  "topicReleaseStatus":[591],"sortBy":"finalTopicCode,asc"}. Status 591 = Open
+  (accepting submissions). Response {total, data[]}: topicId, topicCode,
+  topicTitle, component (ARMY/DAF/DON/DARPA…), program (SBIR|STTR),
+  solicitationNumber, topicEndDate (EPOCH MS, not ISO), topicPreReleaseStartDate.
+- `GET .../topics/{topicId}/details` → objective, description,
+  phase1Description (HTML — strip), keywords, technologyAreas. Phase I cost
+  limit is stated in phase1Description prose ("cost limit of $300,000") — first
+  $ amount ≥ $10K is a safe ceiling parse.
+- `.../topics/{topicId}` WITHOUT /details 500s; the bare /topics-app/api path
+  403s — only /topics/api/public/* works. Desktop User-Agent header required.
+- Ingest: scripts/ingest/dsip.ts → source "sbir", ids "sbir:<topicCode>".
+  ~35 open topics at any time; sequential detail fetches at ~120ms are polite.
+
+## Dedupe / join strategy across sources
+
+- Primary key namespace prevents cross-source collisions: grants_gov:<id>,
+  assistance_listing:<ALN>, utah:<slug>, sbir:<topicCode>. Re-ingest is safe:
+  INSERT_OPPORTUNITY_SQL is ON CONFLICT(id) DO UPDATE (keeps rowid, FTS stays
+  consistent).
+- DSIP topics vs grants.gov: DoD SBIR umbrella BAAs occasionally appear on
+  grants.gov as one broad notice; DSIP rows are per-topic. Both levels are
+  legitimate matches — no dedupe needed; join key if ever needed is
+  solicitationNumber (kept in raw JSON) against the grants.gov opportunity
+  number.
+- Assistance listings vs grants.gov: joined by ALN/CFDA (alnNumbers) — the
+  evidence module already uses this for USAspending program_numbers.
+- DSIP/SBIR evidence: USAspending covers SBIR awards as contracts
+  (award_type_codes A-D) — keyword joins (company name + "SBIR") work; no ALN.
+
+## Utah state sources — probed 2026-08-15, no stable public APIs
+
+- Utah procurement (U3P) moved to Bonfire: utah.bonfirehub.com. Portal is an
+  SPA; every guessed JSON path (api/portal/*, *.json) 404s to an HTML error
+  page. No public feed — hand-curate any headline bid or revisit with a real
+  session capture post-hackathon.
+- grants.utah.gov → Salesforce Experience site (/s/): state-administered
+  (mostly federal pass-through) grants aimed at governments/nonprofits; SPA,
+  no public JSON. Low founder relevance; skip.
+- Conclusion: the hand-curated data/utah-opportunities.json layer (25 programs
+  incl. UTIF, SSBCI, STEP, Manufacturing Modernization, APEX, Custom Fit) IS
+  the Utah integration — richer than anything scrapable, and the ingest
+  validates every row against the Opportunity contract.
