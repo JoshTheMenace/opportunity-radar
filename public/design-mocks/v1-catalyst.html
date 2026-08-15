@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V1 Catalyst</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F6FB; --card:#FFF; --border:#E3E9F2; --ink:#14213A; --muted:#5A6B85;
+  --faint:#8DA0BC; --brand:#1D4F91; --brand-strong:#163C6E; --accent:#2E6FDB;
+  --soft:#E8F0FC; --good:#1B7F4D; --good-soft:#E4F4EA; --risk:#C03A2B;
+  --risk-soft:#FBEAE7; --warn:#B97E12; --warn-soft:#FCF3E1;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+.mono{font-family:"IBM Plex Mono",monospace}
+nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:28px;padding:0 28px;height:60px;position:sticky;top:0}
+.wordmark{font-weight:800;font-size:19px;color:var(--brand);letter-spacing:-.02em}
+.wordmark span{color:var(--ink)}
+.navlink{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted);text-decoration:none}
+.navlink.on{color:var(--brand);font-weight:600}
+.cta{margin-left:auto;background:var(--brand);color:#fff;border:0;border-radius:999px;padding:9px 20px;font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:28px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px}
+.label{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:600}
+/* intake */
+.intake textarea{width:100%;border:1px solid var(--border);border-radius:12px;padding:14px;font:15px/1.5 Inter;color:var(--ink);resize:none;background:#FBFCFE}
+.chip{display:inline-block;border:1px solid var(--border);background:var(--card);border-radius:999px;padding:6px 14px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);margin:8px 8px 0 0;cursor:pointer}
+.go{background:var(--brand);color:#fff;border:0;border-radius:10px;padding:11px 22px;font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;margin-top:12px;cursor:pointer}
+/* meter hero */
+.hero{display:flex;align-items:center;gap:28px;justify-content:space-between}
+.hero .big{font-size:34px;font-weight:800;letter-spacing:-.03em;color:var(--brand)}
+.hero .sub{color:var(--muted);font-size:13px}
+.statchip{border:1px solid var(--border);border-radius:12px;padding:10px 16px;text-align:left}
+.statchip b{display:block;font-size:18px;letter-spacing:-.02em}
+/* progress stepper */
+.stepper{display:flex;align-items:center;gap:0;margin-top:16px}
+.dot{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;flex:none}
+.dot.done{background:var(--brand);color:#fff}
+.dot.now{background:var(--card);border:2px solid var(--brand);color:var(--brand)}
+.dot.todo{background:var(--card);border:1.5px solid var(--border);color:var(--faint)}
+.bar{height:3px;flex:1;background:var(--border)}
+.bar.fill{background:var(--brand)}
+.steplabels{display:flex;justify-content:space-between;margin-top:8px}
+.steplabels span{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--faint)}
+.steplabels span.on{color:var(--brand);font-weight:600}
+/* match card */
+.match{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:16px;align-items:start;margin-top:16px}
+.score{width:64px;height:64px;border-radius:14px;display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:19px}
+.score.strong{background:var(--good-soft);color:var(--good)}
+.score.verify{background:var(--warn-soft);color:var(--warn)}
+.match h3{font-size:16.5px;font-weight:700;letter-spacing:-.01em}
+.meta{display:flex;gap:14px;margin-top:6px;flex-wrap:wrap}
+.meta span{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted)}
+.tier{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;border-radius:999px;padding:4px 10px}
+.tier.strong{background:var(--good-soft);color:var(--good)}
+.tier.verify{background:var(--warn-soft);color:var(--warn)}
+.why{color:var(--muted);font-size:13.5px;margin-top:8px}
+.next{margin-top:8px;font-size:13px}
+.next b{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent);letter-spacing:.06em}
+.due{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--risk);background:var(--risk-soft);padding:4px 10px;border-radius:999px;font-weight:600}
+/* rail */
+.agent{display:flex;gap:12px;align-items:center}
+.orb{width:38px;height:38px;border-radius:999px;background:radial-gradient(circle at 35% 30%,#4C86E8,#1D4F91);flex:none}
+.dossier .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--border);font-size:13.5px}
+.dossier .row:last-child{border-bottom:0}
+.dossier .k{color:var(--muted)}
+.dossier .v{font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.dossier .v.unknown{color:var(--faint)}
+.pill{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;background:var(--soft);color:var(--brand);border-radius:999px;padding:4px 10px}
+.q{border:1px solid var(--border);border-radius:12px;padding:14px;margin-top:12px;background:#FBFCFE}
+.q p{font-size:13.5px;font-weight:600}
+.q .unlock{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--good);margin-top:4px}
+.yn{display:flex;gap:8px;margin-top:10px}
+.yn button{flex:1;border:1px solid var(--border);background:var(--card);border-radius:9px;padding:8px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--brand);cursor:pointer}
+.alert{background:var(--risk-soft);border:1px solid #F2C4BC;border-radius:14px;padding:16px}
+.alert b{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--risk)}
+.alert p{font-size:13px;color:#7A3A31;margin-top:4px}
+.timeline{margin-top:4px}
+.tl{display:flex;gap:12px;padding:8px 0}
+.tl .d{width:10px;height:10px;border-radius:99px;background:var(--brand);margin-top:5px;flex:none}
+.tl .d.todo{background:var(--card);border:2px solid var(--border)}
+.tl .date{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--brand);font-weight:600;width:52px;flex:none}
+.tl p{font-size:13.5px}
+h2.sec{font-size:13px;font-family:"IBM Plex Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin:26px 0 10px}
+</style></head><body>
+<nav>
+  <div class="wordmark">Opportunity<span>Radar</span></div>
+  <a class="navlink on" href="#">Radar</a>
+  <a class="navlink" href="#">Pursuits</a>
+  <a class="navlink" href="#">Monitor</a>
+  <button class="cta">New Analysis</button>
+</nav>
+<div class="wrap">
+  <div class="card intake">
+    <div class="label">Company intake</div>
+    <div style="height:8px"></div>
+    <textarea rows="3">We build AI-powered clinical decision support software that analyzes EHR data to flag high-risk inpatients. 12 people, Salt Lake City, raised $2.1M seed, seeking ~$1M non-dilutive.</textarea>
+    <button class="go">Scan 4,612 programs →</button>
+    <span class="chip">AI healthcare</span><span class="chip">Water reuse</span><span class="chip">Ag robotics</span>
+  </div>
+
+  <div style="height:24px"></div>
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="hero">
+          <div>
+            <div class="label">Eligible funding unlocked</div>
+            <div class="big">$4.3M <span style="font-size:15px;color:var(--faint);font-weight:600">of $11.2M potential</span></div>
+            <div class="sub">14 programs match · 9 need one more answer</div>
+          </div>
+          <div style="display:flex;gap:12px">
+            <div class="statchip"><span class="label">Matches ≥ 50</span><b>14</b></div>
+            <div class="statchip"><span class="label">Profile</span><b style="color:var(--good)">5/5 ready</b></div>
+          </div>
+        </div>
+        <div class="stepper">
+          <div class="dot done">✓</div><div class="bar fill"></div>
+          <div class="dot done">✓</div><div class="bar fill"></div>
+          <div class="dot now">3</div><div class="bar"></div>
+          <div class="dot todo">4</div><div class="bar"></div>
+          <div class="dot todo">5</div>
+        </div>
+        <div class="steplabels"><span>Profile</span><span>Screen</span><span class="on">Rank</span><span>Pursue</span><span>Submit</span></div>
+      </div>
+
+      <h2 class="sec">Top matches</h2>
+      <div class="card">
+        <div class="match">
+          <div class="score strong">82</div>
+          <div>
+            <h3>NSF SBIR Phase I — Digital Health Technologies</h3>
+            <div class="meta"><span>NSF</span><span>Up to $314K</span><span class="tier strong">STRONG FIT</span></div>
+            <p class="why">Small US-owned business doing active R&D on clinical ML — squarely inside NSF's digital-health topic area; your $1M ask fits Phase I + II sequencing.</p>
+            <p class="next"><b>NEXT →</b> Draft the 2-page Project Pitch on the NSF portal.</p>
+          </div>
+          <div class="due">CLOSES OCT 16</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="match">
+          <div class="score verify">61</div>
+          <div>
+            <h3>NIH SBIR — Clinical Decision Support Instruments</h3>
+            <div class="meta"><span>NIH / AHRQ</span><span>Up to $500K</span><span class="tier verify">VERIFY ELIGIBILITY</span></div>
+            <p class="why">Strong topical fit; needs confirmation your PI meets NIH effort requirements before this counts as a sure match.</p>
+            <p class="next"><b>NEXT →</b> Confirm PI primary-employment rule (§ 2.3).</p>
+          </div>
+          <div class="due" style="background:var(--soft);color:var(--brand)">DEC 05</div>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="card agent">
+        <div class="orb"></div>
+        <div><b style="font-size:14.5px">Radar Agent</b><br><span class="mono" style="font-size:12px;color:var(--good)">● Live — ranking complete</span></div>
+        <button class="cta" style="margin-left:auto;padding:8px 14px">Voice</button>
+      </div>
+      <div style="height:14px"></div>
+      <div class="card dossier">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="label">Company dossier</span><span class="pill">READY TO RANK</span></div>
+        <div style="height:8px"></div>
+        <div class="row"><span class="k">HQ</span><span class="v">Salt Lake City, UT</span></div>
+        <div class="row"><span class="k">Team</span><span class="v">12 employees</span></div>
+        <div class="row"><span class="k">Seeking</span><span class="v">$1.0M</span></div>
+        <div class="row"><span class="k">Active R&D</span><span class="v" style="color:var(--good)">Yes</span></div>
+        <div class="row"><span class="k">SAM.gov</span><span class="v unknown">— unknown</span></div>
+      </div>
+      <div style="height:14px"></div>
+      <div class="card">
+        <div class="label">Radar is asking</div>
+        <div class="q">
+          <p>Is your company registered on SAM.gov?</p>
+          <div class="unlock">ANSWER UNLOCKS +$2.4M</div>
+          <div class="yn"><button>Yes</button><button>No</button><button>Not sure</button></div>
+        </div>
+      </div>
+      <div style="height:14px"></div>
+      <div class="alert"><b>⚠ SAM.gov status unconfirmed</b><p>Active registration is required at submission. Verify before Oct 02.</p></div>
+      <div style="height:14px"></div>
+      <div class="card">
+        <div class="label">Deadline timeline</div>
+        <div class="timeline">
+          <div class="tl"><div class="d"></div><span class="date">AUG 14</span><p>Pursuit created</p></div>
+          <div class="tl"><div class="d"></div><span class="date">SEP 05</span><p>Pilot outcomes due</p></div>
+          <div class="tl"><div class="d todo"></div><span class="date">OCT 16</span><p>Submit by 5:00 PM ET</p></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+</body></html>

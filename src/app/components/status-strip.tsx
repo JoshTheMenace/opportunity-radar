@@ -109,19 +109,19 @@ export default function StatusStrip({ lines, busy }: { lines: string[]; busy: bo
   return (
     <section
       id="run-status"
-      className="space-y-1.5 rounded-lg border border-hairline bg-panel px-4 py-3"
+      className="space-y-2 rounded-2xl border border-hairline bg-card px-4 py-3 shadow-card"
       aria-live="polite"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-sm text-paper">
-          <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-brass align-middle" />
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-ink">
+          <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-accent align-middle" />
           {phase.label}…
         </p>
-        <p className="font-mono text-[11px] text-faint">{eta}</p>
+        <p className="font-mono text-[11px] text-muted">{eta}</p>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-panel-2">
+      <div className="h-[3px] overflow-hidden rounded-full bg-hairline">
         <div
-          className="h-full rounded-full bg-brass transition-[width] duration-500 ease-out"
+          className="h-full rounded-full bg-brand transition-[width] duration-500 ease-out"
           style={{ width: `${Math.round(frac * 100)}%` }}
         />
       </div>

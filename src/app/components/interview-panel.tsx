@@ -10,10 +10,10 @@ import { isRequiredField } from "@/lib/engine/readiness";
 import FieldWidget, { hasRichWidget } from "./field-widgets";
 import type { QuickReply } from "./shared";
 
-/** Small brass tag for questions ranking can't run without. */
+/** Small brand tag for questions ranking can't run without. */
 function RequiredTag() {
   return (
-    <span className="ml-2 rounded-full border border-brass/50 bg-brass/10 px-1.5 py-0.5 align-middle text-[10px] font-semibold text-brass">
+    <span className="ml-2 rounded-full bg-soft px-2 py-0.5 align-middle font-mono text-[10px] font-semibold text-brand">
       needed for ranking
     </span>
   );
@@ -39,9 +39,9 @@ export default function InterviewPanel({
   if (questions.length === 0 && !askCapitalNeed) return null;
 
   return (
-    <section id="interview" className="space-y-2 rounded-lg border border-hairline bg-panel p-4">
-      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
-        ANSWER TO UNLOCK MORE
+    <section id="interview" className="space-y-2 rounded-2xl border border-hairline bg-card p-4 shadow-card">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
+        Radar is asking
       </p>
       {askCapitalNeed && <CapitalNeedCard disabled={busy} onSend={onSend} />}
       {questions.map((q) => (
@@ -49,14 +49,14 @@ export default function InterviewPanel({
       ))}
       {quickReplies.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-xs text-faint">Quick answers:</span>
+          <span className="font-mono text-[11px] text-faint">Quick answers:</span>
           {quickReplies.map((r) => (
             <button
               key={r.label}
               disabled={busy}
               onClick={() => onSend(r.message)}
               title={r.message}
-              className="rounded-full border border-brass/40 bg-brass/10 px-3 py-1 text-xs text-brass transition-colors hover:bg-brass/20 disabled:opacity-40"
+              className="rounded-full bg-soft px-3 py-1 font-mono text-[11px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
             >
               {r.label}
             </button>
@@ -77,11 +77,11 @@ export default function InterviewPanel({
           value={chat}
           onChange={(e) => setChat(e.target.value)}
           placeholder="Or answer in your own words — one message can cover several questions…"
-          className="min-w-0 flex-1 rounded-lg border border-hairline bg-ink px-3 py-2 text-sm text-paper placeholder:text-faint focus:border-brass focus:outline-none"
+          className="min-w-0 flex-1 rounded-xl border border-hairline bg-[#FBFCFE] px-3 py-2 text-[13.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none"
         />
         <button
           disabled={busy || !chat.trim()}
-          className="rounded-lg bg-brass px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-brass-bright disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-xl bg-brand px-4 py-2 font-mono text-[12.5px] font-semibold text-white transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
         >
           Send
         </button>
@@ -101,13 +101,13 @@ function CapitalNeedCard({
 }) {
   const [val, setVal] = useState("");
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-hairline bg-ink p-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-hairline border-l-[3px] border-l-accent bg-[#FBFCFE] p-3.5">
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-paper">
+        <p className="text-[13.5px] font-semibold text-ink">
           Roughly how much funding are you looking for?
           <RequiredTag />
         </p>
-        <p className="text-xs text-faint">Needed before we can rank accurately</p>
+        <p className="mt-0.5 font-mono text-[11px] text-good">Needed before we can rank accurately</p>
       </div>
       <FieldWidget
         field="capitalNeed"
@@ -131,13 +131,13 @@ function QuestionCard({
   // Purpose-built control (map, pickers) — full-width layout.
   if (hasRichWidget(q.field)) {
     return (
-      <div className="space-y-2.5 rounded-lg border border-hairline bg-ink p-3">
+      <div className="space-y-2.5 rounded-xl border border-hairline border-l-[3px] border-l-accent bg-[#FBFCFE] p-3.5">
         <div>
-          <p className="text-sm text-paper">
+          <p className="text-[13.5px] font-semibold text-ink">
             {q.question}
             {isRequiredField(q.field) && <RequiredTag />}
           </p>
-          <p className="text-xs text-faint">{q.whyAsking}</p>
+          <p className="mt-0.5 font-mono text-[11px] text-good">{q.whyAsking}</p>
         </div>
         <FieldWidget
           field={q.field}
@@ -148,27 +148,27 @@ function QuestionCard({
     );
   }
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-hairline bg-ink p-3">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-hairline border-l-[3px] border-l-accent bg-[#FBFCFE] p-3.5">
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-paper">
+        <p className="text-[13.5px] font-semibold text-ink">
           {q.question}
           {isRequiredField(q.field) && <RequiredTag />}
         </p>
-        <p className="text-xs text-faint">{q.whyAsking}</p>
+        <p className="mt-0.5 font-mono text-[11px] text-good">{q.whyAsking}</p>
       </div>
       {q.answerType === "boolean" ? (
         <div className="flex gap-2">
           <button
             disabled={disabled}
             onClick={() => onAnswer(q.field, true)}
-            className="rounded-md border border-treasury/50 px-3 py-1 text-sm text-treasury transition-colors hover:bg-treasury/10 disabled:opacity-40"
+            className="rounded-xl bg-soft px-3.5 py-1.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
           >
             Yes
           </button>
           <button
             disabled={disabled}
             onClick={() => onAnswer(q.field, false)}
-            className="rounded-md border border-hairline px-3 py-1 text-sm text-muted transition-colors hover:bg-panel-2 hover:text-paper disabled:opacity-40"
+            className="rounded-xl bg-soft px-3.5 py-1.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
           >
             No
           </button>
@@ -180,7 +180,7 @@ function QuestionCard({
               key={c}
               disabled={disabled}
               onClick={() => onAnswer(q.field, c)}
-              className="rounded-md border border-hairline px-3 py-1 text-sm text-muted transition-colors hover:bg-panel-2 hover:text-paper disabled:opacity-40"
+              className="rounded-xl bg-soft px-3.5 py-1.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
             >
               {c}
             </button>
@@ -198,11 +198,11 @@ function QuestionCard({
             value={val}
             onChange={(e) => setVal(e.target.value)}
             type={q.answerType === "number" ? "number" : "text"}
-            className="w-32 rounded-md border border-hairline bg-panel px-2 py-1 font-mono text-sm text-paper focus:border-brass focus:outline-none"
+            className="w-32 rounded-xl border border-hairline bg-card px-2.5 py-1.5 font-mono text-[12.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none"
           />
           <button
             disabled={disabled || !val.trim()}
-            className="rounded-md border border-hairline px-3 py-1 text-sm text-muted transition-colors hover:bg-panel-2 hover:text-paper disabled:opacity-40"
+            className="rounded-xl bg-soft px-3.5 py-1.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
           >
             Answer
           </button>

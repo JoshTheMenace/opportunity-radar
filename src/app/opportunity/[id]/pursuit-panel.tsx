@@ -108,18 +108,21 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
 
   if (phase !== "ready") {
     return (
-      <section id="pursuit" className="space-y-2 rounded-lg border border-brass/40 bg-brass/5 p-4">
-        <h2 className="font-display text-lg font-semibold text-paper">Go after this funding</h2>
-        <p className="text-sm text-muted">
+      <section
+        id="pursuit"
+        className="space-y-2.5 rounded-2xl border border-hairline bg-card p-5 shadow-card"
+      >
+        <h2 className="text-lg font-bold tracking-tight text-ink">Go after this funding</h2>
+        <p className="text-sm leading-relaxed text-muted">
           We&apos;ll build you a submission plan for this specific program — registrations,
           eligibility checks, narrative sections, budget, and a timeline working back from the
           deadline. Then we help you finish every task.
         </p>
-        {error && <p className="text-sm text-signal">{error}</p>}
+        {error && <p className="text-sm text-risk">{error}</p>}
         <button
           onClick={start}
           disabled={phase === "building"}
-          className="rounded-md bg-brass px-5 py-2 text-sm font-semibold text-ink transition-colors hover:bg-brass-bright disabled:opacity-60"
+          className="rounded-full bg-brand px-5 py-2.5 font-mono text-[12.5px] font-semibold text-white transition-colors hover:bg-brand-strong disabled:opacity-60"
         >
           {phase === "building" ? "Building your plan… (~30s)" : "Build my submission plan"}
         </button>
@@ -132,78 +135,113 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
   const phases = [...new Set(tasks.map((t) => t.phase))];
   const today = new Date().toISOString().slice(0, 10);
   const soon = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+  const firstOpenId = tasks.find((t) => !t.done)?.id;
 
-  /** Phase tone for the stepper: all tasks done → treasury, some → brass, none → faint. */
-  function phaseTone(ph: string): string {
-    const ts = tasks.filter((t) => t.phase === ph);
-    const d = ts.filter((t) => t.done).length;
-    if (ts.length > 0 && d === ts.length) return "text-treasury";
-    if (d > 0) return "text-brass";
-    return "text-faint";
+  /** Stepper state per phase: done = every task finished, current = first phase
+   *  with open tasks, todo = the rest. */
+  const currentPhaseIdx = phases.findIndex((ph) =>
+    tasks.some((t) => t.phase === ph && !t.done),
+  );
+  function phaseState(i: number): "done" | "current" | "todo" {
+    if (currentPhaseIdx === -1 || i < currentPhaseIdx) return "done";
+    return i === currentPhaseIdx ? "current" : "todo";
   }
 
+  const DOT: Record<"done" | "current" | "todo", string> = {
+    done: "bg-brand text-white",
+    current: "border-2 border-brand bg-card text-brand ring-4 ring-soft",
+    todo: "border border-hairline bg-card text-faint",
+  };
+
   return (
-    <section id="pursuit" className="space-y-4 rounded-lg border border-hairline bg-panel p-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
-            SUBMISSION PLAN
-          </p>
-          <h2 className="font-display text-lg font-semibold text-paper">Your submission plan</h2>
+    <section id="pursuit" className="space-y-5">
+      {/* readiness card: the one big number + the stage stepper */}
+      <div className="rounded-2xl border border-hairline bg-card p-5 shadow-card">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
+              Submission plan
+            </p>
+            <p className="mt-1 text-3xl font-bold tracking-tight text-brand">
+              {pct}%{" "}
+              <span className="text-[15px] font-semibold tracking-normal text-faint">ready</span>
+            </p>
+            <p className="mt-0.5 font-mono text-xs text-muted">
+              {done}/{tasks.length} tasks complete
+            </p>
+          </div>
+          <label className="flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
+            status
+            <select
+              value={pursuit?.status ?? "active"}
+              onChange={(e) => void setStatus(e.target.value)}
+              className="rounded-xl border border-hairline bg-card px-2.5 py-1.5 font-mono text-xs font-medium normal-case tracking-normal text-ink focus:border-brand"
+            >
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-        <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
-          status
-          <select
-            value={pursuit?.status ?? "active"}
-            onChange={(e) => void setStatus(e.target.value)}
-            className="rounded-md border border-hairline bg-panel px-2 py-1 font-mono text-xs normal-case tracking-normal text-paper"
-          >
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
 
-      {/* phase stepper — lights up as each phase completes */}
-      <p
-        id="pursuit-phases"
-        className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.14em]"
-      >
-        {phases.map((ph, i) => (
-          <span key={ph} className="flex items-center gap-x-2">
-            {i > 0 && <span aria-hidden className="text-faint/60">→</span>}
-            <span className={phaseTone(ph)}>{ph}</span>
-          </span>
-        ))}
-      </p>
-
-      {pursuit?.planSummary && (
-        <p className="border-l-2 border-hairline pl-3 font-display text-sm italic leading-relaxed text-paper/80">
-          {pursuit.planSummary}
-        </p>
-      )}
-
-      {/* progress */}
-      <div id="pursuit-progress" className="space-y-1">
-        <div className="h-1.5 overflow-hidden rounded-full bg-panel-2">
+        {/* progress */}
+        <div id="pursuit-progress" className="mt-4 h-[3px] overflow-hidden rounded-full bg-hairline">
           <div
-            className="h-full rounded-full bg-treasury transition-[width] duration-700"
+            className="h-full rounded-full bg-brand transition-[width] duration-700"
             style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="font-mono text-xs text-faint">
-          {done}/{tasks.length} tasks done · {pct}%
-        </p>
+
+        {/* phase stepper — lights up as each phase completes */}
+        <div id="pursuit-phases" className="mt-5 flex items-center overflow-x-auto pb-1">
+          {phases.map((ph, i) => {
+            const st = phaseState(i);
+            return (
+              <span key={ph} className="contents">
+                {i > 0 && (
+                  <span
+                    aria-hidden
+                    className={`-mx-3 mb-5 h-[3px] min-w-4 flex-1 ${
+                      phaseState(i - 1) === "done" ? "bg-brand" : "bg-hairline"
+                    }`}
+                  />
+                )}
+                <span className="flex w-20 flex-none flex-col items-center gap-1.5">
+                  <span
+                    className={`grid size-[30px] place-items-center rounded-full font-mono text-xs font-semibold ${DOT[st]}`}
+                  >
+                    {st === "done" ? "✓" : i + 1}
+                  </span>
+                  <span
+                    className={`text-center font-mono text-[10.5px] uppercase ${
+                      st === "current" ? "font-semibold text-brand" : "text-faint"
+                    }`}
+                  >
+                    {ph}
+                  </span>
+                </span>
+              </span>
+            );
+          })}
+        </div>
+
+        {pursuit?.planSummary && (
+          <p className="mt-4 border-l-2 border-soft pl-3 text-[13.5px] leading-relaxed text-muted">
+            {pursuit.planSummary}
+          </p>
+        )}
       </div>
 
       {/* phased task list */}
-      <div id="pursuit-tasks" className="space-y-3">
+      <div
+        id="pursuit-tasks"
+        className="space-y-4 rounded-2xl border border-hairline bg-card p-5 shadow-card"
+      >
         {phases.map((ph) => (
           <div key={ph} className="space-y-1.5">
-            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-faint">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
               {ph}
             </p>
             {tasks
@@ -211,24 +249,34 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
               .map((t) => {
                 const overdue = !t.done && t.dueDate != null && t.dueDate < today;
                 const urgent = !t.done && t.dueDate != null && t.dueDate <= soon;
+                const current = t.id === firstOpenId;
                 return (
-                  <div key={t.id} className="rounded-md border border-hairline bg-panel-2 p-3">
+                  <div
+                    key={t.id}
+                    className={`rounded-xl border border-hairline p-3 ${
+                      current ? "border-l-[3px] border-l-accent bg-soft/40" : "bg-card"
+                    }`}
+                  >
                     <div className="flex items-start gap-3">
                       <input
                         type="checkbox"
                         checked={t.done}
                         onChange={() => void toggle(t)}
-                        className="mt-1 h-4 w-4 accent-treasury"
+                        className="mt-1 h-4 w-4 accent-good"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm ${t.done ? "text-faint line-through" : "text-paper"}`}>
+                        <p
+                          className={`text-sm ${
+                            t.done ? "text-muted line-through" : "font-medium text-ink"
+                          }`}
+                        >
                           {t.title}
                         </p>
                         <p className="text-xs text-muted">{t.detail}</p>
                         {t.dueDate && (
                           <p
-                            className={`mt-0.5 font-mono text-xs ${
-                              overdue || urgent ? "text-signal" : "text-faint"
+                            className={`mt-0.5 font-mono text-[11px] ${
+                              overdue || urgent ? "font-semibold text-risk" : "text-faint"
                             }`}
                           >
                             due {t.dueDate}
@@ -239,17 +287,17 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
                       <button
                         onClick={() => void assist(t)}
                         disabled={assistBusy === t.id}
-                        className="shrink-0 rounded-md border border-brass/50 px-2.5 py-1 text-xs font-semibold text-brass transition-colors hover:bg-brass/10 disabled:opacity-50"
+                        className="shrink-0 rounded-xl border border-hairline bg-card px-2.5 py-1 font-mono text-[11px] font-semibold text-brand transition-colors hover:bg-soft disabled:opacity-50"
                       >
                         {assistBusy === t.id ? "Thinking…" : t.assist ? "Help ▾" : "Help me"}
                       </button>
                     </div>
                     {t.assist && openAssist.has(t.id) && (
-                      <div className="mt-2 space-y-1 rounded-md border border-hairline bg-ink p-3">
-                        <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
-                          HOW TO FINISH THIS
+                      <div className="mt-2 space-y-1 rounded-xl border border-hairline bg-[#FBFCFE] p-3.5">
+                        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
+                          How to finish this
                         </p>
-                        <div className="whitespace-pre-wrap text-xs leading-relaxed text-paper/85">
+                        <div className="whitespace-pre-wrap text-xs leading-relaxed text-ink/85">
                           {t.assist}
                         </div>
                       </div>

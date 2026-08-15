@@ -59,24 +59,33 @@ export default function AgentDock({
   const started = busy || lines.length > 0 || report != null;
 
   return (
-    <section
-      id="agent"
-      className="space-y-3 rounded-lg border border-hairline bg-panel/60 p-3"
-      aria-label="Radar, your funding analyst"
-    >
+    <section id="agent" className="space-y-3.5" aria-label="Radar, your funding analyst">
       {/* the agent itself */}
-      <div className="rounded-md border border-hairline bg-panel p-3">
-        <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
-          RADAR · YOUR FUNDING ANALYST
-        </p>
-        <div className="mt-2 flex flex-col items-center gap-2">
-          <RadarScope report={report} busy={busy} size={140} />
-          <p className="w-full text-center text-sm leading-snug text-paper" aria-live="polite">
-            {statusLine(busy, lines, report)}
-          </p>
+      <div className="rounded-2xl border border-hairline bg-card p-5 shadow-card">
+        {/* identity row */}
+        <div className="flex items-center gap-3">
+          <div
+            aria-hidden
+            className="h-[38px] w-[38px] flex-none rounded-full"
+            style={{ background: "radial-gradient(circle at 32% 28%, #4C86E8, #1D4F91)" }}
+          />
+          <div className="min-w-0">
+            <p className="text-[14.5px] font-semibold tracking-tight text-ink">Radar Agent</p>
+            <p
+              className={`font-mono text-[11.5px] ${started ? "text-good" : "text-muted"}`}
+              aria-live="polite"
+            >
+              ● {busy ? "Live — " : ""}
+              {statusLine(busy, lines, report)}
+            </p>
+          </div>
         </div>
 
-        <div className="mt-2">
+        <div className="mt-3 flex justify-center">
+          <RadarScope report={report} busy={busy} size={140} />
+        </div>
+
+        <div className="mt-3">
           <StatusStrip lines={lines} busy={busy} />
         </div>
 
@@ -84,32 +93,33 @@ export default function AgentDock({
         {started && lines.length > 0 && (
           <div
             ref={logRef}
-            className="mt-2 max-h-36 space-y-0.5 overflow-y-auto border-t border-hairline pt-2 font-mono text-[11px] leading-relaxed text-muted"
+            className="mt-3 max-h-36 space-y-1 overflow-y-auto border-t border-hairline pt-3 text-[13px] leading-relaxed text-muted"
           >
             {lines.length > shown.length && (
-              <div className="text-faint">… {lines.length - shown.length} earlier lines</div>
+              <div className="font-mono text-[11px] text-faint">
+                … {lines.length - shown.length} earlier lines
+              </div>
             )}
             {shown.map((line, i) => {
               const target = lineTarget(line, report);
               return target ? (
                 <div key={`${i}-${line.slice(0, 24)}`}>
-                  <span className="text-faint">›</span>{" "}
                   <button
                     type="button"
                     onClick={() => onFocusMatch(target)}
-                    className="text-left underline decoration-hairline underline-offset-2 transition-colors hover:text-brass hover:decoration-brass"
+                    className="rounded-lg border border-hairline bg-card px-2.5 py-1 text-left font-mono text-[11.5px] font-semibold text-brand transition-colors hover:bg-soft"
                     title="Show me this card"
                   >
                     {line}
                   </button>
                 </div>
               ) : (
-                <div key={`${i}-${line.slice(0, 24)}`}>
-                  <span className="text-faint">›</span> {line}
-                </div>
+                <div key={`${i}-${line.slice(0, 24)}`}>{line}</div>
               );
             })}
-            {busy && <div className="animate-pulse text-brass">› working…</div>}
+            {busy && (
+              <div className="animate-pulse font-mono text-[11.5px] text-accent">● working…</div>
+            )}
           </div>
         )}
       </div>

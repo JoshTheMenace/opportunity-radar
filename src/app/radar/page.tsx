@@ -2,7 +2,7 @@
 
 // The Radar dashboard: monitored companies + the live notification feed,
 // framed as the founder's daily funding brief. Presentation follows the
-// treasury identity; polling and data shapes are unchanged.
+// Catalyst identity; polling and data shapes are unchanged.
 
 import { useCallback, useEffect, useState } from "react";
 import RadarScope from "../components/radar-scope";
@@ -28,15 +28,21 @@ interface NotificationRow {
   opportunity: { title: string; agency: string; closeDate: string | null; url: string | null } | null;
 }
 
-// Tier chips: treasury = money/pass, brass = needs a look. Never decorative.
+// Tier chips: good = money/pass, warn = needs a look. Never decorative.
 const tierChip: Record<string, string> = {
-  likely_fit: "border-treasury/50 bg-treasury/10 text-treasury",
-  verify_eligibility: "border-brass/50 bg-brass/10 text-brass",
+  likely_fit: "bg-good-soft text-good",
+  verify_eligibility: "bg-warn-soft text-warn",
+};
+
+// Status dot beside each notification row, matching its tier chip.
+const tierDot: Record<string, string> = {
+  likely_fit: "bg-good",
+  verify_eligibility: "bg-warn",
 };
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-faint">
+    <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
       {children}
     </p>
   );
@@ -75,7 +81,7 @@ export default function RadarPage() {
       <header className="flex items-start justify-between gap-6">
         <div className="space-y-2">
           <Eyebrow>Proactive monitoring · no buttons</Eyebrow>
-          <h1 className="font-display text-3xl font-semibold text-paper sm:text-4xl">
+          <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             {weekday ?? "Today's"} funding brief
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-muted">
@@ -92,30 +98,32 @@ export default function RadarPage() {
       {/* monitored companies */}
       <section className="mt-10 space-y-3">
         <div className="flex items-baseline gap-3">
-          <h2 className="font-display text-lg font-semibold text-paper">Monitored companies</h2>
+          <h2 className="text-lg font-bold tracking-tight text-ink">Monitored companies</h2>
           <span className="font-mono text-xs text-faint">{companies.length}</span>
           <div className="h-px flex-1 bg-hairline" />
         </div>
         {companies.length === 0 ? (
-          <p className="rounded-lg border border-hairline bg-panel p-4 text-sm text-muted">
+          <p className="rounded-2xl border border-hairline bg-card p-5 text-sm text-muted shadow-card">
             No companies saved yet — run an analysis and hit Save &amp; monitor.
           </p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-hairline rounded-2xl border border-hairline bg-card shadow-card">
             {companies.map((c) => (
-              <li key={c.id} className="rounded-lg border border-hairline bg-panel p-4">
+              <li key={c.id} className="px-5 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-semibold text-paper">{c.name}</span>
+                  <span className="font-semibold text-ink">{c.name}</span>
                   <span
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-[11px] font-semibold ${
                       c.completeness.monitorable
-                        ? "border-treasury/50 bg-treasury/10 text-treasury"
-                        : "border-hairline bg-panel-2 text-muted"
+                        ? "bg-good-soft text-good"
+                        : "bg-warn-soft text-warn"
                     }`}
                   >
-                    {c.completeness.monitorable && (
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-treasury" />
-                    )}
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        c.completeness.monitorable ? "animate-pulse bg-good" : "bg-warn"
+                      }`}
+                    />
                     {c.completeness.monitorable
                       ? "monitoring active"
                       : `needs: ${c.completeness.missing.join(", ")}`}
@@ -134,54 +142,60 @@ export default function RadarPage() {
       {/* notifications: the brief entries */}
       <section className="mt-10 space-y-3">
         <div className="flex items-baseline gap-3">
-          <h2 className="font-display text-lg font-semibold text-paper">Notifications</h2>
+          <h2 className="text-lg font-bold tracking-tight text-ink">Notifications</h2>
           <span className="font-mono text-xs text-faint">{notifications.length}</span>
           <div className="h-px flex-1 bg-hairline" />
         </div>
         {notifications.length === 0 ? (
-          <p className="rounded-lg border border-hairline bg-panel p-4 text-sm text-muted">
+          <p className="rounded-2xl border border-hairline bg-card p-5 text-sm text-muted shadow-card">
             Nothing new for your companies yet. The radar checks every cycle — you don&apos;t have
             to.
           </p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-hairline rounded-2xl border border-hairline bg-card shadow-card">
             {notifications.map((n, i) => (
               <li
                 key={n.id}
-                className="card-in space-y-2 rounded-lg border border-hairline bg-panel p-4"
+                className="card-in space-y-2 px-5 py-4"
                 style={{ animationDelay: `${Math.min(i * 60, 420)}ms` }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <Eyebrow>New match · {n.companyName}</Eyebrow>
-                    <p className="font-semibold text-paper">
-                      {n.opportunity?.url ? (
-                        <a
-                          className="transition-colors hover:text-brass-bright hover:underline"
-                          href={n.opportunity.url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {n.opportunity?.title ?? n.emailSubject}
-                        </a>
-                      ) : (
-                        (n.opportunity?.title ?? n.emailSubject)
-                      )}
-                    </p>
-                    <p className="font-mono text-xs text-muted">
-                      {n.opportunity?.agency}
-                      {n.opportunity?.closeDate ? ` · closes ${n.opportunity.closeDate}` : ""}
-                      <span className="text-faint">
-                        {` · ${new Date(n.createdAt + "Z").toLocaleString()}`}
-                      </span>
-                    </p>
+                  <div className="flex min-w-0 items-start gap-2.5">
+                    <span
+                      aria-hidden
+                      className={`mt-1.5 h-2 w-2 flex-none rounded-full ${tierDot[n.tier] ?? "bg-faint"}`}
+                    />
+                    <div className="min-w-0 space-y-1">
+                      <Eyebrow>New match · {n.companyName}</Eyebrow>
+                      <p className="font-semibold text-ink">
+                        {n.opportunity?.url ? (
+                          <a
+                            className="transition-colors hover:text-accent hover:underline"
+                            href={n.opportunity.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {n.opportunity?.title ?? n.emailSubject}
+                          </a>
+                        ) : (
+                          (n.opportunity?.title ?? n.emailSubject)
+                        )}
+                      </p>
+                      <p className="font-mono text-xs text-muted">
+                        {n.opportunity?.agency}
+                        {n.opportunity?.closeDate ? ` · closes ${n.opportunity.closeDate}` : ""}
+                        <span className="text-faint">
+                          {` · ${new Date(n.createdAt + "Z").toLocaleString()}`}
+                        </span>
+                      </p>
+                    </div>
                   </div>
                   <span
-                    className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-                      tierChip[n.tier] ?? "border-hairline bg-panel-2 text-muted"
+                    className={`shrink-0 rounded-full px-3 py-1 font-mono text-[11px] font-semibold uppercase ${
+                      tierChip[n.tier] ?? "bg-bg text-muted"
                     }`}
                   >
-                    {n.tier.replace("_", " ")} · <span className="font-mono">{n.score}</span>
+                    {n.tier.replace("_", " ")} · <span>{n.score}</span>
                   </span>
                 </div>
                 <p className="text-sm leading-relaxed text-muted">{n.whyFit}</p>
@@ -189,13 +203,13 @@ export default function RadarPage() {
                   <div>
                     <button
                       type="button"
-                      className="font-mono text-xs font-semibold text-muted transition-colors hover:text-paper"
+                      className="font-mono text-xs font-semibold text-brand transition-colors hover:text-brand-strong"
                       onClick={() => setOpenEmail(openEmail === n.id ? null : n.id)}
                     >
                       {openEmail === n.id ? "▾ Hide drafted email" : "▸ View drafted email"}
                     </button>
                     {openEmail === n.id && (
-                      <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-md border border-hairline bg-ink p-3 font-mono text-xs leading-relaxed text-paper/85">
+                      <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-xl border border-hairline bg-[#FBFCFE] p-3.5 font-mono text-xs leading-relaxed text-ink/85">
                         {`Subject: ${n.emailSubject}\n\n${n.emailBody}`}
                       </pre>
                     )}

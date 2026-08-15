@@ -42,11 +42,11 @@ export default function SaveMonitor({ profile }: { profile: CompanyProfile }) {
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-hairline bg-panel p-4">
-      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+    <div className="mt-6 rounded-2xl border border-hairline bg-card p-5 shadow-card">
+      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
         STANDING WATCH
       </p>
-      <div className="mt-1 font-display text-base font-semibold text-paper">
+      <div className="mt-1 text-base font-semibold tracking-tight text-ink">
         Keep watching for me
       </div>
       <p className="mt-1 text-sm text-muted">
@@ -56,19 +56,19 @@ export default function SaveMonitor({ profile }: { profile: CompanyProfile }) {
       {state !== "done" ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <input
-            className="rounded-md border border-hairline bg-ink px-2.5 py-1.5 text-sm text-paper placeholder:text-faint focus:border-brass focus:outline-none"
+            className="rounded-xl border border-hairline bg-[#FBFCFE] px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-brand focus:outline-none"
             placeholder="Company name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input
-            className="rounded-md border border-hairline bg-ink px-2.5 py-1.5 text-sm text-paper placeholder:text-faint focus:border-brass focus:outline-none"
+            className="rounded-xl border border-hairline bg-[#FBFCFE] px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-brand focus:outline-none"
             placeholder="Email for alerts (optional)"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <button
-            className="rounded-md bg-brass px-3 py-1.5 text-sm font-semibold text-ink transition-colors hover:bg-brass-bright disabled:opacity-50"
+            className="rounded-xl border border-hairline bg-card px-4 py-2 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-soft disabled:opacity-50"
             disabled={!name.trim() || state === "saving"}
             onClick={save}
           >
@@ -77,7 +77,7 @@ export default function SaveMonitor({ profile }: { profile: CompanyProfile }) {
         </div>
       ) : null}
       {message && (
-        <p className={`mt-2 text-sm ${state === "error" ? "text-signal" : "text-treasury"}`}>
+        <p className={`mt-2 text-sm ${state === "error" ? "text-risk" : "text-good"}`}>
           {message}
         </p>
       )}

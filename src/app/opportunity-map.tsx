@@ -255,7 +255,7 @@ export default function OpportunityMap() {
       {error && (
         <div
           id="error"
-          className="rounded-lg border border-signal/50 bg-signal/10 p-3 text-sm text-signal"
+          className="rounded-2xl border border-[#F2C4BC] bg-risk-soft p-3 text-[13px] text-risk"
         >
           {error}
         </div>
@@ -301,7 +301,7 @@ export default function OpportunityMap() {
 
           <div id="canvas" className="min-w-0 space-y-4 lg:order-1">
             {report && busy && (
-              <p className="animate-pulse font-mono text-xs text-faint">
+              <p className="animate-pulse font-mono text-[11px] text-faint">
                 Matches below update live as scoring finishes…
               </p>
             )}

@@ -59,3 +59,23 @@ components.
 - `/api/answer` also accepts `{profile, message}` (freeform chat text); one
   message can settle several gate fields in a single LLM parse. The legacy
   `{profile, field, answer}` form still works for one-tap buttons.
+
+## 2026-08 full redesign — "Catalyst" (paper-ledger RETIRED)
+
+The dark paper-ledger theme is gone. New system: light institutional gov-tech
+(reference screenshot: "Federal Catalyst"; approved synthesis mockup:
+`public/design-mocks/final.html`). Read `DESIGN-SPEC.md` (repo root) before
+styling ANYTHING — tokens, Tailwind recipes, and rules live there.
+
+- globals.css defines the new tokens (bg/card/hairline/ink/muted/faint/
+  brand/brand-strong/accent/soft/good/warn/risk + -soft tints, .shadow-card).
+  Legacy names (paper, panel, panel-2, brass, treasury, signal) are ALIASED to
+  light equivalents so old classes don't break — but migrate them on touch.
+- Fonts: Inter (all UI; --font-display also = Inter, Fraunces removed) +
+  IBM Plex Mono (labels/data/buttons only). Public Sans removed.
+- Shell: layout.tsx is now a white sticky TOP navbar (wordmark + Radar/
+  Pursuits/Monitor links from components/side-nav.tsx, which exports TopNav).
+  The left sidebar is gone; pages render full-width below the nav.
+- One blue (brand #1D4F91). Red = deadlines/alerts ONLY. Mono = chrome only.
+- Design-system previews are synced to the claude.ai/design project
+  "Opportunity Radar" (foundations/components/pages cards).

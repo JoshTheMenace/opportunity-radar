@@ -32,23 +32,37 @@ export default async function OpportunityPage({ params }: Params) {
   const o = opp((await params).id);
   if (!o) notFound();
   const close = daysUntil(o.closeDate);
+  const closeSoon = close != null && close >= 0 && close <= 30;
 
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
+    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
       {/* header */}
-      <header id="opp-header" className="space-y-2">
-        <Link
-          href="/"
-          className="font-mono text-xs text-faint transition-colors hover:text-paper"
-        >
-          ← Back to your matches
-        </Link>
-        <h1 className="font-display text-2xl font-semibold text-paper sm:text-3xl">
-          {o.title}
-        </h1>
+      <header id="opp-header" className="space-y-3">
         <p className="font-mono text-xs text-muted">
+          <Link href="/" className="transition-colors hover:text-brand">
+            Active grants
+          </Link>
+          <span className="text-faint"> › </span>
+          <span className="text-faint">{o.title}</span>
+        </p>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <h1 className="max-w-3xl text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            {o.title}
+          </h1>
+          {o.url && (
+            <a
+              href={o.url}
+              target="_blank"
+              rel="noreferrer"
+              className="shrink-0 rounded-full border border-hairline bg-card px-4 py-2 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-soft"
+            >
+              Review official notice ↗
+            </a>
+          )}
+        </div>
+        <p className="font-mono text-[11.5px] uppercase tracking-[0.02em] text-muted">
           {o.agency}
-          {o.agencyCode ? ` (${o.agencyCode})` : ""}
+          {o.agencyCode ? ` · ${o.agencyCode}` : ""}
         </p>
         <div className="flex flex-wrap gap-2">
           <Chip>{o.kind.replace(/_/g, "/")}</Chip>
@@ -57,10 +71,10 @@ export default async function OpportunityPage({ params }: Params) {
         </div>
       </header>
 
-      {/* key facts — instrument readout band */}
+      {/* key facts — stat strip */}
       <section
         id="opp-facts"
-        className="grid grid-cols-2 divide-hairline rounded-lg border border-hairline bg-panel sm:grid-cols-4 sm:divide-x"
+        className="grid grid-cols-2 divide-hairline overflow-hidden rounded-xl border border-hairline bg-card shadow-card sm:grid-cols-4 sm:divide-x"
       >
         <Fact
           label="Award range"
@@ -76,7 +90,7 @@ export default async function OpportunityPage({ params }: Params) {
         <Fact
           label="Closes"
           value={o.closeDate ? `${o.closeDate}${close != null && close >= 0 ? ` (${close}d)` : ""}` : "rolling"}
-          alert={close != null && close >= 0 && close <= 30}
+          alert={closeSoon}
         />
         <Fact label="Program total" value={fmt(o.estimatedTotalUsd)} />
         <Fact
@@ -92,62 +106,103 @@ export default async function OpportunityPage({ params }: Params) {
         />
       </section>
 
-      {/* pursuit: plan + tracker */}
-      <PursuitPanel opportunityId={o.id} />
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-5">
+          {/* pursuit: plan + tracker */}
+          <PursuitPanel opportunityId={o.id} />
 
-      {/* about */}
-      <Section id="opp-about" title="ABOUT THIS PROGRAM">
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper/85">
-          {o.description || "No description provided by the source."}
-        </p>
-      </Section>
-
-      {o.eligibilityText && (
-        <Section id="opp-eligibility" title="WHO'S ELIGIBLE (OFFICIAL TEXT)">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper/85">
-            {o.eligibilityText}
-          </p>
-        </Section>
-      )}
-
-      {/* contact + source link */}
-      <Section id="opp-contact" title="CONTACT & OFFICIAL NOTICE">
-        <div className="space-y-1 text-sm text-paper/85">
-          {o.contactName && <p>{o.contactName}</p>}
-          {o.contactEmail && (
-            <a
-              href={`mailto:${o.contactEmail}`}
-              className="text-muted underline transition-colors hover:text-paper"
-            >
-              {o.contactEmail}
-            </a>
-          )}
-          {o.url ? (
-            <p>
-              <a
-                href={o.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-muted underline transition-colors hover:text-paper"
-              >
-                View the official notice ↗
-              </a>
+          {/* about */}
+          <Section id="opp-about" title="ABOUT THIS PROGRAM">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
+              {o.description || "No description provided by the source."}
             </p>
-          ) : (
-            <p className="text-faint">No official URL on record — search the title on the source site.</p>
-          )}
-          {o.alnNumbers.length > 0 && (
-            <p className="font-mono text-xs text-faint">ALN: {o.alnNumbers.join(", ")}</p>
+          </Section>
+
+          {o.eligibilityText && (
+            <Section id="opp-eligibility" title="WHO'S ELIGIBLE (OFFICIAL TEXT)">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
+                {o.eligibilityText}
+              </p>
+            </Section>
           )}
         </div>
-      </Section>
+
+        <aside className="space-y-4">
+          {/* funding stat card */}
+          <Section id="opp-funding" title="FUNDING">
+            <p
+              className={`text-2xl font-bold tracking-tight ${
+                o.awardCeilingUsd != null ? "text-good" : "text-faint"
+              }`}
+            >
+              {o.awardCeilingUsd != null ? `Up to ${fmt(o.awardCeilingUsd)}` : "Unlisted"}
+            </p>
+            {o.awardFloorUsd != null && (
+              <p className="font-mono text-xs text-muted">floor {fmt(o.awardFloorUsd)}</p>
+            )}
+          </Section>
+
+          {/* deadline timeline */}
+          <Section id="opp-deadline" title="DEADLINE TIMELINE">
+            {o.closeDate ? (
+              <div className="flex items-baseline gap-3 py-1">
+                <span className="w-[78px] flex-none font-mono text-[11px] font-semibold text-brand">
+                  {o.closeDate}
+                </span>
+                <p className="text-[13.5px] text-ink">
+                  Submission closes{" "}
+                  {closeSoon && (
+                    <span className="rounded-full bg-risk-soft px-2.5 py-0.5 font-mono text-[11px] font-semibold text-risk">
+                      IN {close} DAYS
+                    </span>
+                  )}
+                </p>
+              </div>
+            ) : (
+              <p className="text-[13.5px] text-muted">Rolling — no fixed close date.</p>
+            )}
+          </Section>
+
+          {/* contact + source link */}
+          <Section id="opp-contact" title="CONTACT & OFFICIAL NOTICE">
+            <div className="space-y-1.5 text-[13.5px] text-ink/85">
+              {o.contactName && <p>{o.contactName}</p>}
+              {o.contactEmail && (
+                <a
+                  href={`mailto:${o.contactEmail}`}
+                  className="text-accent underline transition-colors hover:text-brand"
+                >
+                  {o.contactEmail}
+                </a>
+              )}
+              {o.url ? (
+                <p>
+                  <a
+                    href={o.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent underline transition-colors hover:text-brand"
+                  >
+                    View the official notice ↗
+                  </a>
+                </p>
+              ) : (
+                <p className="text-faint">No official URL on record — search the title on the source site.</p>
+              )}
+              {o.alnNumbers.length > 0 && (
+                <p className="font-mono text-xs text-faint">ALN: {o.alnNumbers.join(", ")}</p>
+              )}
+            </div>
+          </Section>
+        </aside>
+      </div>
     </main>
   );
 }
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-hairline px-2.5 py-0.5 font-mono text-[11px] text-muted">
+    <span className="rounded-full border border-hairline bg-card px-3 py-1 font-mono text-[11px] font-semibold text-muted">
       {children}
     </span>
   );
@@ -165,15 +220,15 @@ function Fact({
   alert?: boolean;
 }) {
   return (
-    <div className="p-3.5">
+    <div className="px-4 py-3">
       <p
-        className={`font-mono text-lg font-semibold ${
-          money ? "text-treasury" : alert ? "text-signal" : "text-paper"
+        className={`text-lg font-bold tracking-tight ${
+          money && value !== "unlisted" ? "text-good" : alert ? "text-risk" : value === "unlisted" || value === "—" ? "text-faint" : "text-ink"
         }`}
       >
         {value}
       </p>
-      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
+      <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-faint">
         {label}
       </p>
     </div>
@@ -182,8 +237,10 @@ function Fact({
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="space-y-2 rounded-lg border border-hairline bg-panel p-4">
-      <h2 className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">{title}</h2>
+    <section id={id} className="space-y-2 rounded-2xl border border-hairline bg-card p-5 shadow-card">
+      <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
+        {title}
+      </h2>
       {children}
     </section>
   );

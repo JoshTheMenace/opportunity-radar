@@ -146,13 +146,10 @@ function UsStateMap({ disabled, onPick }: Omit<WidgetProps, "field">) {
                 width={CELL}
                 height={CELL}
                 rx={4}
-                className={
-                  active
-                    ? "fill-treasury"
-                    : lit
-                      ? "fill-brass"
-                      : "fill-panel-2"
-                }
+                className={`${lit ? "fill-brand" : "fill-soft"} ${
+                  active ? "stroke-accent" : "stroke-none"
+                }`}
+                strokeWidth={active ? 2 : 0}
                 style={{ transition: "fill 120ms" }}
               />
               <text
@@ -160,7 +157,7 @@ function UsStateMap({ disabled, onPick }: Omit<WidgetProps, "field">) {
                 y={CELL / 2 + 3.5}
                 textAnchor="middle"
                 className={`pointer-events-none font-mono text-[10px] font-semibold ${
-                  lit || active ? "fill-ink" : "fill-muted"
+                  lit ? "fill-white" : "fill-brand"
                 }`}
               >
                 {code}
@@ -185,6 +182,7 @@ function AmountPicker({
   presets,
 }: Omit<WidgetProps, "field"> & { field: string; presets: [label: string, value: string][] }) {
   const [custom, setCustom] = useState("");
+  const [picked, setPicked] = useState<string | null>(null);
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
@@ -192,14 +190,19 @@ function AmountPicker({
           <button
             key={label}
             disabled={disabled}
-            onClick={() =>
+            onClick={() => {
+              setPicked(label);
               onPick({
                 field,
                 value: field === "annualRevenueUsd" ? parseAmount(value) : value,
                 sayAs: label,
-              })
-            }
-            className="rounded-md border border-hairline px-3 py-1.5 font-mono text-sm text-paper/85 transition-colors hover:border-brass hover:bg-brass/10 hover:text-paper disabled:opacity-40"
+              });
+            }}
+            className={`rounded-xl px-3 py-1.5 font-mono text-[12.5px] font-semibold transition-colors disabled:opacity-40 ${
+              picked === label
+                ? "bg-brand text-white"
+                : "bg-soft text-brand hover:bg-brand hover:text-white"
+            }`}
           >
             {label}
           </button>
@@ -222,11 +225,11 @@ function AmountPicker({
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
           placeholder="or exact: 750k"
-          className="w-32 rounded-md border border-hairline bg-panel px-2 py-1 font-mono text-sm text-paper placeholder:text-faint focus:border-brass focus:outline-none"
+          className="w-32 rounded-xl border border-hairline bg-[#FBFCFE] px-2.5 py-1.5 font-mono text-[12.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none"
         />
         <button
           disabled={disabled || !custom.trim()}
-          className="rounded-md border border-hairline px-2.5 py-1 text-sm text-muted transition-colors hover:bg-panel-2 hover:text-paper disabled:opacity-40"
+          className="rounded-xl bg-soft px-3 py-1.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
         >
           Set
         </button>
@@ -254,14 +257,22 @@ const TEAM_BANDS: [label: string, value: number][] = [
 ];
 
 function TeamSizePicker({ disabled, onPick }: Omit<WidgetProps, "field">) {
+  const [picked, setPicked] = useState<number | null>(null);
   return (
     <div className="flex flex-wrap gap-1.5">
       {TEAM_BANDS.map(([label, value]) => (
         <button
           key={label}
           disabled={disabled}
-          onClick={() => onPick({ field: "employees", value, sayAs: `${label} people` })}
-          className="rounded-md border border-hairline px-3 py-1.5 font-mono text-sm text-paper/85 transition-colors hover:border-brass hover:bg-brass/10 hover:text-paper disabled:opacity-40"
+          onClick={() => {
+            setPicked(value);
+            onPick({ field: "employees", value, sayAs: `${label} people` });
+          }}
+          className={`rounded-xl px-3 py-1.5 font-mono text-[12.5px] font-semibold transition-colors disabled:opacity-40 ${
+            picked === value
+              ? "bg-brand text-white"
+              : "bg-soft text-brand hover:bg-brand hover:text-white"
+          }`}
         >
           {label}
         </button>
@@ -280,20 +291,47 @@ const STAGES: [key: string, label: string, hint: string][] = [
 ];
 
 function MaturityStepper({ disabled, onPick }: Omit<WidgetProps, "field">) {
+  const [picked, setPicked] = useState<string | null>(null);
   return (
     <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-      {STAGES.map(([key, label, hint], i) => (
-        <button
-          key={key}
-          disabled={disabled}
-          onClick={() => onPick({ field: "productMaturity", value: key, sayAs: `${label} stage` })}
-          className="rounded-md border border-hairline p-2 text-left transition-colors hover:border-brass hover:bg-brass/10 disabled:opacity-40"
-        >
-          <span className="font-mono text-[10px] text-faint">0{i + 1}</span>
-          <span className="block text-sm font-semibold text-paper">{label}</span>
-          <span className="block text-[11px] text-muted">{hint}</span>
-        </button>
-      ))}
+      {STAGES.map(([key, label, hint], i) => {
+        const on = picked === key;
+        return (
+          <button
+            key={key}
+            disabled={disabled}
+            onClick={() => {
+              setPicked(key);
+              onPick({ field: "productMaturity", value: key, sayAs: `${label} stage` });
+            }}
+            className={`group rounded-xl p-2 text-left transition-colors disabled:opacity-40 ${
+              on ? "bg-brand" : "bg-soft hover:bg-brand"
+            }`}
+          >
+            <span
+              className={`font-mono text-[10px] ${
+                on ? "text-white/70" : "text-brand/60 group-hover:text-white/70"
+              }`}
+            >
+              0{i + 1}
+            </span>
+            <span
+              className={`block font-mono text-[12.5px] font-semibold ${
+                on ? "text-white" : "text-brand group-hover:text-white"
+              }`}
+            >
+              {label}
+            </span>
+            <span
+              className={`block text-[11px] ${
+                on ? "text-white/80" : "text-muted group-hover:text-white/80"
+              }`}
+            >
+              {hint}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -306,14 +344,14 @@ function BigYesNo({ field, disabled, onPick }: WidgetProps) {
       <button
         disabled={disabled}
         onClick={() => onPick({ field, value: "true", sayAs: "yes" })}
-        className="flex-1 rounded-md border border-treasury/60 py-2.5 text-sm font-semibold text-treasury transition-colors hover:bg-treasury/10 disabled:opacity-40"
+        className="flex-1 rounded-xl bg-soft py-2.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
       >
         Yes
       </button>
       <button
         disabled={disabled}
         onClick={() => onPick({ field, value: "false", sayAs: "no" })}
-        className="flex-1 rounded-md border border-hairline py-2.5 text-sm font-semibold text-muted transition-colors hover:bg-panel-2 hover:text-paper disabled:opacity-40"
+        className="flex-1 rounded-xl bg-soft py-2.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
       >
         No
       </button>

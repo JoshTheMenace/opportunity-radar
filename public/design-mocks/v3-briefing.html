@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V3 Briefing</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* V3 "Briefing": editorial. Deep navy hero band carrying the headline stat,
+   light content below, oversized display numbers, softer cards. */
+:root{
+  --bg:#F5F7FB; --card:#FFF; --border:#E4E9F1; --ink:#0F1E38; --muted:#54657F;
+  --faint:#93A3BC; --navy:#122E5C; --navy-2:#1B4180; --accent:#3B77E0;
+  --soft:#E9F0FB; --good:#188654; --good-soft:#E6F5EC; --risk:#C23A2C;
+  --risk-soft:#FBEBE8; --warn:#B07C10; --warn-soft:#FBF3DF;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+.mono{font-family:"IBM Plex Mono",monospace}
+.hero{background:linear-gradient(160deg,var(--navy),var(--navy-2));color:#fff;padding:0 0 84px}
+nav{display:flex;align-items:center;gap:28px;padding:18px 32px;max-width:1200px;margin:0 auto}
+.wordmark{font-weight:800;font-size:18px;letter-spacing:-.02em}
+.wordmark em{font-style:normal;color:#8FB4F2}
+.navlink{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:#A7BBDD;text-decoration:none}
+.navlink.on{color:#fff}
+.cta{margin-left:auto;background:#fff;color:var(--navy);border:0;border-radius:999px;padding:9px 20px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600}
+.herostat{max-width:1200px;margin:36px auto 0;padding:0 32px;display:flex;align-items:flex-end;gap:48px}
+.herostat .huge{font-size:64px;font-weight:900;letter-spacing:-.04em;line-height:1}
+.herostat .of{color:#9FB6DC;font-size:15px;margin-top:10px}
+.hlabel{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;color:#8FB4F2;text-transform:uppercase;font-weight:600}
+.hstat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.wrap{max-width:1200px;margin:-56px auto 0;padding:0 32px 40px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:22px;align-items:start}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:22px;box-shadow:0 1px 2px rgba(15,30,56,.05),0 8px 24px -12px rgba(15,30,56,.08)}
+.label{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600}
+.match{display:flex;gap:18px;align-items:flex-start}
+.rank{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--faint);padding-top:4px}
+.match h3{font-size:19px;font-weight:800;letter-spacing:-.02em}
+.match .agency{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);margin-top:4px}
+.scorering{margin-left:auto;flex:none;width:58px;height:58px;border-radius:99px;display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:17px}
+.facts{display:flex;gap:26px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.facts b{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em}
+.facts span{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+.why{color:var(--muted);font-size:14px;margin-top:12px}
+.actions{display:flex;gap:10px;margin-top:14px}
+.btn{border-radius:10px;padding:10px 18px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--navy);cursor:pointer}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.tier{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;border-radius:999px;padding:5px 12px}
+.tier.strong{background:var(--good-soft);color:var(--good)}
+.tier.verify{background:var(--warn-soft);color:var(--warn)}
+.railcard{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px}
+.row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13.5px}
+.row:last-child{border:0}
+.row .k{color:var(--muted)} .row .v{font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.q p{font-size:14px;font-weight:700}
+.unlock{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--good);margin-top:4px}
+.yn{display:flex;gap:8px;margin-top:12px}
+.yn button{flex:1;border:1.5px solid var(--soft);background:var(--soft);border-radius:10px;padding:9px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--navy-2)}
+.alert{background:var(--risk-soft);border:1px solid #F1C7BF;border-radius:14px;padding:14px 16px;font-size:13px;color:#84362B}
+.alert b{font-family:"IBM Plex Mono",monospace;color:var(--risk);font-size:12.5px}
+</style></head><body>
+<div class="hero">
+  <nav>
+    <div class="wordmark">Opportunity<em>Radar</em></div>
+    <a class="navlink on" href="#">Radar</a>
+    <a class="navlink" href="#">Pursuits</a>
+    <a class="navlink" href="#">Monitor</a>
+    <button class="cta">New analysis</button>
+  </nav>
+  <div class="herostat">
+    <div>
+      <div class="hlabel">Eligible federal funding</div>
+      <div class="huge">$4.3M</div>
+      <div class="of">of $11.2M potential · 4,612 programs screened in 71s</div>
+    </div>
+    <div class="hstat"><span class="hlabel">Matches</span><b>14</b></div>
+    <div class="hstat"><span class="hlabel">One answer away</span><b>9</b></div>
+    <div class="hstat"><span class="hlabel">Profile</span><b style="color:#7ED8A8">Ready 5/5</b></div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="grid">
+    <div style="display:grid;gap:16px">
+      <div class="card">
+        <div class="match">
+          <span class="rank">01</span>
+          <div>
+            <h3>NSF SBIR Phase I — Digital Health Technologies</h3>
+            <div class="agency">NATIONAL SCIENCE FOUNDATION · 47.041</div>
+          </div>
+          <div class="scorering" style="background:var(--good-soft);color:var(--good)">82</div>
+        </div>
+        <div class="facts">
+          <div><b>$314K</b><span>Max award</span></div>
+          <div><b>Oct 16</b><span>Deadline</span></div>
+          <div><b style="color:var(--risk)">3 days</b><span>Task due</span></div>
+          <div style="margin-left:auto"><span class="tier strong">STRONG FIT</span></div>
+        </div>
+        <p class="why">Small US-owned business doing active R&D on clinical ML — squarely inside NSF's digital-health topic. Your $1M ask maps to Phase I + II sequencing.</p>
+        <div class="actions"><button class="btn primary">Pursue this →</button><button class="btn">Full details</button></div>
+      </div>
+      <div class="card">
+        <div class="match">
+          <span class="rank">02</span>
+          <div>
+            <h3>NIH SBIR — Clinical Decision Support</h3>
+            <div class="agency">NIH / AHRQ</div>
+          </div>
+          <div class="scorering" style="background:var(--warn-soft);color:var(--warn)">61</div>
+        </div>
+        <p class="why">Strong topical fit, pending PI primary-employment verification (§2.3) before this counts as a sure match.</p>
+        <div class="actions"><button class="btn">Verify eligibility</button><span class="tier verify" style="align-self:center">VERIFY</span></div>
+      </div>
+    </div>
+    <aside style="display:grid;gap:14px">
+      <div class="railcard">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:99px;background:radial-gradient(circle at 30% 30%,#5F92E8,#122E5C)"></div>
+          <div><b style="font-size:14px">Radar Agent</b><br><span class="mono" style="font-size:11.5px;color:var(--good)">● Live</span></div>
+          <button class="btn" style="margin-left:auto;padding:8px 14px">🎙 Voice</button>
+        </div>
+        <div style="height:14px"></div>
+        <div class="q">
+          <div class="label" style="margin-bottom:6px">Radar is asking</div>
+          <p>Is your company registered on SAM.gov?</p>
+          <div class="unlock">ANSWERING UNLOCKS +$2.4M</div>
+          <div class="yn"><button>Yes</button><button>No</button><button>Not sure</button></div>
+        </div>
+      </div>
+      <div class="railcard">
+        <div class="label">Company dossier · ready</div>
+        <div style="height:6px"></div>
+        <div class="row"><span class="k">HQ</span><span class="v">Salt Lake City, UT</span></div>
+        <div class="row"><span class="k">Team</span><span class="v">12</span></div>
+        <div class="row"><span class="k">Seeking</span><span class="v">$1.0M</span></div>
+        <div class="row"><span class="k">R&D</span><span class="v" style="color:var(--good)">Yes</span></div>
+        <div class="row"><span class="k">SAM.gov</span><span class="v" style="color:var(--faint)">unknown</span></div>
+      </div>
+      <div class="alert"><b>⚠ SAM.GOV UNCONFIRMED</b><br>Registration required at submission — verify before Oct 02.</div>
+    </aside>
+  </div>
+</div>
+</body></html>

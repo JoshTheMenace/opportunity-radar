@@ -4,7 +4,7 @@
 // matches grouped under tier rules, the honest-no determination, plus
 // empty/loading states so every phase of the flow has a designed surface.
 
-import type { GatedOpportunity, Opportunity } from "@/lib/types";
+import type { FitTier, GatedOpportunity, Opportunity } from "@/lib/types";
 import { profileReadiness } from "@/lib/engine/readiness";
 import { meterValueUsd } from "@/lib/engine/gates";
 import MatchCard from "./match-card";
@@ -12,6 +12,14 @@ import { TIERS, daysUntil, fmtUsd, type Spotlight, type UiReport } from "./share
 
 /** Matches below this score are noise — hidden from the report entirely. */
 const MIN_SCORE = 50;
+
+/** Catalyst tier chips: status tints only, never decorative. */
+const TIER_CHIP: Record<FitTier, string> = {
+  likely_fit: "bg-good-soft text-good",
+  verify_eligibility: "bg-warn-soft text-warn",
+  adjacent: "bg-soft text-muted",
+  not_a_fit: "bg-soft text-faint",
+};
 
 export function ReportView({
   report,
@@ -41,8 +49,11 @@ export function ReportView({
   const readiness = profileReadiness(report.profile);
   if (report.matches.length === 0 && !readiness.ready) {
     return (
-      <section id="report" className="space-y-3 rounded-lg border border-brass/40 bg-brass/5 p-6">
-        <h2 className="font-display text-xl font-semibold text-paper">
+      <section
+        id="report"
+        className="space-y-3 rounded-2xl border border-hairline bg-card p-6 shadow-card"
+      >
+        <h2 className="text-xl font-bold tracking-tight text-ink">
           A few basics first — then an accurate answer
         </h2>
         <p className="text-sm text-muted">
@@ -50,10 +61,10 @@ export function ReportView({
           numbers that collapse the moment you answer one more question. Still needed
           ({readiness.knownCount}/{readiness.requiredCount} known):
         </p>
-        <ul className="space-y-1 text-sm text-paper">
+        <ul className="space-y-1 text-sm text-ink">
           {readiness.missing.map((m) => (
             <li key={m.key}>
-              <span className="text-brass">•</span> {m.question}
+              <span className="text-brand">•</span> {m.question}
             </li>
           ))}
         </ul>
@@ -71,8 +82,11 @@ export function ReportView({
   if (visible.length === 0) {
     const scoring = report.evidence == null;
     return (
-      <section id="report" className="space-y-2 rounded-lg border border-hairline bg-panel p-6 text-center">
-        <h2 className="font-display text-xl font-semibold text-paper">
+      <section
+        id="report"
+        className="space-y-2 rounded-2xl border border-hairline bg-card p-6 text-center shadow-card"
+      >
+        <h2 className="text-xl font-bold tracking-tight text-ink">
           {scoring ? "Scoring your candidates…" : "No strong matches yet"}
         </h2>
         <p className="mx-auto max-w-md text-sm text-muted">
@@ -93,7 +107,7 @@ export function ReportView({
   return (
     <section id="report" className="space-y-5">
       {/* instrument readout band */}
-      <div className="grid grid-cols-2 divide-hairline rounded-lg border border-hairline bg-panel sm:grid-cols-4 sm:divide-x">
+      <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-hairline bg-card shadow-card sm:grid-cols-4 sm:divide-x sm:divide-hairline">
         <Stat label="Matches" value={String(visible.length)} />
         <Stat label="Across matches" value={matchedUsd > 0 ? `≤ ${fmtUsd(matchedUsd)}` : "—"} money />
         <Stat label="Agencies" value={String(agencies)} />
@@ -101,14 +115,14 @@ export function ReportView({
       </div>
 
       {/* tier groups under section rules */}
-      {TIERS.map(({ tier, label, badge }) => {
+      {TIERS.map(({ tier, label }) => {
         const group = visible.filter((m) => m.tier === tier);
         if (group.length === 0) return null;
         return (
-          <div key={tier} className="space-y-2">
+          <div key={tier} className="space-y-2.5">
             <div className="flex items-center gap-3">
               <span
-                className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badge}`}
+                className={`inline-block rounded-full px-3 py-1 font-mono text-[11px] font-semibold ${TIER_CHIP[tier]}`}
               >
                 {label} · {group.length}
               </span>
@@ -151,13 +165,13 @@ function Stat({
   return (
     <div className="p-3.5">
       <p
-        className={`font-mono text-xl font-semibold ${
-          money ? "text-treasury" : alert ? "text-signal" : "text-paper"
+        className={`font-mono text-xl font-semibold tracking-tight ${
+          money ? "text-good" : alert ? "text-risk" : "text-ink"
         }`}
       >
         {value}
       </p>
-      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
+      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.09em] text-faint">
         {label}
       </p>
     </div>
@@ -173,19 +187,23 @@ export function HonestNoPanel({
 }) {
   const opps = report.opportunities ?? {};
   return (
-    <section id="report" className="space-y-3 rounded-lg border border-signal/40 bg-signal/5 p-5">
-      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-signal">
+    <section
+      id="report"
+      className="space-y-3 rounded-2xl border border-hairline bg-card p-6 shadow-card"
+    >
+      {/* the one small risk accent this panel gets */}
+      <span className="inline-block rounded-full bg-risk-soft px-3 py-1 font-mono text-[11px] font-semibold text-risk">
         DETERMINATION
-      </p>
-      <h2 className="font-display text-xl font-semibold text-paper">
+      </span>
+      <h2 className="text-xl font-bold tracking-tight text-ink">
         No strong federal match — here&apos;s the honest read
       </h2>
       {report.honestNoExplanation && (
-        <p className="text-sm text-paper/85">{report.honestNoExplanation}</p>
+        <p className="text-sm text-muted">{report.honestNoExplanation}</p>
       )}
       {report.matches.length > 0 && (
-        <div className="space-y-2 pt-1">
-          <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-muted">
+        <div className="space-y-2.5 pt-1">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.09em] text-faint">
             ADJACENT &amp; STATE OPTIONS WORTH A LOOK
           </p>
           {report.matches.map((m, i) => (
@@ -202,13 +220,13 @@ export function HonestNoPanel({
         </div>
       )}
       {report.rejected.length > 0 && (
-        <div className="space-y-1 border-t border-signal/20 pt-3">
-          <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-muted">
+        <div className="space-y-1 border-t border-hairline pt-3">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.09em] text-faint">
             NEAR-MISSES (AND WHY THEY FAIL)
           </p>
           {report.rejected.map((g: GatedOpportunity) => (
             <p key={g.opportunity.id} className="text-sm text-muted">
-              <span className="font-semibold text-paper/80">{g.opportunity.title}</span> —{" "}
+              <span className="font-semibold text-ink">{g.opportunity.title}</span> —{" "}
               {g.gates.find((x) => x.verdict === "fail")?.detail ?? "hard eligibility fail"}
             </p>
           ))}
@@ -223,10 +241,13 @@ export function ReportSkeleton() {
   return (
     <div className="space-y-3" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="animate-pulse space-y-2 rounded-lg border border-hairline bg-panel p-4">
-          <div className="h-4 w-2/3 rounded bg-panel-2" />
-          <div className="h-3 w-1/2 rounded bg-panel-2" />
-          <div className="h-3 w-5/6 rounded bg-panel-2" />
+        <div
+          key={i}
+          className="animate-pulse space-y-2.5 rounded-2xl border border-hairline bg-card p-5 shadow-card"
+        >
+          <div className="h-4 w-2/3 rounded bg-soft" />
+          <div className="h-3 w-1/2 rounded bg-hairline" />
+          <div className="h-3 w-5/6 rounded bg-soft" />
         </div>
       ))}
     </div>
@@ -237,17 +258,17 @@ export function ReportSkeleton() {
 export function HowItWorks() {
   const steps = [
     {
-      n: "01",
+      n: "1",
       title: "Describe",
       body: "Tell us about your company in plain words — or just talk to it with voice mode.",
     },
     {
-      n: "02",
+      n: "2",
       title: "Answer to unlock",
       body: "Each eligibility answer unlocks real dollars: the meter shows exactly what every question is worth.",
     },
     {
-      n: "03",
+      n: "3",
       title: "Apply with evidence",
       body: "Every match shows why it fits, what could disqualify you, and who actually wins this money.",
     },
@@ -255,10 +276,12 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="grid gap-3 sm:grid-cols-3">
       {steps.map((s) => (
-        <div key={s.n} className="rounded-lg border border-hairline bg-panel p-4">
-          <p className="font-mono text-[11px] text-brass">{s.n}</p>
-          <p className="mt-1 font-display text-base font-semibold text-paper">{s.title}</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted">{s.body}</p>
+        <div key={s.n} className="rounded-2xl border border-hairline bg-card p-5 shadow-card">
+          <div className="grid h-[30px] w-[30px] place-items-center rounded-full bg-soft font-mono text-xs font-semibold text-brand">
+            {s.n}
+          </div>
+          <p className="mt-2.5 text-[15px] font-semibold tracking-tight text-ink">{s.title}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-muted">{s.body}</p>
         </div>
       ))}
     </section>

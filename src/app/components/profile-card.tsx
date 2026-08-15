@@ -2,7 +2,7 @@
 
 // Region: the company dossier — the profile visibly building itself as the
 // conversation (voice or text) extracts facts. Filled rows read as ledger
-// entries; unknowns stay as dotted slots so the founder can SEE what the
+// entries; unknowns stay as "— unknown" slots so the founder can SEE what the
 // interview is still worth. Lives in the guidance rail.
 
 import type { CompanyProfile } from "@/lib/types";
@@ -50,39 +50,42 @@ export default function ProfileCard({ profile }: { profile: CompanyProfile | nul
   const readiness = profileReadiness(profile);
 
   return (
-    <section id="dossier" className="space-y-2 rounded-lg border border-hairline bg-panel p-4">
-      <div className="flex items-baseline justify-between">
-        <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
-          COMPANY DOSSIER
+    <section id="dossier" className="rounded-2xl border border-hairline bg-card p-5 shadow-card">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
+          Company dossier
         </p>
         <span
-          className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold ${
-            readiness.ready
-              ? "border-treasury/50 bg-treasury/10 text-treasury"
-              : "border-brass/50 bg-brass/10 text-brass"
+          className={`rounded-full px-2.5 py-1 font-mono text-[11px] font-semibold ${
+            readiness.ready ? "bg-good-soft text-good" : "bg-soft text-brand"
           }`}
         >
-          {readiness.ready ? "ready to rank" : `${readiness.knownCount}/${readiness.requiredCount} basics`}
+          {readiness.ready
+            ? `READY ${readiness.knownCount}/${readiness.requiredCount}`
+            : `${readiness.knownCount}/${readiness.requiredCount} BASICS`}
         </span>
       </div>
-      <dl className="divide-y divide-hairline">
+      <dl className="mt-2">
         {rs.map((r) => (
-          <div key={r.label} className="flex items-baseline justify-between gap-3 py-1">
-            <dt className="text-xs text-muted">{r.label}</dt>
+          <div
+            key={r.label}
+            className="flex items-baseline justify-between gap-3 border-b border-dashed border-hairline py-1.5 text-[13.5px] last:border-0"
+          >
+            <dt className="text-muted">{r.label}</dt>
             {r.value != null ? (
               // key on the value so a fresh fact re-triggers the entrance animation
-              <dd key={r.value} className="card-in font-mono text-xs text-paper">
+              <dd key={r.value} className="card-in font-mono text-[12.5px] text-ink">
                 {r.value}
               </dd>
             ) : (
-              <dd className="font-mono text-xs tracking-widest text-faint/60">· · ·</dd>
+              <dd className="font-mono text-[12.5px] text-faint">— unknown</dd>
             )}
           </div>
         ))}
       </dl>
-      <div className="h-1 overflow-hidden rounded-full bg-panel-2">
+      <div className="mt-3 h-[3px] overflow-hidden rounded-full bg-hairline">
         <div
-          className="h-full rounded-full bg-brass transition-[width] duration-700"
+          className="h-full rounded-full bg-brand transition-[width] duration-700"
           style={{ width: `${Math.round((filled / rs.length) * 100)}%` }}
         />
       </div>

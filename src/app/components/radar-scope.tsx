@@ -25,8 +25,8 @@ function radius(score: number): number {
 }
 
 const TIER_FILL: Record<RankedMatch["tier"], string> = {
-  likely_fit: "var(--color-treasury)",
-  verify_eligibility: "var(--color-brass)",
+  likely_fit: "var(--color-brand)",
+  verify_eligibility: "var(--color-warn)",
   adjacent: "var(--color-muted)",
   not_a_fit: "var(--color-faint)",
 };
@@ -85,10 +85,10 @@ export default function RadarScope({
           <g className="scope-sweep">
             <path
               d={`M100,100 L100,${100 - R_OUTER} A${R_OUTER},${R_OUTER} 0 0 1 ${100 + R_OUTER * Math.sin(0.9)},${100 - R_OUTER * Math.cos(0.9)} Z`}
-              fill="var(--color-brass)"
-              opacity="0.14"
+              fill="var(--color-accent)"
+              opacity="0.1"
             />
-            <line x1="100" y1="100" x2="100" y2={100 - R_OUTER} stroke="var(--color-brass)" strokeWidth="1.5" opacity="0.8" />
+            <line x1="100" y1="100" x2="100" y2={100 - R_OUTER} stroke="var(--color-accent)" strokeWidth="1.5" opacity="0.55" />
           </g>
         )}
 
@@ -107,7 +107,7 @@ export default function RadarScope({
           </circle>
         ))}
 
-        <circle cx="100" cy="100" r="2" fill="var(--color-brass)" />
+        <circle cx="100" cy="100" r="2" fill="var(--color-brand)" />
       </svg>
       <figcaption className="font-mono text-[10px] tracking-wide text-faint">
         {blips.length

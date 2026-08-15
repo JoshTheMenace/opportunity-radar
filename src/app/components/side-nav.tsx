@@ -1,21 +1,21 @@
 "use client";
 
-// Region: sidebar navigation — the mission-control rail's nav links with
-// active-route state. Lives inside the layout sidebar (desktop only).
+// Region: primary navigation — horizontal mono links in the top navbar with
+// active-route state (blue underline, reference style).
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const LINKS: { href: string; label: string; hint: string }[] = [
-  { href: "/", label: "Analyze", hint: "run a funding fit" },
-  { href: "/pursuits", label: "Pursuits", hint: "applications in flight" },
-  { href: "/radar", label: "Radar", hint: "watching for you" },
+const LINKS: { href: string; label: string }[] = [
+  { href: "/", label: "Radar" },
+  { href: "/pursuits", label: "Pursuits" },
+  { href: "/radar", label: "Monitor" },
 ];
 
-export default function SideNav() {
+export default function TopNav() {
   const pathname = usePathname();
   return (
-    <nav className="flex flex-col gap-1" aria-label="Primary">
+    <nav className="flex items-center gap-4 sm:gap-6" aria-label="Primary">
       {LINKS.map((l) => {
         const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
         return (
@@ -23,16 +23,13 @@ export default function SideNav() {
             key={l.href}
             href={l.href}
             aria-current={active ? "page" : undefined}
-            className={`group rounded-md border-l-2 px-3 py-2 transition-colors ${
+            className={`-mb-px border-b-2 pb-[17px] pt-[19px] font-mono text-[13px] transition-colors ${
               active
-                ? "border-brass bg-panel text-paper"
-                : "border-transparent text-muted hover:bg-panel/60 hover:text-paper"
+                ? "border-brand font-semibold text-brand"
+                : "border-transparent text-muted hover:text-ink"
             }`}
           >
-            <span className="block text-sm font-semibold">{l.label}</span>
-            <span className="block font-mono text-[10px] tracking-wide text-faint group-hover:text-muted">
-              {l.hint}
-            </span>
+            {l.label}
           </Link>
         );
       })}

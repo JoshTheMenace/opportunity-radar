@@ -1,15 +1,23 @@
 "use client";
 
-// One opportunity match card: tier rail, title row, mono meta row, odds,
-// evidence strip, why-fit/disqualify/verify/next-steps, plan-backward
-// timeline, program officer preview, and the outbound link.
+// One opportunity match card: rank + title row, mono agency line, score tile,
+// facts row, evidence strip, why-fit/disqualify/verify/next-steps,
+// plan-backward timeline, program officer preview, and the outbound link.
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import type { CompanyProfile, EvidenceSummary, Opportunity, RankedMatch } from "@/lib/types";
+import type { CompanyProfile, EvidenceSummary, FitTier, Opportunity, RankedMatch } from "@/lib/types";
 import { buildTimeline, oddsLabel } from "@/lib/engine/timeline";
 import type { OfficerPreview } from "@/lib/engine/officer";
-import { daysUntil, fmtUsd, tierRail } from "./shared";
+import { daysUntil, fmtUsd } from "./shared";
+
+/** Score-tile tints: good for strong fit, warn for verify tier, brand otherwise. */
+const SCORE_TILE: Record<FitTier, { box: string; fill: string }> = {
+  likely_fit: { box: "bg-good-soft text-good", fill: "bg-good" },
+  verify_eligibility: { box: "bg-warn-soft text-warn", fill: "bg-warn" },
+  adjacent: { box: "bg-soft text-brand", fill: "bg-brand" },
+  not_a_fit: { box: "bg-soft text-faint", fill: "bg-faint" },
+};
 
 export default function MatchCard({
   match,
@@ -71,57 +79,87 @@ export default function MatchCard({
     }
   }
 
+  const tile = SCORE_TILE[match.tier] ?? SCORE_TILE.adjacent;
+
   return (
     <article
       ref={cardRef}
-      className={`card-in space-y-2.5 rounded-lg border border-hairline border-l-2 bg-panel p-4 ${tierRail(match.tier)}`}
+      className="card-in space-y-3 rounded-2xl border border-hairline bg-card p-5 shadow-card"
       style={{ animationDelay: `${Math.min(index * 70, 490)}ms` }}
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-semibold text-paper">
-          <Link
-            href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
-            className="transition-colors hover:text-brass-bright hover:underline"
-          >
-            {opp?.title ?? match.opportunityId}
-          </Link>
-        </h3>
-        <span className="font-mono text-xs text-faint">score {match.score}</span>
-      </div>
-      <p className="font-mono text-xs text-muted">
-        {opp ? (
-          <>
-            {dedupeAgency(opp.agency)} · {opp.kind.replace(/_/g, "/")} ·{" "}
-            {opp.awardFloorUsd != null && opp.awardCeilingUsd != null
-              ? `${fmtUsd(opp.awardFloorUsd)}–${fmtUsd(opp.awardCeilingUsd)}`
-              : opp.awardCeilingUsd != null
-                ? `up to ${fmtUsd(opp.awardCeilingUsd)}`
-                : "award size unlisted"}
-            {opp.closeDate && (
-              <span className={close != null && close <= 30 ? " text-signal" : ""}>
-                {" "}· closes {opp.closeDate}
-                {close != null && close >= 0 ? ` (${close}d)` : ""}
-              </span>
+      {/* header: rank · title/agency · score tile */}
+      <div className="flex items-start gap-3.5">
+        <span className="pt-0.5 font-mono text-xs text-faint">
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-[17px] font-bold tracking-tight text-ink">
+            <Link
+              href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
+              className="transition-colors hover:text-brand"
+            >
+              {opp?.title ?? match.opportunityId}
+            </Link>
+          </h3>
+          <p className="mt-1 font-mono text-[11.5px] uppercase tracking-[0.02em] text-muted">
+            {opp ? (
+              <>
+                {dedupeAgency(opp.agency)} · {opp.kind.replace(/_/g, "/")}
+              </>
+            ) : (
+              "details unavailable"
             )}
-          </>
-        ) : (
-          "details unavailable"
+          </p>
+        </div>
+        <div className="ml-auto flex-none text-center">
+          <div
+            className={`grid h-14 w-14 place-items-center rounded-[14px] font-mono text-lg font-semibold ${tile.box}`}
+          >
+            {match.score}
+          </div>
+          <div className="mt-1.5 h-[3px] w-14 overflow-hidden rounded-[2px] bg-hairline">
+            <div
+              className={`h-full rounded-[2px] ${tile.fill}`}
+              style={{ width: `${Math.min(100, Math.max(0, match.score))}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* facts row */}
+      <div className="flex flex-wrap items-center gap-x-7 gap-y-2 border-t border-hairline pt-3.5">
+        <Fact
+          value={
+            opp?.awardFloorUsd != null && opp?.awardCeilingUsd != null
+              ? `${fmtUsd(opp.awardFloorUsd)}–${fmtUsd(opp.awardCeilingUsd)}`
+              : opp?.awardCeilingUsd != null
+                ? `up to ${fmtUsd(opp.awardCeilingUsd)}`
+                : "—"
+          }
+          label="Max award"
+        />
+        <Fact value={opp?.closeDate ?? "rolling"} label="Deadline" />
+        {close != null && close >= 0 && close <= 30 && (
+          <span className="rounded-full bg-risk-soft px-2.5 py-1 font-mono text-[11px] font-bold text-risk">
+            IN {close}D
+          </span>
         )}
-      </p>
-      {odds && <p className="font-mono text-xs text-faint">{odds}</p>}
+        {odds && <span className="ml-auto font-mono text-[11px] text-faint">{odds}</span>}
+      </div>
+
+      <p className="text-[13.5px] text-muted">{match.whyFit}</p>
       {evidence && <EvidenceStrip evidence={evidence} />}
       <dl className="space-y-1.5 text-sm">
-        <CardRow label="Why it fits" text={match.whyFit} tone="text-treasury" />
-        <CardRow label="Could disqualify" text={match.whatCouldDisqualify} tone="text-signal" />
-        <CardRow label="Verify" text={match.whatToVerify} tone="text-brass" />
-        <CardRow label="Next steps" text={match.nextSteps} tone="text-paper/70" />
+        <CardRow label="Could disqualify" text={match.whatCouldDisqualify} tone="text-risk" />
+        <CardRow label="Verify" text={match.whatToVerify} tone="text-warn" />
+        <CardRow label="Next steps" text={match.nextSteps} tone="text-faint" />
       </dl>
       {actionable && opp && profile && (
         <div>
           <button
             type="button"
             onClick={() => setShowPlan((v) => !v)}
-            className="font-mono text-xs font-semibold text-muted transition-colors hover:text-paper"
+            className="font-mono text-xs font-semibold text-brand transition-colors hover:text-brand-strong"
           >
             {showPlan ? "▾" : "▸"} Plan backward
           </button>
@@ -130,7 +168,7 @@ export default function MatchCard({
               {buildTimeline(opp, profile).map((s) => (
                 <li key={s.title} className="text-xs">
                   <span
-                    className={`font-mono font-semibold ${s.urgent ? "text-signal" : "text-paper/85"}`}
+                    className={`font-mono font-semibold ${s.urgent ? "text-risk" : "text-ink"}`}
                   >
                     {s.due ?? "rolling"} · {s.title}
                   </span>
@@ -145,19 +183,28 @@ export default function MatchCard({
       {officerErr && (
         <p className="text-xs text-faint">Officer preview unavailable ({officerErr})</p>
       )}
-      <div className="flex flex-wrap items-center gap-3 pt-1">
-        <Link
-          href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
-          className="rounded-md border border-brass/50 px-3 py-1 text-xs font-semibold text-brass transition-colors hover:bg-brass/10"
-        >
-          Details &amp; submission plan →
-        </Link>
+      <div className="flex flex-wrap items-center gap-2.5 pt-1">
+        {actionable ? (
+          <Link
+            href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
+            className="rounded-xl bg-brand px-4 py-2 font-mono text-[12.5px] font-semibold text-white transition-colors hover:bg-brand-strong"
+          >
+            Pursue this →
+          </Link>
+        ) : (
+          <Link
+            href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
+            className="rounded-xl border border-hairline bg-card px-4 py-2 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-soft"
+          >
+            Full details
+          </Link>
+        )}
         {actionable && profile && !officer && (
           <button
             type="button"
             onClick={() => void loadOfficer()}
             disabled={officerBusy}
-            className="rounded-md border border-hairline px-3 py-1 text-xs font-semibold text-muted transition-colors hover:bg-panel-2 hover:text-paper disabled:opacity-50"
+            className="rounded-xl border border-hairline bg-card px-4 py-2 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-soft disabled:opacity-50"
           >
             {officerBusy ? "Reviewing…" : "Program officer preview"}
           </button>
@@ -167,13 +214,23 @@ export default function MatchCard({
             href={opp.url}
             target="_blank"
             rel="noreferrer"
-            className="text-xs text-muted underline transition-colors hover:text-paper"
+            className="font-mono text-xs text-muted underline transition-colors hover:text-brand"
           >
             Official notice ↗
           </a>
         )}
       </div>
     </article>
+  );
+}
+
+/** One facts-row entry: big value over a tiny mono caps label. */
+function Fact({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <p className="text-[15.5px] font-bold tracking-tight text-ink">{value}</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-faint">{label}</p>
+    </div>
   );
 }
 
@@ -205,13 +262,11 @@ function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
   if (stats.length === 0 && similar.length === 0) return null;
 
   return (
-    <div className="space-y-1 rounded-md border border-hairline bg-ink p-2.5">
-      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+    <div className="space-y-1 rounded-xl border border-hairline bg-[#FBFCFE] p-3">
+      <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.09em] text-faint">
         WHO WINS THIS MONEY
       </p>
-      {stats.length > 0 && (
-        <p className="font-mono text-xs text-paper/85">{stats.join(" · ")}</p>
-      )}
+      {stats.length > 0 && <p className="font-mono text-xs text-ink">{stats.join(" · ")}</p>}
       {similar.length > 0 && (
         <p className="text-xs text-muted">
           {similar.map((a, i) => {
@@ -224,7 +279,7 @@ function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
                     href={a.link}
                     target="_blank"
                     rel="noreferrer"
-                    className="underline transition-colors hover:text-paper"
+                    className="underline transition-colors hover:text-brand"
                   >
                     {label}
                   </a>
@@ -245,13 +300,13 @@ function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
 function OfficerPanel({ preview }: { preview: OfficerPreview }) {
   const b = preview.breakdown;
   return (
-    <div className="space-y-2 rounded-md border border-hairline bg-ink p-3">
-      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+    <div className="space-y-2 rounded-xl border border-hairline bg-[#FBFCFE] p-3.5">
+      <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.09em] text-faint">
         PROGRAM OFFICER PREVIEW
       </p>
-      <p className="text-sm font-semibold text-paper">
+      <p className="text-sm font-semibold text-ink">
         <span className="font-mono">{preview.score}</span>{" "}
-        <span className="ml-1 rounded-full border border-hairline px-2 py-0.5 text-xs font-normal text-muted">
+        <span className="ml-1 rounded-full bg-soft px-2.5 py-0.5 font-mono text-[11px] font-normal text-brand">
           {preview.tier}
         </span>
       </p>
@@ -262,21 +317,21 @@ function OfficerPanel({ preview }: { preview: OfficerPreview }) {
       <dl className="space-y-1.5 text-sm">
         <OfficerList
           label="Strengths"
-          tone="text-treasury"
+          tone="text-good"
           items={preview.strengths.map((s) => [s.headline, s.detail])}
         />
         <OfficerList
           label="Concerns"
-          tone="text-signal"
+          tone="text-risk"
           items={preview.concerns.map((c) => [c.headline, c.detail])}
         />
         <OfficerList
           label="What to improve"
-          tone="text-brass"
+          tone="text-brand"
           items={preview.whatToImprove.map((w) => [w.action, w.detail])}
         />
       </dl>
-      <p className="border-l-2 border-hairline pl-3 font-display text-sm italic leading-relaxed text-paper/80">
+      <p className="border-l-2 border-soft pl-3 text-[13.5px] italic leading-relaxed text-muted">
         {preview.officerNote}
       </p>
       <p className="font-mono text-xs text-faint">
@@ -299,9 +354,11 @@ function OfficerList({
   if (items.length === 0) return null;
   return (
     <div>
-      <dt className={`text-xs font-semibold uppercase tracking-wide ${tone}`}>{label}</dt>
+      <dt className={`font-mono text-[10px] font-semibold uppercase tracking-[0.08em] ${tone}`}>
+        {label}
+      </dt>
       {items.map(([head, detail], i) => (
-        <dd key={i} className="text-paper/85">
+        <dd key={i} className="text-[13.5px] text-ink">
           <span className="font-medium">{head}</span>{" "}
           <span className="text-muted">— {detail}</span>
         </dd>
@@ -313,8 +370,10 @@ function OfficerList({
 function CardRow({ label, text, tone }: { label: string; text: string; tone: string }) {
   return (
     <div>
-      <dt className={`text-xs font-semibold uppercase tracking-wide ${tone}`}>{label}</dt>
-      <dd className="text-paper/85">{text}</dd>
+      <dt className={`font-mono text-[10px] font-semibold uppercase tracking-[0.08em] ${tone}`}>
+        {label}
+      </dt>
+      <dd className="text-[13.5px] text-ink">{text}</dd>
     </div>
   );
 }

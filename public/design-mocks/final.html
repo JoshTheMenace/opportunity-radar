@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FINAL — Catalyst synthesis</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* FINAL: V1 chassis + V3 card anatomy + V2 stat strip & score bars. */
+:root{
+  --bg:#F3F6FB; --card:#FFF; --border:#E3E9F2; --ink:#14213A; --muted:#5A6B85;
+  --faint:#8DA0BC; --brand:#1D4F91; --brand-strong:#163C6E; --accent:#2E6FDB;
+  --soft:#E8F0FC; --good:#1B7F4D; --good-soft:#E4F4EA; --risk:#C03A2B;
+  --risk-soft:#FBEAE7; --warn:#B07C10; --warn-soft:#FCF3E1;
+  --shadow:0 1px 2px rgba(20,33,58,.05),0 10px 28px -14px rgba(20,33,58,.10);
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+.mono{font-family:"IBM Plex Mono",monospace}
+nav{background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:26px;padding:0 28px;height:58px;position:sticky;top:0;z-index:10}
+.wordmark{font-weight:800;font-size:18.5px;color:var(--brand);letter-spacing:-.02em}
+.wordmark span{color:var(--ink)}
+.navlink{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted);text-decoration:none;padding:19px 2px 17px;border-bottom:2px solid transparent}
+.navlink.on{color:var(--brand);font-weight:600;border-bottom-color:var(--brand)}
+.cta{margin-left:auto;background:var(--brand);color:#fff;border:0;border-radius:999px;padding:9px 18px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 28px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 356px;gap:22px;align-items:start}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.label{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);font-weight:600}
+/* hero */
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.big{font-size:36px;font-weight:800;letter-spacing:-.03em;color:var(--brand);line-height:1.1}
+.big small{font-size:15px;color:var(--faint);font-weight:600;letter-spacing:0}
+.sub{color:var(--muted);font-size:13.5px;margin-top:4px}
+.statstrip{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.statstrip>div{padding:10px 16px;border-right:1px solid var(--border)}
+.statstrip>div:last-child{border-right:0}
+.statstrip b{display:block;font-size:18px;letter-spacing:-.02em;margin-top:2px}
+.stepper{display:flex;align-items:center;margin-top:18px}
+.step{display:flex;flex-direction:column;align-items:center;gap:6px;width:64px;flex:none}
+.dot{width:30px;height:30px;border-radius:999px;display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600}
+.dot.done{background:var(--brand);color:#fff}
+.dot.now{background:var(--card);border:2px solid var(--brand);color:var(--brand);box-shadow:0 0 0 4px var(--soft)}
+.dot.todo{background:var(--card);border:1.5px solid var(--border);color:var(--faint)}
+.step span{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--faint)}
+.step.on span{color:var(--brand);font-weight:600}
+.bar{height:3px;flex:1;background:var(--border);margin:0 -14px;margin-bottom:20px}
+.bar.fill{background:var(--brand)}
+/* match card — V3 anatomy */
+.rank{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--faint)}
+.match-hd{display:flex;gap:14px;align-items:flex-start}
+.match-hd h3{font-size:17.5px;font-weight:700;letter-spacing:-.015em}
+.agency{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);margin-top:4px;letter-spacing:.02em}
+.scorebox{margin-left:auto;flex:none;text-align:center}
+.scorenum{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:18px}
+.scorenum.strong{background:var(--good-soft);color:var(--good)}
+.scorenum.verify{background:var(--warn-soft);color:var(--warn)}
+.scorebar{height:3px;border-radius:2px;background:var(--border);margin-top:6px;position:relative}
+.scorebar i{position:absolute;inset:0;right:auto;border-radius:2px}
+.strong .scorebar i,.scorebar i.strong{background:var(--good)}
+.facts{display:flex;gap:28px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);align-items:center}
+.facts .f b{display:block;font-size:15.5px;font-weight:700;letter-spacing:-.01em}
+.facts .f span{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+.tier{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;border-radius:999px;padding:5px 12px}
+.tier.strong{background:var(--good-soft);color:var(--good)}
+.tier.verify{background:var(--warn-soft);color:var(--warn)}
+.why{color:var(--muted);font-size:13.5px;margin-top:12px}
+.actions{display:flex;gap:10px;margin-top:14px}
+.btn{border-radius:10px;padding:9px 16px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--brand);cursor:pointer}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.due{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--risk);background:var(--risk-soft);padding:4px 10px;border-radius:999px;font-weight:600}
+/* rail */
+.dossier .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--border);font-size:13.5px}
+.dossier .row:last-child{border-bottom:0}
+.dossier .k{color:var(--muted)} .dossier .v{font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.pill{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;background:var(--good-soft);color:var(--good);border-radius:999px;padding:4px 10px}
+.q{border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:14px;margin-top:10px;background:#FBFCFE}
+.q p{font-size:13.5px;font-weight:600}
+.unlock{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--good);margin-top:4px}
+.yn{display:flex;gap:8px;margin-top:10px}
+.yn button{flex:1;border:1px solid var(--soft);background:var(--soft);border-radius:9px;padding:8px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--brand);cursor:pointer}
+.alert{background:var(--risk-soft);border:1px solid #F2C4BC;border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.alert b{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--risk)}
+.alert p{font-size:13px;color:#7A3A31;margin-top:4px}
+.tl{display:flex;gap:12px;padding:7px 0;align-items:baseline}
+.tl .date{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--brand);font-weight:600;width:50px;flex:none}
+.tl p{font-size:13.5px}
+h2.sec{font-size:11px;font-family:"IBM Plex Mono",monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:24px 0 10px;font-weight:600}
+.orb{width:38px;height:38px;border-radius:999px;background:radial-gradient(circle at 32% 28%,#4C86E8,#1D4F91);flex:none}
+</style></head><body>
+<nav>
+  <div class="wordmark">Opportunity<span>Radar</span></div>
+  <a class="navlink on" href="#">Radar</a>
+  <a class="navlink" href="#">Pursuits</a>
+  <a class="navlink" href="#">Monitor</a>
+  <button class="cta">New analysis</button>
+</nav>
+<div class="wrap"><div class="grid">
+  <div>
+    <div class="card">
+      <div class="hero-top">
+        <div>
+          <div class="label">Eligible funding unlocked</div>
+          <div class="big">$4.3M <small>of $11.2M potential</small></div>
+          <div class="sub">14 programs match · 9 are one answer away · 4,612 screened in 71s</div>
+        </div>
+        <div class="statstrip">
+          <div><span class="label">Matches</span><b>14</b></div>
+          <div><span class="label">1 answer away</span><b>9</b></div>
+          <div><span class="label">Profile</span><b style="color:var(--good)">5/5</b></div>
+        </div>
+      </div>
+      <div class="stepper">
+        <div class="step"><div class="dot done">✓</div><span>Profile</span></div><div class="bar fill"></div>
+        <div class="step"><div class="dot done">✓</div><span>Screen</span></div><div class="bar fill"></div>
+        <div class="step on"><div class="dot now">3</div><span>Rank</span></div><div class="bar"></div>
+        <div class="step"><div class="dot todo">4</div><span>Pursue</span></div><div class="bar"></div>
+        <div class="step"><div class="dot todo">5</div><span>Submit</span></div>
+      </div>
+    </div>
+
+    <h2 class="sec">Top matches — 14 programs ≥ 50</h2>
+    <div class="card">
+      <div class="match-hd">
+        <span class="rank">01</span>
+        <div>
+          <h3>NSF SBIR Phase I — Digital Health Technologies</h3>
+          <div class="agency">NATIONAL SCIENCE FOUNDATION · 47.041</div>
+        </div>
+        <div class="scorebox">
+          <div class="scorenum strong">82</div>
+          <div class="scorebar" style="width:56px"><i class="strong" style="width:82%"></i></div>
+        </div>
+      </div>
+      <div class="facts">
+        <div class="f"><b>$314K</b><span>Max award</span></div>
+        <div class="f"><b>Oct 16</b><span>Deadline</span></div>
+        <div class="f"><b style="color:var(--risk)">62 days</b><span>Remaining</span></div>
+        <span class="tier strong" style="margin-left:auto">STRONG FIT</span>
+      </div>
+      <p class="why">Small US-owned business doing active R&D on clinical ML — squarely inside NSF's digital-health topic area; your $1M ask fits Phase I + II sequencing.</p>
+      <div class="actions"><button class="btn primary">Pursue this →</button><button class="btn">Full details</button></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="match-hd">
+        <span class="rank">02</span>
+        <div>
+          <h3>NIH SBIR — Clinical Decision Support Instruments</h3>
+          <div class="agency">NIH / AHRQ</div>
+        </div>
+        <div class="scorebox">
+          <div class="scorenum verify">61</div>
+          <div class="scorebar" style="width:56px"><i style="width:61%;background:var(--warn)"></i></div>
+        </div>
+      </div>
+      <div class="facts">
+        <div class="f"><b>$500K</b><span>Max award</span></div>
+        <div class="f"><b>Dec 05</b><span>Deadline</span></div>
+        <span class="tier verify" style="margin-left:auto">VERIFY ELIGIBILITY</span>
+      </div>
+      <p class="why">Strong topical fit; needs confirmation your PI meets NIH effort requirements before this counts as a sure match.</p>
+      <div class="actions"><button class="btn">Verify eligibility →</button></div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="card" style="display:flex;gap:12px;align-items:center;padding:16px 18px">
+      <div class="orb"></div>
+      <div><b style="font-size:14.5px">Radar Agent</b><br><span class="mono" style="font-size:11.5px;color:var(--good)">● Live — ranking complete</span></div>
+      <button class="cta" style="margin-left:auto;padding:8px 16px">🎙 Voice</button>
+    </div>
+    <div style="height:14px"></div>
+    <div class="card">
+      <div class="label">Radar is asking</div>
+      <div class="q">
+        <p>Is your company registered on SAM.gov?</p>
+        <div class="unlock">ANSWER UNLOCKS +$2.4M</div>
+        <div class="yn"><button>Yes</button><button>No</button><button>Not sure</button></div>
+      </div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="card dossier">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span class="label">Company dossier</span><span class="pill">READY 5/5</span></div>
+      <div style="height:8px"></div>
+      <div class="row"><span class="k">HQ</span><span class="v">Salt Lake City, UT</span></div>
+      <div class="row"><span class="k">Team</span><span class="v">12 employees</span></div>
+      <div class="row"><span class="k">Seeking</span><span class="v">$1.0M</span></div>
+      <div class="row"><span class="k">Active R&D</span><span class="v" style="color:var(--good)">Yes</span></div>
+      <div class="row"><span class="k">SAM.gov</span><span class="v" style="color:var(--faint)">— unknown</span></div>
+    </div>
+    <div style="height:14px"></div>
+    <div class="alert"><b>⚠ SAM.GOV UNCONFIRMED</b><p>Registration is required at submission. Verify before Oct 02.</p></div>
+    <div style="height:14px"></div>
+    <div class="card">
+      <div class="label">Deadline timeline</div>
+      <div style="height:6px"></div>
+      <div class="tl"><span class="date">SEP 05</span><p>Pilot outcomes due <span class="due">IN 3 DAYS</span></p></div>
+      <div class="tl"><span class="date">OCT 02</span><p>Verify SAM.gov registration</p></div>
+      <div class="tl"><span class="date">OCT 16</span><p>NSF submission · 5:00 PM ET</p></div>
+    </div>
+  </aside>
+</div></div>
+</body></html>
