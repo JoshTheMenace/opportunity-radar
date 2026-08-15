@@ -18,6 +18,7 @@ import { extractProfile } from "./profile";
 import { retrieveCandidates, countBySource } from "./retrieve";
 import { evaluateGates } from "./gates";
 import { buildMeter, buildQuestions, formatUsdCompact } from "./meter";
+import { profileReadiness, sortQuestionsRequiredFirst } from "./readiness";
 import { rankOpportunities } from "./rank";
 import { getEvidence } from "./evidence";
 
@@ -39,6 +40,13 @@ export async function runAnalysis(
   founderText: string,
   prior: Partial<CompanyProfile> | null = null,
   emit: (e: AnalyzeEvent) => void = () => {},
+  opts: {
+    /** Interactive callers (facade/voice) opt in: hold the expensive ranking
+     *  until the required basics are known and re-run when answers arrive.
+     *  One-shot callers (eval harness, scripts) always rank — they have no
+     *  interview loop, so a held report would just be an empty report. */
+    gatherFirst?: boolean;
+  } = {},
 ): Promise<MatchReport> {
   // A complete prior profile (interview follow-up) skips re-extraction.
   const priorComplete =
@@ -74,8 +82,31 @@ export async function runAnalysis(
   const gated = candidates.map((opp) => evaluateGates(profile, opp));
 
   const meter = buildMeter(gated);
-  const questions = buildQuestions(gated, profile);
+  const questions = sortQuestionsRequiredFirst(buildQuestions(gated, profile));
   emit({ type: "questions", questions, meter });
+
+  // Ranking readiness: without the required basics (see readiness.ts) the
+  // numbers are inflated and collapse as answers arrive — gather first,
+  // rank once. The caller re-runs when the profile crosses into ready.
+  const readiness = profileReadiness(profile);
+  if (opts.gatherFirst && !readiness.ready) {
+    emit({
+      type: "activity",
+      message:
+        `Holding off on ranking — ${readiness.knownCount}/${readiness.requiredCount} required basics known. ` +
+        `Still needed: ${readiness.missing.map((m) => m.label).join("; ")}.`,
+    });
+    return {
+      profile,
+      matches: [],
+      rejected: pickRejected(gated),
+      honestNo: false,
+      honestNoExplanation: null,
+      meter,
+      questions,
+      evidence: {},
+    };
+  }
 
   emit({
     type: "activity",

@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T02:34:02.015Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.44999999999999996,
+  "scores": [
+    {
+      "caseId": "aerospace",
+      "coverage": 0,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0,
+      "total": 0.44999999999999996,
+      "notes": "missed themes: DoD, NASA, DOE, procurement | No match explanations were provided, so the report offers neither founder-specific reasoning nor actionable next steps."
+    }
+  ]
+}

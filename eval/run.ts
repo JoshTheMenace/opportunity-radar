@@ -16,10 +16,15 @@
 import fs from "fs";
 import path from "path";
 import { EVAL_CASES, getCase } from "./cases";
+import { INTERVIEW_ANSWERS, followUpMessage } from "./interview-answers";
 import { judgeReport } from "./judge";
-import type { EvalScore, MatchReport } from "../src/lib/types";
+import type { CompanyProfile, EvalCase, EvalScore, GateField, MatchReport } from "../src/lib/types";
 
-type RunAnalysis = (founderInput: string) => Promise<MatchReport>;
+/** The pipeline also accepts (text, prior) — used for the interview second pass. */
+type RunAnalysis = (
+  founderInput: string,
+  prior?: Partial<CompanyProfile> | null,
+) => Promise<MatchReport>;
 
 const PIPELINE_SPECIFIER = "../src/lib/engine/pipeline";
 const PIPELINE_MISSING_MSG =
@@ -51,11 +56,14 @@ type Provider = "codex" | "live";
 /** What one provider run yields: the report, plus (live only) what the agent said. */
 type CaseRun = { report: MatchReport; spoken?: string };
 
-/** codex = call the pipeline directly; live = converse with the Gemini Live voice agent. */
+/** codex = call the pipeline directly; live = converse with the Gemini Live voice agent.
+ *  Both model the readiness interview: when the first pass holds off ranking
+ *  (matches empty, required basics missing), the case's canned founder answers
+ *  are applied and the pipeline runs its one real ranking pass. */
 async function loadDriver(
   provider: Provider,
   jsonMode: boolean,
-): Promise<(founderInput: string) => Promise<CaseRun>> {
+): Promise<(c: EvalCase) => Promise<CaseRun>> {
   if (provider === "live") {
     if (!process.env.GEMINI_API_KEY) {
       const msg = "--provider live requires GEMINI_API_KEY in .env.local / env";
@@ -64,13 +72,28 @@ async function loadDriver(
       process.exit(1);
     }
     const { runLiveText } = await import("../src/lib/voice/live-text");
-    return async (input) => {
-      const r = await runLiveText(input);
+    return async (c) => {
+      const r = await runLiveText(c.founderInput, { followUp: followUpMessage(c.id) });
       return { report: r.report, spoken: r.agentText };
     };
   }
   const fn = await loadPipeline(jsonMode);
-  return async (input) => ({ report: await fn(input) });
+  const { applyAnswer, deriveFields } = await import("../src/lib/engine/profile");
+  return async (c) => {
+    let report = await fn(c.founderInput);
+    const canned = INTERVIEW_ANSWERS[c.id] ?? [];
+    if (report.matches.length === 0 && canned.length > 0) {
+      let p = report.profile;
+      for (const a of canned) {
+        p =
+          a.field === "capitalNeed"
+            ? deriveFields({ ...p, capitalNeedUsd: { min: Number(a.answer), max: p.capitalNeedUsd.max } })
+            : applyAnswer(p, a.field as GateField, a.answer);
+      }
+      report = await fn(p.description, p);
+    }
+    return { report };
+  };
 }
 
 function parseArgs(argv: string[]): {
@@ -136,7 +159,7 @@ async function main() {
   for (const c of cases) {
     if (!json) console.log(`\n=== running case: ${c.id} (${provider}) ===`);
     try {
-      const { report, spoken } = await run(c.founderInput);
+      const { report, spoken } = await run(c);
       if (spoken != null) transcripts[c.id] = spoken;
       scores.push(await judgeReport(c, report, { spokenTranscript: spoken }));
     } catch (err) {

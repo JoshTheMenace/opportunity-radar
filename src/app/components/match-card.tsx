@@ -17,12 +17,15 @@ export default function MatchCard({
   evidence?: EvidenceSummary;
 }) {
   const close = daysUntil(opp?.closeDate ?? null);
+  // Odds ratios below 2 ("1-in-1") read as a data glitch, not a selling point.
+  const oddsRatio =
+    opp?.expectedAwards != null && opp.expectedAwards > 0 && opp.expectedApplications != null
+      ? Math.round(opp.expectedApplications / opp.expectedAwards)
+      : null;
   const odds =
     opp?.expectedAwards != null
       ? `~${opp.expectedAwards} awards expected` +
-        (opp.expectedApplications != null && opp.expectedAwards > 0
-          ? ` · 1-in-${Math.max(1, Math.round(opp.expectedApplications / opp.expectedAwards))} odds`
-          : "")
+        (oddsRatio != null && oddsRatio >= 2 ? ` · 1-in-${oddsRatio} odds` : "")
       : null;
 
   return (
@@ -41,7 +44,7 @@ export default function MatchCard({
       <p className="text-xs text-neutral-400">
         {opp ? (
           <>
-            {opp.agency} · {opp.kind.replace(/_/g, "/")} ·{" "}
+            {dedupeAgency(opp.agency)} · {opp.kind.replace(/_/g, "/")} ·{" "}
             {opp.awardFloorUsd != null && opp.awardCeilingUsd != null
               ? `${fmtUsd(opp.awardFloorUsd)}–${fmtUsd(opp.awardCeilingUsd)}`
               : opp.awardCeilingUsd != null
@@ -88,10 +91,27 @@ export default function MatchCard({
   );
 }
 
+/** Source rows sometimes repeat the agency ("SBA, SBA") — keep unique segments. */
+function dedupeAgency(agency: string): string {
+  const seen = new Set<string>();
+  return agency
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => {
+      const k = s.toLowerCase();
+      if (!s || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .join(", ");
+}
+
 /** Compact "who wins this money" strip built from historical-award evidence. */
 function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
   const stats: string[] = [];
-  if (evidence.totalAwards != null) stats.push(`${evidence.totalAwards} awards`);
+  // "0 awards" is an absence of signal, not evidence — say nothing instead.
+  if (evidence.totalAwards != null && evidence.totalAwards > 0)
+    stats.push(`${evidence.totalAwards} awards`);
   if (evidence.medianUsd != null) stats.push(`${fmtUsd(evidence.medianUsd)} median`);
   if (evidence.utahCount != null && evidence.utahCount > 0)
     stats.push(`${evidence.utahCount} in Utah`);

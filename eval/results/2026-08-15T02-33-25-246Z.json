@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T02:33:25.246Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.988,
+  "scores": [
+    {
+      "caseId": "cyber",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.988,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the founder’s Utah location, cybersecurity product, funding target, and federal-market goal, clearly flag missing sector or eligibility evidence, and provide specific next steps, with only minor risk that claims about award ranges, investment maxima, and program targeting rely on source data not shown here."
+    }
+  ]
+}

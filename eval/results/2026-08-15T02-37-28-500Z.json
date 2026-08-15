@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T02:37:28.500Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.912,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.8,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.91,
+      "total": 0.912,
+      "notes": "missed themes: NSF | The explanations are highly specific to the founder’s healthcare-AI product and funding goals, appropriately flag eligibility and notice details for verification, and provide concrete next steps, with only minor concern that a few exact claims—especially the demo notice’s scope and deadline—could be overly confident without visible source data."
+    }
+  ]
+}

@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import type { GateField, InterviewQuestion } from "@/lib/types";
+import { isRequiredField } from "@/lib/engine/readiness";
 import type { QuickReply } from "./shared";
 
 export default function InterviewPanel({
@@ -88,7 +89,14 @@ function QuestionCard({
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-950 p-3">
       <div className="min-w-0 flex-1">
-        <p className="text-sm">{q.question}</p>
+        <p className="text-sm">
+          {q.question}
+          {isRequiredField(q.field) && (
+            <span className="ml-2 rounded-full border border-blue-500/50 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-300 align-middle">
+              needed for ranking
+            </span>
+          )}
+        </p>
         <p className="text-xs text-neutral-500">{q.whyAsking}</p>
       </div>
       {q.answerType === "boolean" ? (

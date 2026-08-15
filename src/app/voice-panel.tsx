@@ -17,6 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AnalyzeEvent, CompanyProfile, MatchReport } from "@/lib/types";
 import { formatUsdCompact } from "@/lib/engine/meter";
+import { profileReadiness } from "@/lib/engine/readiness";
 import { SYSTEM_INSTRUCTION, TOOL_DECLARATIONS } from "@/lib/voice/schema";
 
 type Status = "off" | "idle" | "connecting" | "live";
@@ -193,6 +194,14 @@ export default function VoicePanel({
 
   function finalSummary(r: UiReport): string {
     const title = (id: string) => r.opportunities?.[id]?.title ?? id;
+    const readiness = profileReadiness(r.profile);
+    if (!readiness.ready) {
+      return (
+        `SCREENING DONE but ranking was SKIPPED — profile not ready (numbers would be inflated). ` +
+        `Gather these, then call analyze_company again: ` +
+        readiness.missing.map((m) => m.question).join(" | ")
+      );
+    }
     if (r.honestNo) {
       const alt = r.matches.slice(0, 3).map((m) => title(m.opportunityId));
       return (

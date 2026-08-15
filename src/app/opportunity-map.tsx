@@ -135,9 +135,16 @@ export default function OpportunityMap() {
     setReport(null);
     setMeter(null);
     setQuestions([]);
-    // Carry durable interview answers (gate fields) into re-analysis; the
-    // rest of the profile is re-extracted from whatever is in the box.
-    const p = profileRef.current;
+    // Carry durable interview answers (gate fields) into re-analysis — but
+    // ONLY when the box still builds on this profile's own description
+    // (appended follow-ups). A rewritten description is a different company;
+    // carrying the old answers leaks stale employees/revenue into the run.
+    let p = profileRef.current;
+    if (p && !(p.description && text.trim().startsWith(p.description.trim().slice(0, 80)))) {
+      p = null;
+      profileRef.current = null;
+      setRestored(false);
+    }
     const prior = p && {
       employees: p.employees,
       annualRevenueUsd: p.annualRevenueUsd,
@@ -225,7 +232,12 @@ export default function OpportunityMap() {
             getReport={() => report}
             onEngineEvent={handle}
           />
-          {meter && <MeterPanel meter={meter} />}
+          {meter && (
+            <MeterPanel
+              meter={meter}
+              preliminary={report != null && report.matches.length === 0}
+            />
+          )}
           <InterviewPanel
             questions={questions}
             quickReplies={quickReplies}

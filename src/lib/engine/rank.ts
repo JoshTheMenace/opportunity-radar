@@ -6,6 +6,7 @@
 // ============================================================
 
 import { complete, completeJSON } from "../llm";
+import { intentPromptLine } from "./intent";
 import { localIsoDate } from "./dates";
 import type {
   CompanyProfile,
@@ -147,6 +148,7 @@ async function scoreBatch(
   const prompt = [
     "COMPANY PROFILE:",
     profileSummary(profile),
+    intentPromptLine(profile),
     "",
     "OPPORTUNITIES TO SCORE:",
     ...batch.map(opportunityBlock),

@@ -1,8 +1,15 @@
 import type { CompanyProfile, GateField, MatchReport } from "@/lib/types";
 import { applyAnswer, applyFreeformAnswer } from "@/lib/engine/profile";
 import { ALL_GATE_FIELDS } from "@/lib/engine/meter";
+import { profileReadiness } from "@/lib/engine/readiness";
 import { refineReport } from "@/lib/engine/refine";
 import { runAnalysis, sseResponse, withOpportunities } from "../engine-facade";
+
+/** Refine when there's something to subtract from; run the full pipeline when
+ *  this answer just made a not-yet-ranked profile ready (the ONE ranking run). */
+function shouldRefine(prior: MatchReport, updated: CompanyProfile): boolean {
+  return prior.matches.length > 0 || !profileReadiness(updated).ready;
+}
 
 export const runtime = "nodejs";
 
@@ -36,11 +43,12 @@ export async function POST(req: Request) {
       });
       // Keep the founder's words: follow-ups accumulate into the description.
       const description = `${updated.description}\n\nFounder follow-up: ${text}`;
-      if (canRefine && answered.length > 0) {
+      const merged = { ...updated, description };
+      if (canRefine && answered.length > 0 && shouldRefine(priorReport, merged)) {
         emit({ type: "activity", message: "Re-checking eligibility (no re-ranking needed)..." });
-        return withOpportunities(refineReport(priorReport, { ...updated, description }));
+        return withOpportunities(refineReport(priorReport, merged));
       }
-      return runAnalysis(description, { ...updated, description }, emit);
+      return runAnalysis(description, merged, emit);
     });
   }
 
@@ -56,11 +64,13 @@ export async function POST(req: Request) {
     field as GateField,
     (answer ?? "") as string | number | boolean,
   );
-  if (canRefine) {
+  if (canRefine && shouldRefine(priorReport, updated)) {
     return sseResponse(async (emit) => {
       emit({ type: "activity", message: "Re-checking eligibility (no re-ranking needed)..." });
       return withOpportunities(refineReport(priorReport, updated));
     });
   }
+  // Either no prior report, or this answer completed the required basics on a
+  // not-yet-ranked profile — run the one full ranking pass.
   return sseResponse((emit) => runAnalysis(updated.description, updated, emit));
 }

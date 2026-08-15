@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-08-15T02:30:47.633Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.9467666666666666,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.992,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the company’s nursing-focused AI SaaS, maturity, Utah location, funding target, and pilot goals, while clearly flagging unknowns and providing opportunity-specific go/no-go checks and actionable next steps without evident unsupported claims."
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.988,
+      "notes": "all mustSee themes covered | The explanations are highly specific to the founder’s Utah aerospace-manufacturing profile, clearly distinguish capital from adjacent support, and provide concrete verification and next steps, with only minor risk that a few asserted program features or requirements depend on source data not shown here."
+    },
+    {
+      "caseId": "water",
+      "coverage": 0.6666666666666666,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.95,
+      "total": 0.8733333333333333,
+      "notes": "missed themes: DOE | The explanations are consistently tailored to the company’s Utah location, water-loss technology, municipal pilot strategy, and funding need, while clearly flagging eligibility uncertainties and providing concrete next steps without obvious unsupported invention."
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.9005000000000001,
+      "notes": "missed themes: SBIR | The explanations consistently connect each opportunity to the founder’s cybersecurity R&D, Utah location, funding range, revenue stage, and federal-market goal, clearly flag mission or eligibility gaps, and provide concrete next steps, with only minor risk that a few precise award ranges, deadlines, and program conditions rely on source data not shown here."
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.98,
+      "notes": "all mustSee themes covered | The explanations are mostly founder-specific, appropriately cautious, and actionable, with clear verification steps, though the arts-program link is tenuous and a few eligibility or program-range assertions depend on unseen opportunity data."
+    }
+  ]
+}

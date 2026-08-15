@@ -77,13 +77,11 @@ Field rules:
 - govKeywords: 8-15 terms that TRANSLATE the startup's language into US
   government / federal-grant vocabulary (agency program language, not startup
   jargon). Example: "reduces nurse admin burden" -> ["health information
-  technology","healthcare workforce","hospital operations","clinical decision
-  support","labor productivity","digital health"]. Cover the program
-  vocabulary of EVERY agency that plausibly funds this space, not just the
-  obvious one (e.g. healthcare AI -> also NSF "translational research";
-  aerospace manufacturing -> also DOE "advanced manufacturing", "energy
-  efficient manufacturing"; consumer/youth services -> "community development",
-  "youth programs", "out-of-school time").
+  technology","healthcare workforce","clinical decision support","digital
+  health"]. Ask which agencies could plausibly fund this work and include each
+  one's program vocabulary — adjacent agencies too (NSF, DOE, DoD, DHS, EPA
+  and peers fund far beyond their obvious domains) — plus the funding
+  mechanisms the company qualifies for ("SBIR", "STTR" whenever it does R&D).
 - location: state as its 2-letter USPS code (e.g. "Utah" -> "UT").
 - productMaturity: one of "concept" | "prototype" | "pilot" | "in-market", else null.
 
@@ -244,7 +242,7 @@ const FREEFORM_SCHEMA = {
   required: [
     "employees", "annualRevenueUsd", "isForProfit", "isSmallBusiness",
     "majorityUsOwned", "hasActiveRnD", "samRegistered", "productMaturity",
-    "locationCity", "locationState",
+    "locationCity", "locationState", "capitalNeedMinUsd", "capitalNeedMaxUsd",
   ],
   properties: {
     employees: nullable("number"),
@@ -257,6 +255,8 @@ const FREEFORM_SCHEMA = {
     productMaturity: nullable("string"),
     locationCity: nullable("string"),
     locationState: nullable("string"),
+    capitalNeedMinUsd: nullable("number"),
+    capitalNeedMaxUsd: nullable("number"),
   },
 } as const;
 
@@ -271,6 +271,8 @@ interface FreeformAnswers {
   productMaturity: string | null;
   locationCity: string | null;
   locationState: string | null;
+  capitalNeedMinUsd: number | null;
+  capitalNeedMaxUsd: number | null;
 }
 
 const FREEFORM_SYSTEM =
@@ -304,7 +306,8 @@ Extract any of these facts the message settles (null when not addressed):
 - hasActiveRnD: actively doing research & development?
 - samRegistered: registered in SAM.gov?
 - productMaturity: exactly one of "concept" | "prototype" | "pilot" | "in-market"
-- locationCity / locationState: HQ city and 2-letter USPS state code`,
+- locationCity / locationState: HQ city and 2-letter USPS state code
+- capitalNeedMinUsd / capitalNeedMaxUsd: how much funding they're seeking in USD (a single figure fills min only)`,
     FREEFORM_SCHEMA,
     { system: FREEFORM_SYSTEM, effort: "low", maxTokens: 500 },
   );
@@ -342,6 +345,15 @@ Extract any of these facts the message settles (null when not addressed):
   if (a.productMaturity !== null && (MATURITY as readonly string[]).includes(a.productMaturity)) {
     p.productMaturity = a.productMaturity;
     answered.push(`product stage (${a.productMaturity})`);
+  }
+  if (a.capitalNeedMinUsd !== null || a.capitalNeedMaxUsd !== null) {
+    p.capitalNeedUsd = {
+      min: a.capitalNeedMinUsd ?? p.capitalNeedUsd.min,
+      max: a.capitalNeedMaxUsd ?? p.capitalNeedUsd.max,
+    };
+    answered.push(
+      `funding sought ($${(a.capitalNeedMinUsd ?? a.capitalNeedMaxUsd)!.toLocaleString("en-US")})`,
+    );
   }
   if (a.locationState !== null || a.locationCity !== null) {
     const state = a.locationState !== null ? toStateCode(a.locationState) : null;

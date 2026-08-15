@@ -8,6 +8,12 @@
 export async function runAnalysis(founderInput: string): Promise<MatchReport>;
 ```
 
+**And it must RANK** — a one-shot call has no interview loop, so a report
+held for "readiness" is just an empty report (coverage 0, explain 0). The
+readiness hold (readiness.ts) is therefore opt-in via
+`runAnalysis(..., {gatherFirst: true})`; only the interactive facade passes
+it. Keep the bare call ranking, whatever else changes.
+
 (Extra optional params — e.g. an activity/event callback — are fine; the eval
 runner passes only the founder paragraph.)
 

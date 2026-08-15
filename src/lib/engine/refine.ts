@@ -19,6 +19,7 @@ import type {
 import { retrieveCandidates } from "./retrieve";
 import { evaluateGates } from "./gates";
 import { buildMeter, buildQuestions } from "./meter";
+import { sortQuestionsRequiredFirst } from "./readiness";
 import { tierFor } from "./rank";
 
 const REJECTED_MAX = 8;
@@ -95,7 +96,7 @@ export function refineReport(prior: MatchReport, profile: CompanyProfile): Match
         : explainHonestNo(dropped, gated)
       : null,
     meter: buildMeter(gated),
-    questions: buildQuestions(gated, profile),
+    questions: sortQuestionsRequiredFirst(buildQuestions(gated, profile)),
     evidence,
   };
 }

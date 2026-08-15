@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T02:33:43.868Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.44999999999999996,
+  "scores": [
+    {
+      "caseId": "water",
+      "coverage": 0,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0,
+      "total": 0.44999999999999996,
+      "notes": "missed themes: EPA, DOE, infrastructure | No match explanations were provided, so the report offers no founder-specific grounding, opportunity-specific rationale, or actionable next steps."
+    }
+  ]
+}

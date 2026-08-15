@@ -6,12 +6,21 @@
 // ============================================================
 
 import type { CompanyProfile, GateField, MatchReport, Opportunity } from "@/lib/types";
-import { applyAnswer } from "@/lib/engine/profile";
+import { applyAnswer, deriveFields } from "@/lib/engine/profile";
 import { ALL_GATE_FIELDS } from "@/lib/engine/meter";
+import { profileReadiness } from "@/lib/engine/readiness";
 import { refineReport } from "@/lib/engine/refine";
 import { getOpportunityById } from "@/lib/engine/retrieve";
 import { getDb, rowToOpportunity } from "@/lib/db";
 import { runAnalysis, withOpportunities, type UiMatchReport } from "@/app/api/engine-facade";
+
+/** "$500K", "2m", "250,000" -> USD number, or null. */
+function parseMoney(s: string): number | null {
+  const m = s.replace(/[$,\s]/g, "").match(/^(\d+(?:\.\d+)?)([kmb])?$/i);
+  if (!m) return null;
+  const mult = { k: 1e3, m: 1e6, b: 1e9 }[m[2]?.toLowerCase() as "k" | "m" | "b"] ?? 1;
+  return parseFloat(m[1]) * mult;
+}
 
 export interface VoiceToolResult {
   /** Compact JSON handed back to the voice model (keep it small — it's spoken context). */
@@ -36,10 +45,21 @@ export async function executeVoiceTool(
     case "answer_question": {
       if (!profile?.description)
         return { result: { error: "No company profile yet — call analyze_company first." } };
-      const field = String(args.field ?? "") as GateField;
-      if (!ALL_GATE_FIELDS.includes(field))
-        return { result: { error: `field must be one of: ${ALL_GATE_FIELDS.join(", ")}` } };
-      const updated = applyAnswer(profile, field, String(args.answer ?? ""));
+      const rawField = String(args.field ?? "");
+      let updated: CompanyProfile;
+      if (rawField === "capitalNeed") {
+        const usd = parseMoney(String(args.answer ?? ""));
+        if (usd == null)
+          return { result: { error: "couldn't parse the amount — answer like '500k' or '2m'" } };
+        updated = deriveFields({ ...profile, capitalNeedUsd: { min: usd, max: profile.capitalNeedUsd.max } });
+      } else {
+        const field = rawField as GateField;
+        if (!ALL_GATE_FIELDS.includes(field))
+          return {
+            result: { error: `field must be capitalNeed or one of: ${ALL_GATE_FIELDS.join(", ")}` },
+          };
+        updated = applyAnswer(profile, field, String(args.answer ?? ""));
+      }
       // Incremental fast path: re-gate + subtract, reusing prior LLM scores.
       const report =
         priorReport != null && Array.isArray(priorReport.matches)
@@ -102,7 +122,18 @@ function compactOpp(o: Opportunity) {
 
 /** Trim a full report to what the voice model needs to talk about it. */
 function compactReport(r: UiMatchReport) {
+  const readiness = profileReadiness(r.profile);
   return {
+    // Ranking only runs once the required basics are known; until then
+    // matches is empty ON PURPOSE — gather stillNeeded, then re-analyze.
+    readiness: {
+      ready: readiness.ready,
+      stillNeeded: readiness.missing.map((m) => ({
+        // capitalNeed is askable via answer_question(field:"capitalNeed").
+        field: m.key === "size" ? "employees" : m.key,
+        ask: m.question,
+      })),
+    },
     honestNo: r.honestNo,
     honestNoExplanation: r.honestNoExplanation,
     totalMatches: r.matches.length,

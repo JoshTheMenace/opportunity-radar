@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T02:37:52.765Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.8713333333333333,
+  "scores": [
+    {
+      "caseId": "water",
+      "coverage": 0.6666666666666666,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.8713333333333333,
+      "notes": "missed themes: DOE | The explanations are highly specific to the founder’s Utah location, water-loss technology, municipal pilot goals, and funding range, while appropriately flagging eligibility uncertainties and offering concrete next steps, with only minor risk from assertive program superlatives and precise award details that cannot be verified from the supplied context."
+    }
+  ]
+}

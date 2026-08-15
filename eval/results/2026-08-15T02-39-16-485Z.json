@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T02:39:16.485Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.9045000000000001,
+  "scores": [
+    {
+      "caseId": "aerospace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.9045000000000001,
+      "notes": "missed themes: DOE | The explanations are consistently tailored to the founder’s Utah aerospace-manufacturing profile, distinguish R&D and capacity funding from tax credits or ecosystem support, flag key uncertainties without overstating eligibility, and provide opportunity-specific next steps, with only minor risk that phrases such as “strongest” or “top lead” imply more comparative certainty than the supplied evidence demonstrates."
+    }
+  ]
+}

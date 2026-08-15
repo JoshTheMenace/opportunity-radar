@@ -10,6 +10,7 @@
 
 import type { CompanyProfile } from "../types";
 import type { UiMatchReport } from "@/app/api/engine-facade";
+import { profileReadiness } from "../engine/readiness";
 import { SYSTEM_INSTRUCTION, TOOL_DECLARATIONS } from "./schema";
 import { executeVoiceTool } from "./execute";
 
@@ -47,15 +48,15 @@ async function msgToText(data: unknown): Promise<string> {
  */
 export function runLiveText(
   founderInput: string,
-  opts?: { timeoutMs?: number; maxTurns?: number },
+  opts?: { timeoutMs?: number; maxTurns?: number; followUp?: string | null },
 ): Promise<LiveTextRun> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY not set — required for the live provider");
   if (typeof WebSocket === "undefined")
     throw new Error("global WebSocket missing — run with Node >= 22");
   const model = process.env.GEMINI_LIVE_MODEL ?? "gemini-3.1-flash-live-preview";
-  const timeoutMs = opts?.timeoutMs ?? 180_000;
-  const maxTurns = opts?.maxTurns ?? 4;
+  const timeoutMs = opts?.timeoutMs ?? 240_000;
+  const maxTurns = opts?.maxTurns ?? 6; // readiness interview needs more turns
 
   const ws = new WebSocket(
     `wss://${HOST}/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${encodeURIComponent(key)}`,
@@ -67,6 +68,7 @@ export function runLiveText(
   let turns = 0;
   let toolBusy = false;
   let settled = false;
+  let followUpSent = false;
 
   return new Promise<LiveTextRun>((resolve, reject) => {
     const settle = (err: Error | null) => {
@@ -145,9 +147,19 @@ export function runLiveText(
           for (const p of sc.modelTurn?.parts ?? []) if (p.text) agentText += p.text;
           if (sc.outputTranscription?.text) agentText += sc.outputTranscription.text;
           if (sc.turnComplete && !toolBusy) {
-            if (report) settle(null);
-            else if (turns < maxTurns) sendUser(NUDGE);
-            else settle(new Error("live agent never produced a report (no analyze_company call)"));
+            // "Done" = a report whose ranking actually ran (readiness met or
+            // matches present). A not-ready screening report means the agent
+            // is interviewing — answer with the case's follow-up facts.
+            const final =
+              report != null &&
+              (report.matches.length > 0 || profileReadiness(report.profile).ready);
+            if (final) settle(null);
+            else if (turns >= maxTurns)
+              settle(new Error("live agent never produced a ranked report"));
+            else if (opts?.followUp && !followUpSent) {
+              followUpSent = true;
+              sendUser(opts.followUp);
+            } else sendUser(NUDGE);
           }
         }
       })().catch((err) => settle(err as Error));

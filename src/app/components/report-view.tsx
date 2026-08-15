@@ -5,6 +5,8 @@
 // every phase of the flow has a designed surface.
 
 import type { GatedOpportunity, Opportunity } from "@/lib/types";
+import { profileReadiness } from "@/lib/engine/readiness";
+import { meterValueUsd } from "@/lib/engine/gates";
 import MatchCard from "./match-card";
 import { TIERS, daysUntil, fmtUsd, type UiReport } from "./shared";
 
@@ -23,17 +25,60 @@ export function ReportView({ report }: { report: UiReport }) {
     const d = daysUntil(o.closeDate);
     return d != null && d >= 0 && d <= 30;
   }).length;
+  // Headline money comes from the MATCHES the reader is looking at (each
+  // valued with the engine's capped realism logic) — the whole gate-passed
+  // pool total stays in the meter panel where it's framed as ceilings.
+  const matchedUsd = resolved.reduce((sum, o) => sum + meterValueUsd(o), 0);
 
-  // Everything scored below the bar: honest empty state, not forced matches.
+  // Ranking hasn't run yet: the required basics aren't known, and running it
+  // early would show numbers that collapse as answers arrive.
+  const readiness = profileReadiness(report.profile);
+  if (report.matches.length === 0 && !readiness.ready) {
+    return (
+      <section id="report" className="space-y-3 rounded-lg border border-blue-500/40 bg-blue-500/5 p-6">
+        <h2 className="text-lg font-bold">
+          A few basics first — then an accurate answer
+        </h2>
+        <p className="text-sm text-neutral-400">
+          We screen 4,600 programs, but ranking them without these facts would show you
+          numbers that collapse the moment you answer one more question. Still needed
+          ({readiness.knownCount}/{readiness.requiredCount} known):
+        </p>
+        <ul className="space-y-1 text-sm text-neutral-200">
+          {readiness.missing.map((m) => (
+            <li key={m.key}>
+              <span className="text-blue-300">•</span> {m.question}
+            </li>
+          ))}
+        </ul>
+        <p className="text-xs text-neutral-500">
+          Answer with the question cards or just type it in the chat box — ranking runs
+          automatically the moment the last one is in.
+        </p>
+      </section>
+    );
+  }
+
+  // Everything scored below the bar so far. Interim stream events never carry
+  // `evidence` (the final report always does), so its absence means scoring is
+  // still running — don't declare "nothing for you" at 15/177 scored.
   if (visible.length === 0) {
+    const scoring = report.evidence == null;
     return (
       <section id="report" className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-center">
-        <h2 className="text-lg font-bold">No strong matches yet</h2>
+        <h2 className="text-lg font-bold">
+          {scoring ? "Scoring your candidates…" : "No strong matches yet"}
+        </h2>
         <p className="mx-auto max-w-md text-sm text-neutral-400">
-          Nothing scored high enough to be worth your time
-          {hidden > 0 ? ` (${hidden} weak ${hidden === 1 ? "match" : "matches"} hidden)` : ""}.
-          Answering the eligibility questions usually sharpens the picture — each answer can
-          unlock programs we couldn&apos;t confirm yet.
+          {scoring ? (
+            <>Strong matches appear here the moment one clears the bar — most runs surface
+            them in the later batches.</>
+          ) : (
+            <>Nothing scored high enough to be worth your time
+            {hidden > 0 ? ` (${hidden} weak ${hidden === 1 ? "match" : "matches"} hidden)` : ""}.
+            Answering the eligibility questions usually sharpens the picture — each answer can
+            unlock programs we couldn&apos;t confirm yet.</>
+          )}
         </p>
       </section>
     );
@@ -44,7 +89,10 @@ export function ReportView({ report }: { report: UiReport }) {
       {/* summary stat band */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Matches" value={String(visible.length)} />
-        <Stat label="Total potential" value={fmtUsd(report.meter.potentialUsd)} />
+        <Stat
+          label="across these matches"
+          value={matchedUsd > 0 ? `up to ${fmtUsd(matchedUsd)}` : "—"}
+        />
         <Stat label="Agencies" value={String(agencies)} />
         <Stat label="Closing ≤30d" value={String(closingSoon)} />
       </div>

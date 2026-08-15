@@ -32,7 +32,10 @@ export async function runAnalysis(
         ? { type: "report", report: withOpportunities(e.report) }
         : e,
     );
-  const report = await runPipeline(founderText, prior, enriching);
+  // Interactive path: hold ranking until required basics are known (the UI
+  // and voice agent gather answers, then re-run). One-shot callers that use
+  // the pipeline directly (eval harness) always rank.
+  const report = await runPipeline(founderText, prior, enriching, { gatherFirst: true });
   return withOpportunities(report);
 }
 
