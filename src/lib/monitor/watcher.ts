@@ -17,6 +17,7 @@
 import { rowToOpportunity, getDb } from "../db";
 import type { Opportunity } from "../types";
 import { evaluateGates } from "../engine/gates";
+import { nowUnlocked } from "../engine/future";
 import { rankOpportunities } from "../engine/rank";
 import { profileCompleteness } from "./completeness";
 import {

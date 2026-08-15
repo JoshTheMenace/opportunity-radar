@@ -5,7 +5,7 @@
 // ============================================================
 
 import { getDb } from "../db";
-import type { CompanyProfile, FitTier } from "../types";
+import type { CompanyProfile, FitTier, FutureFit } from "../types";
 
 export interface CompanyRecord {
   id: number;
@@ -13,6 +13,8 @@ export interface CompanyRecord {
   email: string | null;
   profile: CompanyProfile;
   monitoring: boolean;
+  /** Saved "not yet" matches — the watcher checks for grow-into transitions. */
+  futureFits: FutureFit[];
   createdAt: string;
   updatedAt: string;
 }
@@ -64,6 +66,12 @@ function db() {
         UNIQUE(company_id, opportunity_id)
       );
     `);
+    // Additive migration: future-fit snapshot ("not yet" matches) per company.
+    try {
+      d.exec("ALTER TABLE companies ADD COLUMN future_fits TEXT");
+    } catch {
+      // column already exists
+    }
     ready = true;
   }
   return d;
@@ -76,21 +84,26 @@ export function saveCompany(
   email: string | null,
   profile: CompanyProfile,
   monitoring = true,
+  futureFits?: FutureFit[] | null,
 ): CompanyRecord {
+  // undefined = caller has no snapshot -> keep whatever is stored.
+  const ff = futureFits === undefined ? undefined : JSON.stringify(futureFits ?? []);
   const existing = db()
     .prepare("SELECT id FROM companies WHERE name = ?")
     .get(name) as { id: number } | undefined;
   if (existing) {
     db()
       .prepare(
-        "UPDATE companies SET email = COALESCE(?, email), profile = ?, monitoring = ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE companies SET email = COALESCE(?, email), profile = ?, monitoring = ?, future_fits = COALESCE(?, future_fits), updated_at = datetime('now') WHERE id = ?",
       )
-      .run(email, JSON.stringify(profile), monitoring ? 1 : 0, existing.id);
+      .run(email, JSON.stringify(profile), monitoring ? 1 : 0, ff ?? null, existing.id);
     return getCompany(existing.id)!;
   }
   const r = db()
-    .prepare("INSERT INTO companies (name, email, profile, monitoring) VALUES (?, ?, ?, ?)")
-    .run(name, email, JSON.stringify(profile), monitoring ? 1 : 0);
+    .prepare(
+      "INSERT INTO companies (name, email, profile, monitoring, future_fits) VALUES (?, ?, ?, ?, ?)",
+    )
+    .run(name, email, JSON.stringify(profile), monitoring ? 1 : 0, ff ?? null);
   return getCompany(Number(r.lastInsertRowid))!;
 }
 
@@ -109,12 +122,19 @@ export function listCompanies(monitoringOnly = false): CompanyRecord[] {
 }
 
 function rowToCompany(r: Record<string, unknown>): CompanyRecord {
+  let futureFits: FutureFit[] = [];
+  try {
+    futureFits = r.future_fits ? (JSON.parse(r.future_fits as string) as FutureFit[]) : [];
+  } catch {
+    // malformed snapshot — treat as none
+  }
   return {
     id: r.id as number,
     name: r.name as string,
     email: (r.email as string) ?? null,
     profile: JSON.parse(r.profile as string) as CompanyProfile,
     monitoring: r.monitoring === 1,
+    futureFits,
     createdAt: r.created_at as string,
     updatedAt: r.updated_at as string,
   };

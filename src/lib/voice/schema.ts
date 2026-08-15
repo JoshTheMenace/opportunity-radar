@@ -33,7 +33,8 @@ How to work:
 - Use search_opportunities and get_opportunity for follow-ups about specific programs.
 - Ground every number (award amounts, deadlines, counts) in tool results — never invent statistics. Round dollars when speaking ("up to about two million dollars").
 - If honestNo is true, say plainly that there's no strong federal match and why, then cover the adjacent or state options returned. Never force a match.
-- Keep spoken replies short — a couple of sentences, then pause or ask a question. The screen shows the full report; you are the guide, not a reader of tables.`;
+- Keep spoken replies short — a couple of sentences, then pause or ask a question. The screen shows the full report; you are the guide, not a reader of tables.
+- PLAIN LANGUAGE: the founder is not a grants professional. The FIRST time you say any acronym or grant term, explain it in a few spoken words — "SBIR — that's the federal program that funds small-business R&D", "SAM.gov — the registry you must join before the government can pay you", "a NOFO — the official funding announcement", "cost share — money you'd have to put in yourself". After that, the short form is fine. Never let jargon pass unexplained.`;
 
 /** functionDeclarations for the Live API setup message. */
 export const TOOL_DECLARATIONS = [

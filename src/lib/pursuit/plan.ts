@@ -13,6 +13,7 @@ import { completeJSON } from "../llm";
 import { localIsoDate } from "../engine/dates";
 import type { CompanyProfile, Opportunity } from "../types";
 import type { NewTask } from "./db";
+import { PLAIN_LANGUAGE_RULE } from "../engine/plain-language";
 
 /** Canonical phase order for display + sorting. */
 export const PHASES = [
@@ -209,7 +210,7 @@ async function llmTasks(
 ): Promise<{ summary: string; tasks: NewTask[] } | null> {
   const windowDays = submitBy ? daysBetween(today, submitBy) : null;
   const prompt = [
-    "You are a grants consultant building a submission work plan for a startup founder.",
+    `You are a grants consultant building a submission work plan for a startup founder. ${PLAIN_LANGUAGE_RULE}`,
     "Produce 6-12 tasks SPECIFIC to this opportunity — eligibility checks drawn from its eligibility text,",
     "narrative sections implied by its description, budget/attachment work, and one review pass.",
     "Do NOT include generic registrations (SAM.gov, Grants.gov, SBIR.gov) or the final submission — those are handled separately.",

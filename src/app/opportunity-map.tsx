@@ -83,14 +83,16 @@ export default function OpportunityMap() {
     } catch {}
   }, []);
 
-  /** Debounced autosave to the companies API (durable across refreshes). */
-  function persist(profile: CompanyProfile) {
+  /** Debounced autosave to the companies API (durable across refreshes).
+   *  futureFits ride along when a report carried them, so the watcher can
+   *  notify the founder when they grow into a blocked opportunity. */
+  function persist(profile: CompanyProfile, futureFits?: import("@/lib/types").FutureFit[]) {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
       void fetch("/api/companies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: profile.name ?? "My company", profile }),
+        body: JSON.stringify({ name: profile.name ?? "My company", profile, futureFits }),
       }).catch(() => {});
     }, 800);
   }
@@ -115,7 +117,7 @@ export default function OpportunityMap() {
         setMeter(ev.report.meter);
         profileRef.current = ev.report.profile;
         setProfileView(ev.report.profile);
-        persist(ev.report.profile);
+        persist(ev.report.profile, ev.report.futureFits);
         // a scan is expensive — survive navigation (issue: report evaporated)
         try {
           sessionStorage.setItem("or:lastReport", JSON.stringify(ev.report));

@@ -21,6 +21,7 @@ import { buildMeter, buildQuestions, formatUsdCompact } from "./meter";
 import { profileReadiness, sortQuestionsRequiredFirst } from "./readiness";
 import { rankOpportunities } from "./rank";
 import { injectUtif } from "./utif";
+import { classifyFutureFits } from "./future";
 import { getEvidence } from "./evidence";
 
 const EVIDENCE_TOP_N = 5;
@@ -167,6 +168,14 @@ export async function runAnalysis(
   // UTIF special case: a qualified Utah first-timer's microgrant is
   // deterministic money — inject it over the LLM's read of that row.
   const matches = injectUtif(ranked.matches, profile, honestNo);
+  // "Not yet" matches: hard-fails whose only blockers are time-solvable.
+  const futureFits = classifyFutureFits(gated);
+  if (futureFits.length > 0) {
+    emit({
+      type: "activity",
+      message: `${futureFits.length} future fit${futureFits.length === 1 ? "" : "s"} worth watching (blocked today, solvable with time)...`,
+    });
+  }
 
   // Historical-award evidence for the top matches: surfaced live as
   // activity lines AND attached to the report (MatchReport.evidence).
@@ -218,5 +227,6 @@ export async function runAnalysis(
     meter,
     questions,
     evidence,
+    futureFits,
   };
 }

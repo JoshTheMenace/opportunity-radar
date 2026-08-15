@@ -137,6 +137,25 @@ export interface MatchReport {
   questions: InterviewQuestion[]; // next questions worth asking (may be empty)
   /** Historical-award evidence keyed by opportunityId (top matches only). */
   evidence?: Record<string, EvidenceSummary>;
+  /** Hard-fails whose ONLY blockers are time-solvable — "not yet" matches.
+   *  Optional + additive (see NOTES-future.md); absent on older reports. */
+  futureFits?: FutureFit[];
+}
+
+/** Why a future fit is blocked today — every value is time-solvable. */
+export type FutureFitReason = "reopens" | "start_rnd" | "amount_mismatch";
+
+/** A "not yet" match: fails gates today for a reason that can change.
+ *  Denormalized (title/agency/close) so UI and emails need no extra lookup. */
+export interface FutureFit {
+  opportunityId: string;
+  title: string;
+  agency: string;
+  closeDate: string | null; // the deadline that passed (reopens) or null
+  reason: FutureFitReason;
+  blockedBy: string; // failing gate name, e.g. "deadline", "sbir:rnd"
+  detail: string; // one human sentence: what blocks it + what would change it
+  meterValueUsd: number;
 }
 
 /** Serializable subset of the evidence module's bundle for the report/UI. */

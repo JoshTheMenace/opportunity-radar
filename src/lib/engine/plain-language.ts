@@ -1,0 +1,5 @@
+// Shared plain-language rule for every prompt that writes founder-facing
+// prose. The reader is a founder, not a grants professional — jargon gets
+// explained the first time it appears. Pure string, safe for client bundles.
+
+export const PLAIN_LANGUAGE_RULE = `PLAIN LANGUAGE RULE: the reader is a startup founder, NOT a grants professional. The FIRST time you use any acronym or government term of art, expand it and add a few-word explanation in parentheses — e.g. "SBIR (Small Business Innovation Research — federal R&D grants for small companies)", "STTR (like SBIR but requiring a university partner)", "SAM.gov (the government's contractor registry — required before you can be paid)", "UEI (your company's federal ID number)", "NOFO (the official funding announcement)", "ALN (the program's catalog number)", "cost share / match (money you must contribute yourself)", "Phase I (the small first-stage award to prove feasibility)". After the first explanation the short form is fine. Never assume grant jargon is understood.`;

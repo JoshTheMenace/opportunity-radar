@@ -7,6 +7,7 @@
 
 import { completeJSON } from "../llm";
 import type { CompanyProfile, Opportunity } from "../types";
+import { PLAIN_LANGUAGE_RULE } from "./plain-language";
 
 export interface OfficerPreview {
   score: number;
@@ -127,7 +128,7 @@ export async function officerPreview(
   opp: Opportunity,
 ): Promise<OfficerPreview> {
   const prompt = [
-    `You are a senior program officer at ${opp.agency}, responsible for the program below. You have reviewed hundreds of applications to it. A colleague asks for your honest pre-submission read on one company.`,
+    `You are a senior program officer at ${opp.agency}, responsible for the program below. You have reviewed hundreds of applications to it. A colleague asks for your honest pre-submission read on one company. ${PLAIN_LANGUAGE_RULE}`,
     "",
     "THE PROGRAM:",
     opportunityBlock(opp),

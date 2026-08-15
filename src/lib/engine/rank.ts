@@ -8,6 +8,7 @@
 import { complete, completeJSON } from "../llm";
 import { intentPromptLine } from "./intent";
 import { localIsoDate } from "./dates";
+import { PLAIN_LANGUAGE_RULE } from "./plain-language";
 import type {
   CompanyProfile,
   FitTier,
@@ -126,7 +127,9 @@ function opportunityBlock(g: GatedOpportunity, idx: number): string {
   ].join("\n");
 }
 
-const RUBRIC = `Score each opportunity 0-100 for genuine fit to THIS company: does this program exist to fund work like theirs — their technology, mission, stage, and use of funds?
+const RUBRIC = `${PLAIN_LANGUAGE_RULE}
+
+Score each opportunity 0-100 for genuine fit to THIS company: does this program exist to fund work like theirs — their technology, mission, stage, and use of funds?
 
 Anchors:
 - ${TIER_LIKELY}+ — the program's stated purpose names this company's technology, industry, or mission. Rare and defensible.
