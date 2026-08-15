@@ -22,26 +22,26 @@ export function daysUntil(iso: string | null): number | null {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
 }
 
-/** Tier system: treasury = money-grade fit, brass = attention needed,
- *  muted = adjacent. Chip styles + the match card's left rail. */
+/** Tier system (Federal Catalyst chips): green = money-grade fit, amber =
+ *  attention needed, neutral = adjacent. Chip styles + legacy left rail. */
 export const TIERS: { tier: FitTier; label: string; badge: string; rail: string }[] = [
   {
     tier: "likely_fit",
     label: "Likely fit",
-    badge: "border-treasury/50 bg-treasury/10 text-treasury",
-    rail: "border-l-treasury",
+    badge: "bg-good-soft text-good",
+    rail: "border-l-good",
   },
   {
     tier: "verify_eligibility",
     label: "Verify eligibility",
-    badge: "border-brass/50 bg-brass/10 text-brass",
-    rail: "border-l-brass",
+    badge: "bg-warn-soft text-warn",
+    rail: "border-l-warn",
   },
   {
     tier: "adjacent",
     label: "Adjacent",
-    badge: "border-hairline bg-panel-2 text-muted",
-    rail: "border-l-hairline",
+    badge: "bg-surface-variant text-muted",
+    rail: "border-l-line",
   },
 ];
 

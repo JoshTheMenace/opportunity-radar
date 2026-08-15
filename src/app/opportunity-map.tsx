@@ -21,8 +21,8 @@ import SaveMonitor from "./save-monitor";
 import IntakePanel from "./components/intake-panel";
 import AgentDock from "./components/agent-dock";
 import ProfileCard from "./components/profile-card";
-import MeterPanel from "./components/meter-panel";
-import InterviewPanel from "./components/interview-panel";
+import ActionPlan from "./components/action-plan";
+import UnlockPanel from "./components/unlock-panel";
 import { HonestNoPanel, HowItWorks, ReportSkeleton, ReportView } from "./components/report-view";
 import type { QuickReply, Spotlight, UiReport } from "./components/shared";
 import type { EligibilityMeter, InterviewQuestion } from "@/lib/types";
@@ -243,78 +243,72 @@ export default function OpportunityMap() {
     : questions;
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
-      <IntakePanel
-        text={text}
-        busy={busy}
-        restored={restored}
-        onText={setText}
-        onAnalyze={analyze}
-      />
-
+    <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-10">
       {error && (
         <div
           id="error"
-          className="rounded-2xl border border-[#F2C4BC] bg-risk-soft p-3 text-[13px] text-risk"
+          className="mb-4 rounded-xl border border-[#F2C4BC] bg-risk-soft p-3 text-[13px] text-risk"
         >
           {error}
         </div>
       )}
 
-      {!started && <HowItWorks />}
-
-      {/* Workspace: canvas (main) + the agent. Always mounted — the agent is
-          present ("standing by", voice reachable) before the first run too.
-          The dock sticks on desktop and stacks above the report on mobile. */}
-      <div
-        id="workspace"
-        className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start"
-      >
-          <aside
-            id="agent-rail"
-            className="min-w-0 lg:order-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
-          >
-            <AgentDock lines={activity} busy={busy} report={report} onFocusMatch={focusMatch}>
-              {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
-              <VoicePanel
-                getProfile={() => profileRef.current}
-                getReport={() => report}
-                onEngineEvent={handle}
-              />
-              <ProfileCard profile={profileView} />
-              {meter && (
-                <MeterPanel
-                  meter={meter}
-                  preliminary={report != null && report.matches.length === 0}
-                />
-              )}
-              <InterviewPanel
-                questions={interviewQuestions}
-                quickReplies={quickReplies}
-                busy={busy}
-                askCapitalNeed={asks?.needsCapitalNeed ?? false}
-                onAnswer={answer}
-                onSend={sendMessage}
-              />
-            </AgentDock>
-          </aside>
-
-          <div id="canvas" className="min-w-0 space-y-4 lg:order-1">
-            {report && busy && (
-              <p className="animate-pulse font-mono text-[11px] text-faint">
-                Matches below update live as scoring finishes…
-              </p>
-            )}
-            {busy && !report && <ReportSkeleton />}
-            {report &&
-              (report.honestNo ? (
-                <HonestNoPanel report={report} spotlight={spotlight} />
-              ) : (
-                <ReportView report={report} spotlight={spotlight} />
-              ))}
-            {report && !busy && <SaveMonitor profile={report.profile} />}
-          </div>
+      {/* Federal Catalyst 12-col map: dossier+plan | intake+matches | unlock+agent.
+          DOM order puts the center first so mobile stacks intake → rail → dossier. */}
+      <div id="workspace" className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        <div id="canvas" className="min-w-0 space-y-4 lg:order-2 lg:col-span-6">
+          <IntakePanel
+            text={text}
+            busy={busy}
+            restored={restored}
+            onText={setText}
+            onAnalyze={analyze}
+          />
+          {!started && <HowItWorks />}
+          {report && busy && (
+            <p className="animate-pulse font-mono text-[11px] text-faint">
+              Matches below update live as scoring finishes…
+            </p>
+          )}
+          {busy && !report && <ReportSkeleton />}
+          {report &&
+            (report.honestNo ? (
+              <HonestNoPanel report={report} spotlight={spotlight} />
+            ) : (
+              <ReportView report={report} spotlight={spotlight} />
+            ))}
+          {report && !busy && <SaveMonitor profile={report.profile} />}
         </div>
+
+        <div className="min-w-0 space-y-6 lg:order-1 lg:col-span-3">
+          <ProfileCard profile={profileView} />
+          <ActionPlan report={report} />
+        </div>
+
+        <aside
+          id="agent-rail"
+          className="min-w-0 space-y-6 lg:sticky lg:top-20 lg:order-3 lg:col-span-3 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
+        >
+          <UnlockPanel
+            meter={meter}
+            questions={interviewQuestions}
+            quickReplies={quickReplies}
+            busy={busy}
+            askCapitalNeed={asks?.needsCapitalNeed ?? false}
+            preliminary={report != null && report.matches.length === 0}
+            onAnswer={answer}
+            onSend={sendMessage}
+          />
+          <AgentDock lines={activity} busy={busy} report={report} onFocusMatch={focusMatch}>
+            {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
+            <VoicePanel
+              getProfile={() => profileRef.current}
+              getReport={() => report}
+              onEngineEvent={handle}
+            />
+          </AgentDock>
+        </aside>
+      </div>
     </main>
   );
 }

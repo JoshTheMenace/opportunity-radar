@@ -1,46 +1,57 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Opportunity Radar — "Catalyst". Light institutional gov-tech:
-   one confident blue, white cards on a cool page ground, mono as
-   chrome (labels/data/buttons), red reserved for risk. Reference:
-   public/design-mocks/final.html + DESIGN-SPEC.md.
+   Opportunity Radar — "Federal Catalyst". Tokens are EXACT hexes
+   from the teammate's Federal Catalyst UI kit + Stitch screens
+   (design/claude-design/*.html): deep federal blue on a cool
+   ground, white cards with ice borders, Hanken Grotesk headlines,
+   Inter body, JetBrains Mono labels/data.
    ============================================================ */
 
 @theme inline {
-  /* surfaces */
-  --color-bg: #f3f6fb;
+  /* surfaces (kit: background / surface-container-*) */
+  --color-bg: #f7f9fb;
   --color-card: #ffffff;
-  --color-hairline: #e3e9f2;
-  /* text */
-  --color-ink: #14213a;
-  --color-muted: #5a6b85;
-  --color-faint: #8da0bc;
-  /* brand — the one blue */
-  --color-brand: #1d4f91;
-  --color-brand-strong: #163c6e;
-  --color-accent: #2e6fdb;
-  --color-soft: #e8f0fc;
-  /* status — never decorative */
-  --color-good: #1b7f4d;
-  --color-good-soft: #e4f4ea;
-  --color-warn: #b07c10;
-  --color-warn-soft: #fcf3e1;
-  --color-risk: #c03a2b;
-  --color-risk-soft: #fbeae7;
-  /* legacy aliases (paper-ledger names) — remapped so unswept corners
-     degrade to sane light-theme colors. Migrate on touch. */
-  --color-paper: #14213a;
+  --color-surface-low: #f2f4f6;
+  --color-surface: #eceef0;
+  --color-surface-high: #e6e8ea;
+  --color-surface-variant: #e0e3e5;
+  /* borders (kit: border-ice / outline-variant) */
+  --color-hairline: rgba(3, 105, 161, 0.12);
+  --color-line: #c0c7d1;
+  /* text (kit: text-deep / on-surface-variant / outline) */
+  --color-ink: #0f172a;
+  --color-muted: #40474f;
+  --color-faint: #707881;
+  /* brand (kit: primary / primary-container / primary-fixed) */
+  --color-brand: #00507d;
+  --color-brand-strong: #004b74;
+  --color-accent: #0369a1;
+  --color-soft: #e7f2fa;
+  --color-brand-fixed: #cde5ff;
+  /* status (kit: fit green, confidence amber, error) */
+  --color-good: #006c4a;
+  --color-good-soft: #e0f0ea;
+  --color-warn: #92400e;
+  --color-warn-soft: #fef3c7;
+  --color-risk: #ba1a1a;
+  --color-risk-soft: #ffdad6;
+  /* funding-twin (kit: secondary) */
+  --color-twin: #006686;
+  --color-twin-soft: #c0e8ff;
+  /* legacy aliases — remapped so unswept corners degrade to sane
+     Catalyst colors. Migrate on touch. */
+  --color-paper: #0f172a;
   --color-panel: #ffffff;
-  --color-panel-2: #f3f6fb;
-  --color-brass: #1d4f91;
-  --color-brass-bright: #2e6fdb;
-  --color-treasury: #1b7f4d;
-  --color-signal: #c03a2b;
-  /* type — Inter everywhere, Plex Mono as chrome. No serifs. */
-  --font-display: var(--font-inter);
+  --color-panel-2: #f2f4f6;
+  --color-brass: #92400e;
+  --color-brass-bright: #b45309;
+  --color-treasury: #006c4a;
+  --color-signal: #ba1a1a;
+  /* type — Hanken Grotesk display, Inter body, JetBrains Mono chrome */
+  --font-display: var(--font-hanken);
   --font-sans: var(--font-inter);
-  --font-mono: var(--font-plex-mono);
+  --font-mono: var(--font-jbmono);
 }
 
 body {

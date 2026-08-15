@@ -39,14 +39,14 @@ export default async function OpportunityPage({ params }: Params) {
       {/* header */}
       <header id="opp-header" className="space-y-3">
         <p className="font-mono text-xs text-muted">
-          <Link href="/" className="transition-colors hover:text-brand">
-            Active grants
+          <Link href="/pursuits" className="transition-colors hover:text-brand">
+            Pursuit Workspace
           </Link>
-          <span className="text-faint"> › </span>
+          <span className="text-faint"> / </span>
           <span className="text-faint">{o.title}</span>
         </p>
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <h1 className="max-w-3xl text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="max-w-3xl font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             {o.title}
           </h1>
           {o.url && (
@@ -106,11 +106,11 @@ export default async function OpportunityPage({ params }: Params) {
         />
       </section>
 
+      {/* pursuit workspace: plan + tracker (full width — carries its own grid) */}
+      <PursuitPanel opportunityId={o.id} />
+
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-5">
-          {/* pursuit: plan + tracker */}
-          <PursuitPanel opportunityId={o.id} />
-
           {/* about */}
           <Section id="opp-about" title="ABOUT THIS PROGRAM">
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">

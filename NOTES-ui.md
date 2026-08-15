@@ -79,3 +79,34 @@ styling ANYTHING — tokens, Tailwind recipes, and rules live there.
 - One blue (brand #1D4F91). Red = deadlines/alerts ONLY. Mono = chrome only.
 - Design-system previews are synced to the claude.ai/design project
   "Opportunity Radar" (foundations/components/pages cards).
+
+## Federal Catalyst adoption (2026-08-15 late) — the teammate's UI, not just its skin
+
+Canonical references: design/claude-design/*.html (PR #1 screens) + the
+"Federal Catalyst UI Kit" (Josh's file; multi-tab React bundle). globals.css
+tokens are now the kit's EXACT hexes; fonts Hanken Grotesk / Inter /
+JetBrains Mono.
+
+Opportunity Map page = kit 12-col anatomy:
+- col 1-3: profile-card.tsx (kit founder dossier: completeness bar, initials
+  avatar, confidence chip, red pulsing Unknown rows) + action-plan.tsx (dated
+  timeline from the TOP match's buildTimeline).
+- col 4-9: intake + report-view.tsx = "Top Matches" header w/ live counts,
+  ONE score-ordered list (tier groups removed; chips carry tier), the
+  "Held — Missing Data" dashed card for the readiness hold (Resolve →
+  #unlock), match-card.tsx in full kit anatomy (header band w/ chip+ID+$+
+  deadline, why/disqualify bullet columns, "Who else got this money" +
+  YOUR FUNDING TWIN from evidence.similarAwards[0], footer w/ Start
+  Pre-flight →). Stat band deleted — counts live in the header line.
+- col 10-12: unlock-panel.tsx (NEW — absorbs meter-panel + interview-panel
+  on this page: "reveal $X across N programs" copy, ONE active question with
+  its FieldWidget, queued questions w/ +$ unlock chips, quick replies,
+  freeform input) + agent-dock.tsx (unchanged) with VoicePanel inside.
+- meter-panel.tsx / interview-panel.tsx are no longer mounted on the map
+  page (interview-panel still referenced by voice stage docs; files kept).
+
+Pursuit Workspace (= kit tab 2): pursuits/page.tsx is the shell (Active
+Grants rail + inline PursuitPanel w/ ?id= deep link); pursuit-panel.tsx has
+the kit anatomy (header, % ready, phase stepper, stat tiles, per-phase task
+cards, HOW TO FINISH THIS document panel, SAM.gov warning banner, Deadline
+Timeline rail).
