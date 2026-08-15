@@ -1,14 +1,22 @@
 "use client";
 
 // Voice mode — Gemini Live over a raw browser WebSocket (no SDK).
-// Fully additive: renders nothing when /api/voice/token says disabled,
-// so the text app never depends on it. Mic audio goes up as 16kHz PCM16,
-// replies come back as 24kHz PCM16; tool calls are executed by
-// /api/voice/tools and full reports are bubbled up to the page UI.
+// Fully additive: renders nothing when /api/voice/token says disabled.
+//
+// Conversation shape (see schema.ts persona):
+// - The AGENT speaks first: a [SESSION STARTED] turn is injected on connect.
+// - analyze_company is intercepted CLIENT-SIDE: the tool returns
+//   "analysis_started" immediately and the real engine run streams in the
+//   background (driving the on-screen UI via onEngineEvent). Progress and
+//   results are queued as [ANALYSIS UPDATE] turns, flushed between model
+//   turns so the agent weaves them in naturally while it keeps interviewing.
+// - answer_question is instant (incremental refine, no re-ranking). Answers
+//   given while ranking is still running are buffered and applied the
+//   moment the analysis lands.
 
 import { useEffect, useRef, useState } from "react";
-import type { CompanyProfile } from "@/lib/types";
-import type { UiMatchReport } from "@/app/api/engine-facade";
+import type { AnalyzeEvent, CompanyProfile, MatchReport } from "@/lib/types";
+import { formatUsdCompact } from "@/lib/engine/meter";
 import { SYSTEM_INSTRUCTION, TOOL_DECLARATIONS } from "@/lib/voice/schema";
 
 type Status = "off" | "idle" | "connecting" | "live";
@@ -33,12 +41,18 @@ interface ServerMsg {
   toolCall?: { functionCalls?: FunctionCall[] };
 }
 
+type UiReport = MatchReport & { opportunities?: Record<string, { title: string }> };
+
+const usd = (n: number) => formatUsdCompact(n);
+
 export default function VoicePanel({
   getProfile,
-  onReport,
+  getReport,
+  onEngineEvent,
 }: {
   getProfile: () => CompanyProfile | null;
-  onReport: (report: UiMatchReport) => void;
+  getReport: () => MatchReport | null;
+  onEngineEvent: (ev: AnalyzeEvent) => void;
 }) {
   const [status, setStatus] = useState<Status>("off");
   const [err, setErr] = useState<string | null>(null);
@@ -52,6 +66,12 @@ export default function VoicePanel({
   const playheadRef = useRef(0);
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const openLineRef = useRef<{ you: boolean; radar: boolean }>({ you: false, radar: false });
+  // Background-analysis machinery
+  const modelSpeakingRef = useRef(false);
+  const updatesRef = useRef<string[]>([]);
+  const analysisBusyRef = useRef(false);
+  const lastProgressAtRef = useRef(0);
+  const pendingAnswersRef = useRef<{ field: string; answer: string }[]>([]);
 
   useEffect(() => {
     void fetch("/api/voice/token")
@@ -142,24 +162,203 @@ export default function VoicePanel({
     proc.connect(ctx.destination); // required for onaudioprocess to fire in Chrome
   }
 
-  // ---------- tool calls -> /api/voice/tools ----------
+  // ---------- update queue (flushed between model turns) ----------
 
-  async function handleToolCalls(calls: FunctionCall[]) {
-    pushSys(`⚙ ${calls.map((c) => c.name).join(", ")}`);
-    const functionResponses = [];
-    for (const c of calls) {
-      let data: { result?: unknown; report?: UiMatchReport };
+  function sendText(text: string) {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN || !readyRef.current) return false;
+    ws.send(
+      JSON.stringify({
+        clientContent: { turns: [{ role: "user", parts: [{ text }] }], turnComplete: true },
+      }),
+    );
+    return true;
+  }
+
+  function queueUpdate(text: string) {
+    updatesRef.current.push(text);
+    flushUpdates();
+  }
+
+  function flushUpdates() {
+    if (modelSpeakingRef.current || updatesRef.current.length === 0) return;
+    const items = updatesRef.current.splice(0);
+    const ok = sendText(
+      `[ANALYSIS UPDATE — system data, weave in naturally, never read verbatim]\n${items.join("\n")}`,
+    );
+    if (!ok) updatesRef.current.unshift(...items); // connection not ready — requeue
+  }
+
+  // ---------- background analysis ----------
+
+  function finalSummary(r: UiReport): string {
+    const title = (id: string) => r.opportunities?.[id]?.title ?? id;
+    if (r.honestNo) {
+      const alt = r.matches.slice(0, 3).map((m) => title(m.opportunityId));
+      return (
+        `ANALYSIS COMPLETE — honest answer: no strong federal match. ${r.honestNoExplanation ?? ""}` +
+        (alt.length ? ` Adjacent/state options worth mentioning: ${alt.join("; ")}.` : "")
+      );
+    }
+    const top = r.matches[0];
+    const strong = r.matches.filter((m) => m.score >= 50).length;
+    const remaining = r.questions
+      .map((q) => `${q.question} (${q.whyAsking})`)
+      .join(" | ");
+    return (
+      `ANALYSIS COMPLETE: ${strong} matches on screen, ${usd(r.meter.unlockedUsd)} already eligible. ` +
+      (top ? `Top match: ${title(top.opportunityId)} — score ${top.score}, why: ${top.whyFit} ` : "") +
+      (remaining ? `Open questions still worth asking: ${remaining}` : "No open questions remain.")
+    );
+  }
+
+  async function applyPendingAnswers(report: MatchReport): Promise<MatchReport> {
+    let current = report;
+    for (const pa of pendingAnswersRef.current.splice(0)) {
       try {
         const res = await fetch("/api/voice/tools", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: c.name, args: c.args ?? {}, profile: getProfile() }),
+          body: JSON.stringify({
+            name: "answer_question",
+            args: pa,
+            profile: current.profile,
+            priorReport: current,
+          }),
+        });
+        const d = (await res.json()) as { report?: MatchReport };
+        if (d.report) {
+          current = d.report;
+          onEngineEvent({ type: "report", report: current });
+        }
+      } catch {}
+    }
+    return current;
+  }
+
+  async function startBackgroundAnalysis(description: string) {
+    if (analysisBusyRef.current) return;
+    analysisBusyRef.current = true;
+    let finalReport: MatchReport | null = null;
+    let questionsSent = false;
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ founderText: description, prior: getProfile() }),
+      });
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const chunks = buf.split("\n\n");
+        buf = chunks.pop() ?? "";
+        for (const chunk of chunks) {
+          const line = chunk.split("\n").find((l) => l.startsWith("data: "));
+          if (!line) continue;
+          const ev = JSON.parse(line.slice(6)) as AnalyzeEvent;
+          onEngineEvent(ev); // keep the on-screen UI live
+          if (ev.type === "questions" && !questionsSent) {
+            questionsSent = true;
+            const qs = ev.questions.map((q) => `${q.question} (${q.whyAsking})`).join(" | ");
+            queueUpdate(
+              `Screening done: ${ev.meter.unlockedCount} programs already eligible (${usd(ev.meter.unlockedUsd)}). ` +
+                `Ranking runs ~30s more. ` +
+                (qs
+                  ? `Interview questions you can ask RIGHT NOW while we wait: ${qs}`
+                  : `No open questions — make small talk about their plans until results land.`),
+            );
+          } else if (ev.type === "activity") {
+            const m = ev.message.match(/Scored (\d+)\/(\d+) candidates — (\d+) matches/);
+            if (m && Date.now() - lastProgressAtRef.current > 9000) {
+              lastProgressAtRef.current = Date.now();
+              queueUpdate(`progress: ${m[3]} matches found so far (${m[1]}/${m[2]} scored)`);
+            }
+          } else if (ev.type === "report") {
+            finalReport = ev.report;
+          } else if (ev.type === "error") {
+            queueUpdate(`Analysis FAILED (${ev.message}). Apologize briefly and offer to retry.`);
+          }
+        }
+      }
+      if (finalReport) {
+        const after = await applyPendingAnswers(finalReport);
+        queueUpdate(finalSummary(after as UiReport));
+      }
+    } catch (e) {
+      queueUpdate(
+        `Analysis failed (${e instanceof Error ? e.message : String(e)}). Apologize and offer to retry.`,
+      );
+    } finally {
+      analysisBusyRef.current = false;
+    }
+  }
+
+  // ---------- tool calls ----------
+
+  async function handleToolCalls(calls: FunctionCall[]) {
+    const functionResponses = [];
+    for (const c of calls) {
+      // analyze_company: fire-and-return — the engine streams in the background.
+      if (c.name === "analyze_company") {
+        const description = String(c.args?.description ?? "").trim();
+        pushSys("⚙ analyze_company → background");
+        if (description) void startBackgroundAnalysis(description);
+        functionResponses.push({
+          id: c.id,
+          name: c.name,
+          response: {
+            result: description
+              ? {
+                  status: "analysis_started",
+                  note: "Engine running in background. First [ANALYSIS UPDATE] (with interview questions) arrives in seconds — keep the conversation going.",
+                }
+              : { error: "description is required" },
+          },
+        });
+        continue;
+      }
+      // answer_question mid-analysis: buffer it; applied the moment results land.
+      if (c.name === "answer_question" && analysisBusyRef.current && !getReport()) {
+        pushSys(`⚙ ${c.name} → buffered`);
+        pendingAnswersRef.current.push({
+          field: String(c.args?.field ?? ""),
+          answer: String(c.args?.answer ?? ""),
+        });
+        functionResponses.push({
+          id: c.id,
+          name: c.name,
+          response: {
+            result: {
+              status: "recorded",
+              note: "Answer saved — it will be applied instantly when the running analysis lands. Keep going.",
+            },
+          },
+        });
+        continue;
+      }
+      pushSys(`⚙ ${c.name}`);
+      let data: { result?: unknown; report?: MatchReport };
+      try {
+        const res = await fetch("/api/voice/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: c.name,
+            args: c.args ?? {},
+            profile: getProfile(),
+            priorReport: getReport(),
+          }),
         });
         data = await res.json();
       } catch (e) {
         data = { result: { error: e instanceof Error ? e.message : String(e) } };
       }
-      if (data.report) onReport(data.report);
+      if (data.report) onEngineEvent({ type: "report", report: data.report });
       functionResponses.push({
         id: c.id,
         name: c.name,
@@ -175,17 +374,27 @@ export default function VoicePanel({
     if (msg.setupComplete) {
       readyRef.current = true;
       setStatus("live");
-      pushSys("listening — just talk");
+      pushSys("connected — Radar speaks first");
+      // The agent greets first: hand it an opening turn.
+      sendText("[SESSION STARTED] The founder just joined the voice session. Greet them now.");
     }
     const sc = msg.serverContent;
     if (sc) {
-      if (sc.interrupted) stopPlayback();
+      if (sc.interrupted) {
+        stopPlayback();
+        modelSpeakingRef.current = false;
+      }
+      if (sc.modelTurn?.parts?.length) modelSpeakingRef.current = true;
       for (const p of sc.modelTurn?.parts ?? []) {
         if (p.inlineData?.data) playChunk(p.inlineData.data);
       }
       if (sc.inputTranscription?.text) appendLine("you", sc.inputTranscription.text);
       if (sc.outputTranscription?.text) appendLine("radar", sc.outputTranscription.text);
-      if (sc.turnComplete) openLineRef.current = { you: false, radar: false };
+      if (sc.turnComplete) {
+        openLineRef.current = { you: false, radar: false };
+        modelSpeakingRef.current = false;
+        flushUpdates(); // natural seam: model finished a turn
+      }
     }
     if (msg.toolCall?.functionCalls?.length) void handleToolCalls(msg.toolCall.functionCalls);
   }
@@ -194,6 +403,8 @@ export default function VoicePanel({
     setErr(null);
     setLog([]);
     setStatus("connecting");
+    updatesRef.current = [];
+    pendingAnswersRef.current = [];
     try {
       const res = await fetch("/api/voice/token", { method: "POST" });
       const session = (await res.json()) as { wsUrl?: string; model?: string; error?: string };
@@ -240,6 +451,7 @@ export default function VoicePanel({
 
   function stop() {
     readyRef.current = false;
+    modelSpeakingRef.current = false;
     const ws = wsRef.current;
     wsRef.current = null;
     ws?.close();
@@ -271,7 +483,7 @@ export default function VoicePanel({
         {status === "live" && (
           <span className="flex items-center gap-1.5 text-xs text-green-400">
             <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-            live — talk to Opportunity Radar
+            live — Radar will greet you
           </span>
         )}
         {err && <span className="text-xs text-red-400">{err}</span>}

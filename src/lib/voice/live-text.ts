@@ -101,7 +101,7 @@ export function runLiveText(
       for (const c of calls) {
         let result: unknown;
         try {
-          const out = await executeVoiceTool(c.name, c.args ?? {}, profile);
+          const out = await executeVoiceTool(c.name, c.args ?? {}, profile, report);
           result = out.result;
           if (out.report) {
             report = out.report;

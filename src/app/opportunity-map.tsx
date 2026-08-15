@@ -154,12 +154,22 @@ export default function OpportunityMap() {
 
   const answer = (field: GateField, value: unknown) => {
     if (!profileRef.current) return;
-    void stream("/api/answer", { profile: profileRef.current, field, answer: value });
+    // priorReport unlocks the incremental fast path (re-gate + subtract, no re-ranking).
+    void stream("/api/answer", {
+      profile: profileRef.current,
+      field,
+      answer: value,
+      priorReport: report,
+    });
   };
 
   const sendMessage = (message: string) => {
     if (!profileRef.current || !message.trim()) return;
-    void stream("/api/answer", { profile: profileRef.current, message: message.trim() });
+    void stream("/api/answer", {
+      profile: profileRef.current,
+      message: message.trim(),
+      priorReport: report,
+    });
   };
 
   // Quick replies: fetch one-tap suggestions once a stream settles and
@@ -212,7 +222,8 @@ export default function OpportunityMap() {
           {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
           <VoicePanel
             getProfile={() => profileRef.current}
-            onReport={(r) => handle({ type: "report", report: r })}
+            getReport={() => report}
+            onEngineEvent={handle}
           />
           {meter && <MeterPanel meter={meter} />}
           <InterviewPanel

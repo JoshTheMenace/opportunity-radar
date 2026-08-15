@@ -32,3 +32,10 @@ runner passes only the founder paragraph.)
 - Spoken-transcript judging (live provider) sees the same data the voice agent
   sees — meter, totalMatches, questions, and each top match's title/agency/
   amounts/closeDate — so quoting real figures isn't scored as invention.
+- Engine addition `src/lib/engine/refine.ts`: refineReport(prior, profile)
+  folds an interview answer in WITHOUT re-ranking (gates re-run, prior LLM
+  scores reused, subtraction-only, tier upgrades via tierFor). /api/answer
+  and voice answer_question use it when the client sends priorReport.
+  Measured: 0.1s vs 90s full pipeline. Eligibility is monotone because
+  interview answers only fill unknown fields — never rely on refine after
+  editing KNOWN profile fields; that needs a full re-run.

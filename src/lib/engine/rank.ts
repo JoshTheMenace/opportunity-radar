@@ -125,25 +125,20 @@ function opportunityBlock(g: GatedOpportunity, idx: number): string {
   ].join("\n");
 }
 
-const RUBRIC = `You are scoring US government funding opportunities for genuine relevance to ONE specific company.
+const RUBRIC = `Score each opportunity 0-100 for genuine fit to THIS company: does this program exist to fund work like theirs — their technology, mission, stage, and use of funds?
 
-Score each opportunity 0-100 on genuine fit across four dimensions:
-1. Technology fit — does the company's actual technology match what the program funds?
-2. Agency mission fit — would this agency plausibly fund this company's work?
-3. Stage fit — does the company's maturity/stage match the program's intent?
-4. Use-of-funds fit — does what the company needs money for match what the award pays for?
+Anchors:
+- ${TIER_LIKELY}+ — the program's stated purpose names this company's technology, industry, or mission. Rare and defensible.
+- ${TIER_VERIFY}-${TIER_LIKELY - 1} — strong purpose match with one real open question. Any score of ${TIER_VERIFY}+ is a recommendation that this founder spend hours applying — give it only when you would stand behind that.
+- ${TIER_ADJACENT}-${TIER_VERIFY - 1} — adjacent: the company is merely eligible, not what the program is for.
+- below ${TIER_ADJACENT} — not a fit.
 
-CALIBRATION (follow strictly):
-- Most opportunities are NOT a fit. Scores above ${TIER_LIKELY} should be rare and defensible.
-- Do not inflate scores to seem helpful.
-- A generic small-business program that merely does not exclude the company is "adjacent" (${TIER_ADJACENT}-${TIER_VERIFY - 1}), not a fit.
-- Generic capital-access programs (loans, loan participation/guarantees, revolving loan funds, co-investment, tax credits, counseling/mentoring services) that any small business could use score at most ${TIER_VERIFY - 1} — a genuine fit requires the program to specifically target the company's technology, industry, or mission.
+The swap test: if a different small business could be dropped into your whyFit and it would read just as well, the program is generic — score it below ${TIER_VERIFY}, whatever its form (loan, tax credit, economic-development grant, counseling, co-investment).
 
 For each opportunity write 1-2 sentences each for whyFit, whatCouldDisqualify, whatToVerify, nextSteps.
-Ground every statement ONLY in the data provided above. Never invent numbers, deadlines, dollar amounts, or program details that are not given. If something is unknown, say it is unknown.
-HARD RULE: any profile field shown as "unknown" (e.g. Active R&D, SAM registration, product maturity) must NEVER be asserted as fact in whyFit — treat it as unresolved and put it in whatToVerify instead. Do not attribute customers, partnerships, facilities, or capabilities the profile does not state.
+Ground every claim in the data above. Anything unknown (a profile field, a number, a date) stays unknown: it belongs in whatToVerify, never asserted in whyFit. Do not attribute customers, partnerships, or capabilities the profile does not state.
 
-Return a JSON object {"matches": [...]} with one entry per opportunity, using each opportunity's exact "id" as opportunityId.`;
+Return a JSON object {"matches": [...]}, one entry per opportunity, using each opportunity's exact "id" as opportunityId.`;
 
 async function scoreBatch(
   profile: CompanyProfile,

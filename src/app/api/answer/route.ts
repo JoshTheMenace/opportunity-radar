@@ -1,7 +1,8 @@
-import type { CompanyProfile, GateField } from "@/lib/types";
+import type { CompanyProfile, GateField, MatchReport } from "@/lib/types";
 import { applyAnswer, applyFreeformAnswer } from "@/lib/engine/profile";
 import { ALL_GATE_FIELDS } from "@/lib/engine/meter";
-import { runAnalysis, sseResponse } from "../engine-facade";
+import { refineReport } from "@/lib/engine/refine";
+import { runAnalysis, sseResponse, withOpportunities } from "../engine-facade";
 
 export const runtime = "nodejs";
 
@@ -11,11 +12,15 @@ export async function POST(req: Request) {
     field?: string;
     answer?: unknown;
     message?: string;
+    /** Prior report enables the incremental fast path: re-gate + subtract,
+     *  reusing all previous LLM scores. No re-ranking. */
+    priorReport?: MatchReport | null;
   } | null;
-  const { profile, field, answer, message } = body ?? {};
+  const { profile, field, answer, message, priorReport } = body ?? {};
   if (!profile?.description) {
     return Response.json({ error: "profile (with description) is required" }, { status: 400 });
   }
+  const canRefine = priorReport != null && Array.isArray(priorReport.matches);
 
   // Freeform chat answer: one message may settle several gate fields at once.
   if (typeof message === "string" && message.trim()) {
@@ -31,6 +36,10 @@ export async function POST(req: Request) {
       });
       // Keep the founder's words: follow-ups accumulate into the description.
       const description = `${updated.description}\n\nFounder follow-up: ${text}`;
+      if (canRefine && answered.length > 0) {
+        emit({ type: "activity", message: "Re-checking eligibility (no re-ranking needed)..." });
+        return withOpportunities(refineReport(priorReport, { ...updated, description }));
+      }
       return runAnalysis(description, { ...updated, description }, emit);
     });
   }
@@ -47,5 +56,11 @@ export async function POST(req: Request) {
     field as GateField,
     (answer ?? "") as string | number | boolean,
   );
+  if (canRefine) {
+    return sseResponse(async (emit) => {
+      emit({ type: "activity", message: "Re-checking eligibility (no re-ranking needed)..." });
+      return withOpportunities(refineReport(priorReport, updated));
+    });
+  }
   return sseResponse((emit) => runAnalysis(updated.description, updated, emit));
 }

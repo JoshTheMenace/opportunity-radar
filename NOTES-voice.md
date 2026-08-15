@@ -65,3 +65,21 @@ voice agent instead of calling the pipeline directly:
 - Still assumed, works-in-eval but untested from a real mic:
   `realtimeInput.audio` upload shape (browser mic path); fallback if rejected:
   `realtimeInput.mediaChunks:[{mimeType,data}]` in `voice-panel.tsx`.
+
+## Restructure (2026-08-15): agent-first, background analysis, instant answers
+
+- The agent GREETS FIRST: voice-panel injects a "[SESSION STARTED]" turn on
+  setupComplete; persona instructs the greeting.
+- analyze_company is intercepted CLIENT-SIDE in voice-panel: tool returns
+  {status:"analysis_started"} immediately; the real run streams /api/analyze
+  SSE in the background, driving the on-screen UI (onEngineEvent) AND queuing
+  "[ANALYSIS UPDATE]" turns (screening done + askable questions within
+  seconds, throttled progress counts, final summary). Updates flush between
+  model turns (modelSpeaking tracked via modelTurn/turnComplete) so the agent
+  weaves them in while it keeps interviewing.
+- answer_question is INSTANT via engine/refine.ts (re-gate + subtract,
+  reuse LLM scores — see NOTES-eval/engine notes). Answers given while
+  ranking still runs are buffered client-side and applied the moment the
+  analysis lands.
+- Server-side executeVoiceTool keeps synchronous analyze (eval driver +
+  text mode); it now accepts priorReport for the refine path.

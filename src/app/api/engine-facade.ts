@@ -36,7 +36,10 @@ export async function runAnalysis(
   return withOpportunities(report);
 }
 
-function withOpportunities(report: MatchReport): UiMatchReport {
+/** Attach the id→Opportunity lookup — used for the pipeline's partial report
+ *  events above AND exported for reports built outside runAnalysis (the
+ *  incremental refine path). */
+export function withOpportunities(report: MatchReport): UiMatchReport {
   return { ...report, opportunities: lookupOpportunities(report) };
 }
 

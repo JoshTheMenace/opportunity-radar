@@ -5,12 +5,13 @@
 // sends its current profile with each call. Server-only.
 // ============================================================
 
-import type { CompanyProfile, GateField, Opportunity } from "@/lib/types";
+import type { CompanyProfile, GateField, MatchReport, Opportunity } from "@/lib/types";
 import { applyAnswer } from "@/lib/engine/profile";
 import { ALL_GATE_FIELDS } from "@/lib/engine/meter";
+import { refineReport } from "@/lib/engine/refine";
 import { getOpportunityById } from "@/lib/engine/retrieve";
 import { getDb, rowToOpportunity } from "@/lib/db";
-import { runAnalysis, type UiMatchReport } from "@/app/api/engine-facade";
+import { runAnalysis, withOpportunities, type UiMatchReport } from "@/app/api/engine-facade";
 
 export interface VoiceToolResult {
   /** Compact JSON handed back to the voice model (keep it small — it's spoken context). */
@@ -23,6 +24,7 @@ export async function executeVoiceTool(
   name: string,
   args: Record<string, unknown>,
   profile: CompanyProfile | null,
+  priorReport: MatchReport | null = null,
 ): Promise<VoiceToolResult> {
   switch (name) {
     case "analyze_company": {
@@ -38,7 +40,11 @@ export async function executeVoiceTool(
       if (!ALL_GATE_FIELDS.includes(field))
         return { result: { error: `field must be one of: ${ALL_GATE_FIELDS.join(", ")}` } };
       const updated = applyAnswer(profile, field, String(args.answer ?? ""));
-      const report = await runAnalysis(updated.description, updated, () => {});
+      // Incremental fast path: re-gate + subtract, reusing prior LLM scores.
+      const report =
+        priorReport != null && Array.isArray(priorReport.matches)
+          ? withOpportunities(refineReport(priorReport, updated))
+          : await runAnalysis(updated.description, updated, () => {});
       return { result: compactReport(report), report };
     }
     case "search_opportunities": {

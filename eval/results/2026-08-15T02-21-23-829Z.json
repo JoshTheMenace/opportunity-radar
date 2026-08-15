@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-15T02:21:23.829Z",
+  "backend": "codex",
+  "provider": "live",
+  "averageTotal": 0.964,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.82,
+      "total": 0.964,
+      "notes": "all mustSee themes covered | The reply accurately highlights the most direct NIH match, its $314K ceiling, and the key ownership question, but it should acknowledge that the award falls below the requested $500K–$2M range and specify the need to verify SBIR eligibility and genuine research uncertainty for an in-market product."
+    }
+  ],
+  "transcripts": {
+    "ai-healthcare": "I've run the analysis, and it looks like there are 25 matching opportunities.\n\nYour strongest potential match is a Phase I Small Business Innovation Research grant from the National Institutes of Health, specifically for AI tools that reduce clinical administrative burden. That could be up to about three hundred fourteen thousand dollars.\n\nThe next step would be to prepare a focused R&D project around your technology.\n\nNow, a quick question to help narrow things down: is your company majority-owned by U.S. citizens or permanent residents? Answering that could unlock up to eighty-six million dollars across sixty-three programs."
+  }
+}
