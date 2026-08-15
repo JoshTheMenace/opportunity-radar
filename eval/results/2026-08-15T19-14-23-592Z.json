@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-08-15T19:14:23.592Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.8933888888888889,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.6,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.8400000000000001,
+      "notes": "missed themes: NSF, workforce | The explanations are consistently tailored to the company’s nursing-workflow AI, Utah location, funding target, and hospital-pilot goals, with opportunity-specific diligence and actionable steps, though a few claims about exact program scope, award ranges, and reimbursement mechanics appear more definitive than the provided context can independently support."
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.9005000000000001,
+      "notes": "missed themes: DOE | The report is highly founder-specific and opportunity-specific, consistently distinguishes capacity expansion from R&D, and provides concrete verification and outreach steps, with only minor risk that precise program conditions and superlatives such as “strongest mission match” exceed the supplied evidence."
+    },
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.688,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=false, got true | The explanations are highly founder-specific, appropriately cautious about indirect eligibility and weak federal fit, and provide concrete verification and partner-led next steps, with only minor risk that some asserted award ranges and program characteristics are more specific than the supplied evidence establishes."
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.91,
+      "total": 0.982,
+      "notes": "all mustSee themes covered | The explanations consistently connect the founder’s Utah location, cybersecurity product, R&D needs, funding range, and federal-market goal to each opportunity with tailored verification and next steps, though several precise award ranges, deadlines, and program mechanics require source confirmation to ensure they are not unsupported."
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.92,
+      "total": 0.984,
+      "notes": "all mustSee themes covered | The report is strongly founder-specific and opportunity-specific, consistently distinguishes generic financing from mission fit, and provides practical verification and preparation steps, though several uncited claims about program ranges, targeted industries, and allowable uses could be overconfident if not present in the underlying data."
+    },
+    {
+      "caseId": "restaurant-group",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.95,
+      "total": 0.99,
+      "notes": "all mustSee themes covered | The report is highly grounded in the restaurant group’s Utah location, profitability, expansion budget, and intended uses, distinguishes financing and advisory support from grants, and provides opportunity-specific verification steps, with only minor risk that a few program capability and eligibility details are stated more confidently than the supplied data can substantiate."
+    },
+    {
+      "caseId": "dating-app",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.91,
+      "total": 0.982,
+      "notes": "all mustSee themes covered | The report consistently ties each opportunity to the founder’s location, revenue stage, funding range, and user-acquisition goal, clearly flags weak fits, and gives concrete verification steps, with only minor boilerplate repetition and a few program-specific eligibility or funding claims that would need source confirmation."
+    },
+    {
+      "caseId": "fitness-franchise",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.68,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations are highly founder-specific, opportunity-specific, candid about grants versus financing, and actionable, with minor grounding gaps such as implying all 45 employees are in Utah and not explicitly prioritizing geographic eligibility checks for the rural and enterprise-zone programs."
+    },
+    {
+      "caseId": "wedding-platform",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.97,
+      "total": 0.994,
+      "notes": "all mustSee themes covered | The report is strongly grounded in the founder’s Utah location, revenue, funding target, and expansion goals, clearly distinguishes each adjacent option, flags key eligibility uncertainties, and gives specific actionable next steps without unsupported claims."
+    }
+  ]
+}
