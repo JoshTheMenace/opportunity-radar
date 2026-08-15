@@ -80,7 +80,9 @@ const INSTITUTION_TERMS =
 // ("benefits industry") appears in institution-only prose and was vetoing
 // the fail almost everywhere (4/861 grants.gov prose rows fired).
 const BUSINESS_TERMS =
-  /small business|for[- ]profit|business concern|commercial organization|private business|businesses (?:are|may|can) (?:eligible|apply)/i;
+  // "(?<![a-z-])profit organization" = SAM's "Profit organization" applicant
+  // category without matching "nonprofit"/"non-profit organization".
+  /small business|for[- ]profit|business concern|commercial organization|private business|(?<![a-z-])profit organizations?|businesses (?:are|may|can) (?:eligible|apply)/i;
 const RESTRICTION_PHRASE =
   /(limited to|restricted to|must be an?\b|only the following|eligible applicants?\s*(are|is|:))/i;
 
