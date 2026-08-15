@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-08-15T02:49:30.322Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.8771000000000001,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.992,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the company’s AI nursing-workflow product, funding range, stage, and hospital-pilot goals, clearly flag uncertainties and concrete verification steps, and avoid unsupported claims aside from a few comparative judgments that may exceed the supplied opportunity data."
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.9045000000000001,
+      "notes": "missed themes: DOE | The explanations consistently tie each opportunity to the founder’s Utah location, aerospace manufacturing capabilities, capacity and R&D goals, distinguish funding limitations, and provide concrete verification and next steps, with only minor risk that a few asserted program priorities or eligibility checks are more specific than the supplied evidence supports."
+    },
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.992,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the company’s sensor-and-AI water-loss product, Utah location, funding range, and municipal-pilot goal, clearly distinguish direct from adjacent fit, acknowledge key uncertainties without inventing founder facts, and provide opportunity-specific verification steps and actionable paths."
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.9045000000000001,
+      "notes": "missed themes: SBIR | The explanations are consistently tailored to the company’s cybersecurity R&D, Utah location, funding range, and federal-market goal, clearly distinguish funding from support services, flag eligibility uncertainties, and provide opportunity-specific next steps without apparent unsupported claims."
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 0.75,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.5925,
+      "notes": "missed themes: community | honesty wrong: expected honestNo=true, got false | The explanations are highly specific, appropriately cautious, and actionable, but lose points for minor unsupported characterizations such as a stated preference for loan or equity capital and calling the expansion request a runway need."
+    }
+  ]
+}

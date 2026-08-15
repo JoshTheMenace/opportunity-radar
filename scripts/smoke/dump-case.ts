@@ -15,7 +15,7 @@ async function main() {
   for (const m of report.matches) {
     const o = getOpportunityById(m.opportunityId);
     console.log(
-      `${String(m.score).padStart(3)}  ${m.tier.padEnd(18)} ${(o?.kind ?? "?").padEnd(12)} ${o?.title?.slice(0, 80) ?? m.opportunityId}`,
+      `${String(m.score).padStart(3)}  ${m.tier.padEnd(18)} ${(o?.kind ?? "?").padEnd(12)} [${o?.agency?.slice(0, 32) ?? "?"}] ${o?.title?.slice(0, 60) ?? m.opportunityId}`,
     );
     if (m.score >= 50) console.log(`     whyFit: ${m.whyFit}`);
   }

@@ -1,8 +1,8 @@
 "use client";
 
-// Region: results — the Opportunity Map itself. Summary stat band, matches
-// grouped by fit tier, the honest-no panel, plus empty/loading states so
-// every phase of the flow has a designed surface.
+// Region: results — the Opportunity Map itself. Instrument readout band,
+// matches grouped under tier rules, the honest-no determination, plus
+// empty/loading states so every phase of the flow has a designed surface.
 
 import type { GatedOpportunity, Opportunity } from "@/lib/types";
 import { profileReadiness } from "@/lib/engine/readiness";
@@ -35,23 +35,23 @@ export function ReportView({ report }: { report: UiReport }) {
   const readiness = profileReadiness(report.profile);
   if (report.matches.length === 0 && !readiness.ready) {
     return (
-      <section id="report" className="space-y-3 rounded-lg border border-blue-500/40 bg-blue-500/5 p-6">
-        <h2 className="text-lg font-bold">
+      <section id="report" className="space-y-3 rounded-lg border border-brass/40 bg-brass/5 p-6">
+        <h2 className="font-display text-xl font-semibold text-paper">
           A few basics first — then an accurate answer
         </h2>
-        <p className="text-sm text-neutral-400">
+        <p className="text-sm text-muted">
           We screen 4,600 programs, but ranking them without these facts would show you
           numbers that collapse the moment you answer one more question. Still needed
           ({readiness.knownCount}/{readiness.requiredCount} known):
         </p>
-        <ul className="space-y-1 text-sm text-neutral-200">
+        <ul className="space-y-1 text-sm text-paper">
           {readiness.missing.map((m) => (
             <li key={m.key}>
-              <span className="text-blue-300">•</span> {m.question}
+              <span className="text-brass">•</span> {m.question}
             </li>
           ))}
         </ul>
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-faint">
           Answer with the question cards or just type it in the chat box — ranking runs
           automatically the moment the last one is in.
         </p>
@@ -65,11 +65,11 @@ export function ReportView({ report }: { report: UiReport }) {
   if (visible.length === 0) {
     const scoring = report.evidence == null;
     return (
-      <section id="report" className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-center">
-        <h2 className="text-lg font-bold">
+      <section id="report" className="space-y-2 rounded-lg border border-hairline bg-panel p-6 text-center">
+        <h2 className="font-display text-xl font-semibold text-paper">
           {scoring ? "Scoring your candidates…" : "No strong matches yet"}
         </h2>
-        <p className="mx-auto max-w-md text-sm text-neutral-400">
+        <p className="mx-auto max-w-md text-sm text-muted">
           {scoring ? (
             <>Strong matches appear here the moment one clears the bar — most runs surface
             them in the later batches.</>
@@ -85,29 +85,29 @@ export function ReportView({ report }: { report: UiReport }) {
   }
 
   return (
-    <section id="report" className="space-y-4">
-      {/* summary stat band */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <section id="report" className="space-y-5">
+      {/* instrument readout band */}
+      <div className="grid grid-cols-2 divide-hairline rounded-lg border border-hairline bg-panel sm:grid-cols-4 sm:divide-x">
         <Stat label="Matches" value={String(visible.length)} />
-        <Stat
-          label="across these matches"
-          value={matchedUsd > 0 ? `up to ${fmtUsd(matchedUsd)}` : "—"}
-        />
+        <Stat label="Across matches" value={matchedUsd > 0 ? `≤ ${fmtUsd(matchedUsd)}` : "—"} money />
         <Stat label="Agencies" value={String(agencies)} />
-        <Stat label="Closing ≤30d" value={String(closingSoon)} />
+        <Stat label="Closing ≤ 30d" value={String(closingSoon)} alert={closingSoon > 0} />
       </div>
 
-      {/* tier groups */}
+      {/* tier groups under section rules */}
       {TIERS.map(({ tier, label, badge }) => {
         const group = visible.filter((m) => m.tier === tier);
         if (group.length === 0) return null;
         return (
           <div key={tier} className="space-y-2">
-            <span
-              className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badge}`}
-            >
-              {label} · {group.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <span
+                className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badge}`}
+              >
+                {label} · {group.length}
+              </span>
+              <div className="h-px flex-1 bg-hairline" />
+            </div>
             {group.map((m) => (
               <MatchCard
                 key={m.opportunityId}
@@ -121,7 +121,7 @@ export function ReportView({ report }: { report: UiReport }) {
         );
       })}
       {hidden > 0 && (
-        <p className="text-xs text-neutral-600">
+        <p className="font-mono text-[11px] text-faint">
           {hidden} weaker {hidden === 1 ? "match" : "matches"} (score &lt; {MIN_SCORE}) hidden.
         </p>
       )}
@@ -129,11 +129,29 @@ export function ReportView({ report }: { report: UiReport }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  money = false,
+  alert = false,
+}: {
+  label: string;
+  value: string;
+  money?: boolean;
+  alert?: boolean;
+}) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
-      <p className="text-lg font-bold">{value}</p>
-      <p className="text-xs text-neutral-500">{label}</p>
+    <div className="p-3.5">
+      <p
+        className={`font-mono text-xl font-semibold ${
+          money ? "text-treasury" : alert ? "text-signal" : "text-paper"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
+        {label}
+      </p>
     </div>
   );
 }
@@ -141,15 +159,20 @@ function Stat({ label, value }: { label: string; value: string }) {
 export function HonestNoPanel({ report }: { report: UiReport }) {
   const opps = report.opportunities ?? {};
   return (
-    <section id="report" className="space-y-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
-      <h2 className="text-lg font-bold text-amber-400">No strong federal match</h2>
+    <section id="report" className="space-y-3 rounded-lg border border-signal/40 bg-signal/5 p-5">
+      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-signal">
+        DETERMINATION
+      </p>
+      <h2 className="font-display text-xl font-semibold text-paper">
+        No strong federal match — here&apos;s the honest read
+      </h2>
       {report.honestNoExplanation && (
-        <p className="text-sm text-amber-100/90">{report.honestNoExplanation}</p>
+        <p className="text-sm text-paper/85">{report.honestNoExplanation}</p>
       )}
       {report.matches.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-400/80">
-            Adjacent & state options worth a look
+        <div className="space-y-2 pt-1">
+          <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-muted">
+            ADJACENT &amp; STATE OPTIONS WORTH A LOOK
           </p>
           {report.matches.map((m) => (
             <MatchCard
@@ -163,13 +186,13 @@ export function HonestNoPanel({ report }: { report: UiReport }) {
         </div>
       )}
       {report.rejected.length > 0 && (
-        <div className="space-y-1 border-t border-amber-500/30 pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-400/80">
-            Near-misses (and why they fail)
+        <div className="space-y-1 border-t border-signal/20 pt-3">
+          <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-muted">
+            NEAR-MISSES (AND WHY THEY FAIL)
           </p>
           {report.rejected.map((g: GatedOpportunity) => (
-            <p key={g.opportunity.id} className="text-sm text-amber-100/80">
-              <span className="font-semibold">{g.opportunity.title}</span> —{" "}
+            <p key={g.opportunity.id} className="text-sm text-muted">
+              <span className="font-semibold text-paper/80">{g.opportunity.title}</span> —{" "}
               {g.gates.find((x) => x.verdict === "fail")?.detail ?? "hard eligibility fail"}
             </p>
           ))}
@@ -184,38 +207,42 @@ export function ReportSkeleton() {
   return (
     <div className="space-y-3" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="animate-pulse space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <div className="h-4 w-2/3 rounded bg-neutral-800" />
-          <div className="h-3 w-1/2 rounded bg-neutral-800" />
-          <div className="h-3 w-5/6 rounded bg-neutral-800" />
+        <div key={i} className="animate-pulse space-y-2 rounded-lg border border-hairline bg-panel p-4">
+          <div className="h-4 w-2/3 rounded bg-panel-2" />
+          <div className="h-3 w-1/2 rounded bg-panel-2" />
+          <div className="h-3 w-5/6 rounded bg-panel-2" />
         </div>
       ))}
     </div>
   );
 }
 
-/** Pre-first-run empty state: how the product works, in three steps. */
+/** Pre-first-run empty state: the product's real three-step sequence. */
 export function HowItWorks() {
   const steps = [
     {
-      title: "1 · Describe",
+      n: "01",
+      title: "Describe",
       body: "Tell us about your company in plain words — or just talk to it with voice mode.",
     },
     {
-      title: "2 · Answer to unlock",
+      n: "02",
+      title: "Answer to unlock",
       body: "Each eligibility answer unlocks real dollars: the meter shows exactly what every question is worth.",
     },
     {
-      title: "3 · Apply with evidence",
+      n: "03",
+      title: "Apply with evidence",
       body: "Every match shows why it fits, what could disqualify you, and who actually wins this money.",
     },
   ];
   return (
     <section id="how-it-works" className="grid gap-3 sm:grid-cols-3">
       {steps.map((s) => (
-        <div key={s.title} className="rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-          <p className="text-sm font-semibold text-neutral-200">{s.title}</p>
-          <p className="mt-1 text-xs text-neutral-400">{s.body}</p>
+        <div key={s.n} className="rounded-lg border border-hairline bg-panel p-4">
+          <p className="font-mono text-[11px] text-brass">{s.n}</p>
+          <p className="mt-1 font-display text-base font-semibold text-paper">{s.title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted">{s.body}</p>
         </div>
       ))}
     </section>

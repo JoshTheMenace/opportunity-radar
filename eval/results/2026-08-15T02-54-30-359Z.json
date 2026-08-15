@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-08-15T02:54:30.359Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.8918000000000001,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.98,
+      "notes": "all mustSee themes covered | The explanations are highly specific to the founder’s AI nursing-workflow product, funding target, and hospital-pilot goals, clearly distinguish eligibility uncertainties, and offer actionable next steps, though a few claims such as exact program ranges, deadlines, award ceilings, and the first opportunity’s unusually exact stated purpose require source verification."
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.9045000000000001,
+      "notes": "missed themes: DOE | The explanations are highly tailored to the founder’s Utah aerospace-manufacturing profile, distinguish funding from procurement or advisory support, flag key uncertainties, and provide concrete next steps, with only minor risk that a few emphatic program-fit claims and the precise DPA award-history range rely on source data not shown here."
+    },
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.95,
+      "total": 0.99,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the company’s water-loss technology, Utah location, funding range, and municipal-pilot model, clearly flag uncertainties and offer concrete next steps, with only minor potentially unsupported phrasing such as requiring a partner’s “collaboration record.”"
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.992,
+      "notes": "all mustSee themes covered | The explanations are highly opportunity-specific, consistently connect the company’s cybersecurity R&D, Utah location, funding range, and federal-market goal to each program, clearly flag eligibility and scope uncertainties, and provide concrete next steps without obvious unsupported claims."
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 0.75,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.5925,
+      "notes": "missed themes: community | honesty wrong: expected honestNo=true, got false | The explanations are strongly grounded, opportunity-specific, appropriately caveated, and actionable, but the SBDC entries include a likely irrelevant ownership/lender check and a confusing self-reference to “Opportunity 8,” slightly reducing precision."
+    }
+  ]
+}

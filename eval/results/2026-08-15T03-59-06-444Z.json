@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T03:59:06.444Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.688,
+  "scores": [
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.688,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=false, got true | The explanations are consistently grounded in the founder’s municipal water-loss technology and funding goals, distinguish each program’s specific mismatch without overstating fit, and provide concrete verification and partner-led next steps, with only minor repetition and a somewhat questionable not-a-fit classification for the Utah co-investment option."
+    }
+  ]
+}

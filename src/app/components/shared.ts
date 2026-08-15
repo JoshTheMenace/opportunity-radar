@@ -18,8 +18,29 @@ export function daysUntil(iso: string | null): number | null {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
 }
 
-export const TIERS: { tier: FitTier; label: string; badge: string }[] = [
-  { tier: "likely_fit", label: "Likely fit", badge: "border-green-500/50 bg-green-500/10 text-green-400" },
-  { tier: "verify_eligibility", label: "Verify eligibility", badge: "border-yellow-500/50 bg-yellow-500/10 text-yellow-400" },
-  { tier: "adjacent", label: "Adjacent", badge: "border-orange-500/50 bg-orange-500/10 text-orange-400" },
+/** Tier system: treasury = money-grade fit, brass = attention needed,
+ *  muted = adjacent. Chip styles + the match card's left rail. */
+export const TIERS: { tier: FitTier; label: string; badge: string; rail: string }[] = [
+  {
+    tier: "likely_fit",
+    label: "Likely fit",
+    badge: "border-treasury/50 bg-treasury/10 text-treasury",
+    rail: "border-l-treasury",
+  },
+  {
+    tier: "verify_eligibility",
+    label: "Verify eligibility",
+    badge: "border-brass/50 bg-brass/10 text-brass",
+    rail: "border-l-brass",
+  },
+  {
+    tier: "adjacent",
+    label: "Adjacent",
+    badge: "border-hairline bg-panel-2 text-muted",
+    rail: "border-l-hairline",
+  },
 ];
+
+export function tierRail(tier: FitTier): string {
+  return TIERS.find((t) => t.tier === tier)?.rail ?? "border-l-hairline";
+}

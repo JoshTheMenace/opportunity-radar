@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T03:28:49.488Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.99,
+  "scores": [
+    {
+      "caseId": "aerospace",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.95,
+      "total": 0.99,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the founder’s Utah location, aerospace manufacturing capabilities, funding range, and split capacity/R&D needs, while clearly flagging uncertainties and giving opportunity-specific next steps, with only minor risk from unverified claims about award ranges and expressly targeted sectors."
+    }
+  ]
+}

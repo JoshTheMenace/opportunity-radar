@@ -125,6 +125,103 @@ export async function extractProfile(
   return deriveFields(merged);
 }
 
+// ---------- Fast extraction (readiness-hold phase only) ----------
+//
+// The hold phase needs gate fields + retrieval keywords, nothing more.
+// Extraction latency is output-token-bound, and govKeywords (8-15 strings),
+// NAICS reasoning, and the misc prose fields are most of the output — so the
+// hold uses this slim schema and the full extraction is folded into the
+// ranking pass (pipeline enriches when govKeywords is empty). The eval path
+// and any direct ranking run always use the FULL extractProfile.
+
+const FAST_PROFILE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "name", "industry", "technologyKeywords", "location", "employees",
+    "annualRevenueUsd", "isForProfit", "isSmallBusiness", "majorityUsOwned",
+    "hasActiveRnD", "productMaturity", "capitalNeedUsd", "samRegistered",
+    "fundingStage", "capitalRaisedUsd",
+  ],
+  properties: {
+    name: nullable("string"),
+    industry: nullable("string"),
+    technologyKeywords: strArray(5, 10),
+    location: {
+      type: ["object", "null"],
+      additionalProperties: false,
+      required: ["city", "state"],
+      properties: { city: nullable("string"), state: nullable("string") },
+    },
+    employees: nullable("number"),
+    annualRevenueUsd: nullable("number"),
+    isForProfit: nullable("boolean"),
+    isSmallBusiness: nullable("boolean"),
+    majorityUsOwned: nullable("boolean"),
+    hasActiveRnD: nullable("boolean"),
+    productMaturity: nullable("string"),
+    capitalNeedUsd: {
+      type: "object",
+      additionalProperties: false,
+      required: ["min", "max"],
+      properties: { min: nullable("number"), max: nullable("number") },
+    },
+    samRegistered: nullable("boolean"),
+    fundingStage: nullable("string"),
+    capitalRaisedUsd: nullable("number"),
+  },
+} as const;
+
+type FastProfile = Pick<
+  CompanyProfile,
+  | "name" | "industry" | "technologyKeywords" | "location" | "employees"
+  | "annualRevenueUsd" | "isForProfit" | "isSmallBusiness" | "majorityUsOwned"
+  | "hasActiveRnD" | "productMaturity" | "capitalNeedUsd" | "samRegistered"
+  | "fundingStage" | "capitalRaisedUsd"
+>;
+
+/** Slim, fast profile extraction for the readiness hold. Same guarantees as
+ *  extractProfile (verbatim description, prior answers override), but the
+ *  gov-language fields come back empty — the pipeline enriches before ranking. */
+export async function extractProfileFast(
+  founderText: string,
+  prior?: Partial<CompanyProfile>,
+): Promise<CompanyProfile> {
+  const extracted = await completeJSON<FastProfile>(
+    `Extract the company facts below from the founder text. Every field is required; null when the text does not support a value.
+- location: state as its 2-letter USPS code (e.g. "Utah" -> "UT").
+- technologyKeywords: 5-10 startup-language terms for the product/technology.
+- productMaturity: one of "concept" | "prototype" | "pilot" | "in-market", else null.
+- capitalNeedUsd: how much funding they're seeking (a single figure fills min).
+Inference: employees < 500 and revenue < $50M => isSmallBusiness true; a company selling a product/service => isForProfit true. Do NOT infer majorityUsOwned or samRegistered.
+
+Founder text:
+"""
+${founderText}
+"""
+${prior && Object.keys(prior).length ? `\nKnown facts from prior interview answers (authoritative):\n${JSON.stringify(prior)}\n` : ""}`,
+    FAST_PROFILE_SCHEMA,
+    { system: SYSTEM, effort: "low", maxTokens: 700 },
+  );
+  const merged: CompanyProfile = {
+    description: founderText,
+    naicsGuesses: [],
+    govKeywords: [], // signals "not yet enriched" to the pipeline
+    useOfFunds: null,
+    targetCustomers: null,
+    milestones: [],
+    ...extracted,
+  };
+  if (prior) {
+    for (const [k, v] of Object.entries(prior) as [keyof CompanyProfile, unknown][]) {
+      if (v !== undefined && v !== null)
+        (merged as unknown as Record<string, unknown>)[k] = v;
+    }
+  }
+  merged.description = founderText; // verbatim, always
+  return deriveFields(merged);
+}
+
 // ---------- Deterministic derivation (never ask what we can infer) ----------
 
 /**

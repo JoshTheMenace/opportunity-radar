@@ -1,7 +1,9 @@
 "use client";
 
-// Region: eligibility meter — headline "unlocked of potential" number plus
-// per-field unlock chips. Lives in the guidance rail.
+// Region: eligibility meter — a ledger, not a dashboard widget. Leads with
+// the believable fact (program count), shows the money as what it is
+// (summed posted ceilings), and lists each unanswered question as a ledger
+// row of what it could unlock. Lives in the guidance rail.
 
 import type { EligibilityMeter } from "@/lib/types";
 import { fmtUsd } from "./shared";
@@ -15,41 +17,67 @@ export default function MeterPanel({
   preliminary?: boolean;
 }) {
   const remaining = Math.max(0, meter.potentialUsd - meter.unlockedUsd);
+  const pct =
+    meter.potentialUsd > 0
+      ? Math.min(100, Math.round((meter.unlockedUsd / meter.potentialUsd) * 100))
+      : 0;
   return (
-    <section id="meter" className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-      {/* Lead with the believable fact (program count); the dollar total is
-          framed as what it is — summed posted ceilings, not a promise. */}
-      <div className="flex items-end gap-3">
-        <span className="text-3xl font-bold text-green-400">{meter.unlockedCount}</span>
-        <span className="pb-1 text-sm text-neutral-400">
-          programs pass your eligibility gates
-        </span>
-      </div>
-      <p className="text-xs text-neutral-500">
-        Posted award ceilings across them total {fmtUsd(meter.unlockedUsd)} — your realistic
-        picks are ranked in the report.
+    <section id="meter" className="space-y-3 rounded-lg border border-hairline bg-panel p-4">
+      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+        ELIGIBILITY LEDGER
       </p>
+      <div className="flex items-end gap-3">
+        <span className="font-mono text-3xl font-semibold text-treasury">
+          {meter.unlockedCount}
+        </span>
+        <span className="pb-1 text-sm text-muted">programs pass your eligibility gates</span>
+      </div>
+      <p className="text-xs text-muted">
+        Posted award ceilings across them total{" "}
+        <span className="font-mono text-paper">{fmtUsd(meter.unlockedUsd)}</span> — your
+        realistic picks are ranked in the report.
+      </p>
+
+      {/* confirmed vs. still-answerable, as a gauge */}
+      {meter.potentialUsd > 0 && (
+        <div className="space-y-1">
+          <div className="h-1.5 overflow-hidden rounded-full bg-panel-2">
+            <div
+              className="h-full rounded-full bg-treasury transition-[width] duration-700"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="flex justify-between font-mono text-[10px] text-faint">
+            <span>{fmtUsd(meter.unlockedUsd)} confirmed</span>
+            <span>{fmtUsd(meter.potentialUsd)} if all answers land</span>
+          </div>
+        </div>
+      )}
+
       {preliminary && (
-        <p className="text-xs text-amber-300">
+        <p className="text-xs text-brass">
           Preliminary — these numbers firm up once the required questions are answered.
         </p>
       )}
       {remaining > 0 && (
-        <p className="text-xs text-amber-300">
+        <p className="text-xs text-brass">
           +{fmtUsd(remaining)} more could unlock — answer the questions below
         </p>
       )}
       {meter.unlocks.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <ul className="divide-y divide-hairline border-t border-hairline">
           {meter.unlocks.map((u) => (
-            <span
+            <li
               key={u.field}
-              className="rounded-full border border-green-500/40 bg-green-500/10 px-2.5 py-0.5 text-xs text-green-400"
+              className="flex items-baseline justify-between gap-2 py-1.5 text-xs"
             >
-              up to +{fmtUsd(u.unlockUsd)} · {u.opportunityCount} opp
-            </span>
+              <span className="font-mono text-treasury">+{fmtUsd(u.unlockUsd)}</span>
+              <span className="text-right text-muted">
+                {u.opportunityCount} program{u.opportunityCount === 1 ? "" : "s"}
+              </span>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );

@@ -477,37 +477,37 @@ export default function VoicePanel({
 
   const busy = status === "connecting" || status === "live";
   return (
-    <section className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-3">
+    <section className="space-y-2 rounded-lg border border-hairline bg-panel p-3">
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={busy ? stop : () => void start()}
-          className={`rounded-lg px-4 py-1.5 text-sm font-semibold ${
+          className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors ${
             busy
-              ? "border border-red-500/50 text-red-400 hover:bg-red-500/10"
-              : "border border-neutral-700 hover:bg-neutral-800"
+              ? "border border-signal/50 text-signal hover:bg-signal/10"
+              : "border border-hairline text-muted hover:bg-panel-2 hover:text-paper"
           }`}
         >
           {status === "live" ? "■ End voice" : status === "connecting" ? "Connecting…" : "🎤 Voice mode"}
         </button>
         {status === "live" && (
-          <span className="flex items-center gap-1.5 text-xs text-green-400">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+          <span className="flex items-center gap-1.5 text-xs text-treasury">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-treasury" />
             live — Radar will greet you
           </span>
         )}
-        {err && <span className="text-xs text-red-400">{err}</span>}
+        {err && <span className="text-xs text-signal">{err}</span>}
       </div>
       {log.length > 0 && (
-        <div className="max-h-40 space-y-1 overflow-y-auto border-t border-neutral-800 pt-2 text-xs">
+        <div className="max-h-40 space-y-1 overflow-y-auto border-t border-hairline pt-2 text-xs">
           {log.map((line, i) => (
             <p
               key={i}
               className={
                 line.who === "you"
-                  ? "text-neutral-300"
+                  ? "text-paper/85"
                   : line.who === "radar"
-                    ? "text-blue-300"
-                    : "font-mono text-neutral-500"
+                    ? "text-brass"
+                    : "font-mono text-faint"
               }
             >
               {line.who === "you" ? "You: " : line.who === "radar" ? "Radar: " : ""}

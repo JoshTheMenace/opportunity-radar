@@ -1,6 +1,8 @@
 "use client";
 
 // Region: intake — the founder's description box + analyze action.
+// Styled as the instrument's intake form (the OR-424 nods at the SF-424,
+// the federal application form every grantee learns to dread).
 // Sample chips give first-time users (and the demo) a one-tap start.
 
 const SAMPLES: { label: string; text: string }[] = [
@@ -32,17 +34,20 @@ export default function IntakePanel({
   onAnalyze: () => void;
 }) {
   return (
-    <section id="intake" className="space-y-2">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">
+    <section id="intake" className="space-y-3">
+      <div className="space-y-1.5">
+        <p className="font-mono text-[11px] font-medium tracking-[0.18em] text-brass">
+          FORM OR-424 · FUNDING FIT DETERMINATION
+        </p>
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-paper sm:text-4xl">
           Find the government funding your startup qualifies for
         </h1>
-        <p className="text-sm text-neutral-400">
+        <p className="text-sm text-muted">
           Describe your company. We map it to US government funding — honestly.
         </p>
       </div>
       {restored && (
-        <p className="text-xs text-neutral-500">
+        <p className="font-mono text-xs text-faint">
           Restored your saved profile — interview answers carry over. Click Analyze to re-run.
         </p>
       )}
@@ -51,24 +56,24 @@ export default function IntakePanel({
         onChange={(e) => onText(e.target.value)}
         placeholder="Tell us about your company — what you build, who it's for, your stage, where you're based…"
         rows={5}
-        className="w-full resize-y rounded-lg border border-neutral-800 bg-neutral-900 p-3 text-sm placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none"
+        className="w-full resize-y rounded-lg border border-hairline bg-panel p-3.5 text-sm text-paper placeholder:text-faint focus:border-brass focus:outline-none"
       />
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={onAnalyze}
           disabled={busy || !text.trim()}
-          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg bg-brass px-5 py-2 text-sm font-semibold text-ink transition-colors hover:bg-brass-bright disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? "Analyzing…" : "Analyze"}
         </button>
         {!text.trim() && (
           <>
-            <span className="text-xs text-neutral-500">or try:</span>
+            <span className="text-xs text-faint">or try:</span>
             {SAMPLES.map((s) => (
               <button
                 key={s.label}
                 onClick={() => onText(s.text)}
-                className="rounded-full border border-neutral-700 px-3 py-1 text-xs text-neutral-300 hover:bg-neutral-800"
+                className="rounded-full border border-hairline px-3 py-1 text-xs text-muted transition-colors hover:border-brass/50 hover:text-paper"
               >
                 {s.label}
               </button>

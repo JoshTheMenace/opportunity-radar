@@ -25,7 +25,16 @@ const THEME_SYNONYMS: Record<string, string[]> = {
   workforce: ["workforce", "job training", "apprenticeship", "apprentice"],
   dod: ["dod", "department of defense", "defense", "darpa", "afwerx", "air force", "army", "navy", "space force"],
   nasa: ["nasa", "aeronautics and space"],
-  doe: ["doe", "department of energy"],
+  // DB agency strings are often inverted ("ENERGY, DEPARTMENT OF") or DOE
+  // sub-entities (ARPA-E, NETL) — recognize them, or surfaced DOE programs
+  // score as missed unless the prose happens to spell out "Department of Energy".
+  doe: [
+    "doe",
+    "department of energy",
+    "energy, department of",
+    "advanced research projects agency energy",
+    "national energy technology laboratory",
+  ],
   procurement: ["procurement", "contract", "contracting", "acquisition"],
   epa: ["epa", "environmental protection"],
   infrastructure: ["infrastructure", "state revolving fund", "srf", "bipartisan infrastructure"],

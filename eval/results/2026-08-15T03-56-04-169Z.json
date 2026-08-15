@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T03:56:04.169Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.984,
+  "scores": [
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.92,
+      "total": 0.984,
+      "notes": "all mustSee themes covered | The explanations are highly specific to the company’s water-loss technology, Utah location, funding range, and municipal pilots, with clear eligibility caveats and actionable next steps, though repeated “strongest match” language and a few asserted program details slightly weaken precision."
+    }
+  ]
+}

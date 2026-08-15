@@ -101,7 +101,8 @@ const consumer = classifyFundingIntent(
   }),
 );
 assert("consumer => no rnd intent", !consumer.all.includes("rnd"), consumer.all);
-assert("consumer falls back to working_capital", consumer.primary === "working_capital", consumer);
+assert("consumer expansion => growth intent", consumer.primary === "growth", consumer);
+assert("growth kinds are non-federal-ish", consumer.preferredKinds.includes("loan") && !consumer.preferredKinds.includes("sbir_sttr"), consumer.preferredKinds);
 
 // 5. Default fallback: nothing matches.
 const blankRnD = classifyFundingIntent(makeProfile({ hasActiveRnD: true }));

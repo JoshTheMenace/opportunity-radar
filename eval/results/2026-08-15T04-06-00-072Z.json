@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T04:06:00.072Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.986,
+  "scores": [
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.93,
+      "total": 0.986,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the company’s Utah location, sensor-and-AI water-loss product, municipal pilot goals, funding range, and financing stage, clearly distinguish direct from adjacent fit, and provide specific verification and next steps, with only minor risk from uncited program-specific assertions such as award ranges, ownership rules, and eligibility structures."
+    }
+  ]
+}

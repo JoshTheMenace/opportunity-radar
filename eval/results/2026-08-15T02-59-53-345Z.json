@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-08-15T02:59:53.345Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.9713,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.988,
+      "notes": "all mustSee themes covered | The explanations are highly tailored to the founder’s nursing-workflow SaaS and hospital-pilot goals, clearly flag missing eligibility and notice details, and provide opportunity-specific next steps, with only minor risk that a few asserted program themes and award ranges cannot be confirmed from the supplied context."
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.97,
+      "total": 0.9065000000000001,
+      "notes": "missed themes: DOE | The explanations consistently connect each opportunity to the founder’s Utah aerospace-manufacturing and R&D situation, clearly flag unresolved eligibility and mission-fit questions, avoid treating capacity expansion as automatically fundable, and provide specific, actionable verification steps without obvious unsupported claims."
+    },
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.988,
+      "notes": "all mustSee themes covered | The explanations are highly specific to the company’s water-loss technology, Utah location, funding range, and municipal-pilot goals, appropriately distinguish direct from adjacent fits, flag uncertainties without asserting unsupported eligibility, and provide concrete next steps, with only minor generic verification language."
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.992,
+      "notes": "all mustSee themes covered | The explanations are consistently founder-specific, opportunity-specific, appropriately cautious about eligibility and program scope, and provide concrete verification and pursuit steps without obvious unsupported inventions."
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.91,
+      "total": 0.982,
+      "notes": "all mustSee themes covered | The explanations are founder-specific, opportunity-specific, candid about weak federal fit, and mostly actionable, with a minor inconsistency in calling SBA 7(a) the “only plausible lead” despite identifying several credible adjacent Utah financing paths."
+    }
+  ]
+}

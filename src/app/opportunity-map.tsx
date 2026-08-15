@@ -18,6 +18,7 @@ import VoicePanel from "./voice-panel";
 import SaveMonitor from "./save-monitor";
 import IntakePanel from "./components/intake-panel";
 import ActivityFeed from "./components/activity-feed";
+import StatusStrip from "./components/status-strip";
 import MeterPanel from "./components/meter-panel";
 import InterviewPanel from "./components/interview-panel";
 import { HonestNoPanel, HowItWorks, ReportSkeleton, ReportView } from "./components/report-view";
@@ -229,7 +230,7 @@ export default function OpportunityMap() {
       {error && (
         <div
           id="error"
-          className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400"
+          className="rounded-lg border border-signal/50 bg-signal/10 p-3 text-sm text-signal"
         >
           {error}
         </div>
@@ -264,10 +265,11 @@ export default function OpportunityMap() {
         </aside>
 
         <div id="results" className="min-w-0 space-y-4 lg:order-1">
-          <ActivityFeed lines={activity} busy={busy} />
+          <StatusStrip lines={activity} busy={busy} />
+          <ActivityFeed lines={activity} busy={busy} report={report} />
           {report && busy && (
-            <p className="animate-pulse text-xs text-neutral-500">
-              Scoring in progress — matches below update live…
+            <p className="animate-pulse font-mono text-xs text-faint">
+              Matches below update live as scoring finishes…
             </p>
           )}
           {busy && !report && <ReportSkeleton />}

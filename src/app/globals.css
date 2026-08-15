@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================================
+   Opportunity Radar — "a precision instrument from a modern
+   treasury." Green-cast ink ground, paper text, brass attention,
+   treasury money, signal red. Fraunces display / Public Sans UI /
+   IBM Plex Mono data. All components draw from these tokens.
+   ============================================================ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* ground + surfaces */
+  --color-ink: #0e1512;
+  --color-panel: #161f1a;
+  --color-panel-2: #1d2822;
+  --color-hairline: #2b3a31;
+  /* text */
+  --color-paper: #eae4d3;
+  --color-muted: #8fa096;
+  --color-faint: #5c6b62;
+  /* functional accents — brass = attention, treasury = money/pass,
+     signal = deadlines/fails. Never decorative. */
+  --color-brass: #d9a441;
+  --color-brass-bright: #edbb5a;
+  --color-treasury: #57b98a;
+  --color-signal: #e0604c;
+  /* type */
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-public-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-ink);
+  /* faint instrument-glow vignette; single gradient, no texture noise */
+  background-image: radial-gradient(
+    900px 420px at 50% -80px,
+    rgba(87, 185, 138, 0.07),
+    transparent 70%
+  );
+  color: var(--color-paper);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Numbers read as ledger entries everywhere. */
+.font-mono,
+code,
+pre {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: rgba(217, 164, 65, 0.35);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brass);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Radar scope sweep + blip pop-in. Both sit still under reduced motion. */
+@keyframes scope-sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes blip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.scope-sweep {
+  animation: scope-sweep 3.6s linear infinite;
+  transform-origin: center;
+}
+.scope-blip {
+  animation: blip-in 0.5s ease-out backwards;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scope-sweep {
+    animation: none;
+    opacity: 0;
+  }
+  .scope-blip {
+    animation: none;
+  }
+  .animate-pulse {
+    animation: none;
+  }
 }

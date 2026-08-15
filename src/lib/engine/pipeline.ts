@@ -14,7 +14,7 @@ import type {
   GatedOpportunity,
   MatchReport,
 } from "../types";
-import { extractProfile } from "./profile";
+import { extractProfile, extractProfileFast } from "./profile";
 import { retrieveCandidates, countBySource } from "./retrieve";
 import { evaluateGates } from "./gates";
 import { buildMeter, buildQuestions, formatUsdCompact } from "./meter";
@@ -58,6 +58,12 @@ export async function runAnalysis(
   if (priorComplete) {
     emit({ type: "activity", message: "Updating your profile..." });
     profile = { ...(prior as CompanyProfile), description: founderText };
+  } else if (opts.gatherFirst) {
+    // Interactive first pass: slim extraction (gate fields + keywords only)
+    // gets questions on screen fast; the gov-language enrichment happens
+    // right before ranking, where its cost hides inside the big phase.
+    emit({ type: "activity", message: "Reading your company description..." });
+    profile = await extractProfileFast(founderText, prior ?? undefined);
   } else {
     emit({ type: "activity", message: "Reading your company description..." });
     profile = await extractProfile(founderText, prior ?? undefined);
@@ -74,15 +80,15 @@ export async function runAnalysis(
     message: `Searching ${total.toLocaleString("en-US")} cached opportunities (${perSource || "empty database"})...`,
   });
 
-  const candidates = retrieveCandidates(profile);
+  let candidates = retrieveCandidates(profile);
   emit({
     type: "activity",
     message: `Screening ${candidates.length} opportunities against eligibility gates...`,
   });
-  const gated = candidates.map((opp) => evaluateGates(profile, opp));
+  let gated = candidates.map((opp) => evaluateGates(profile, opp));
 
-  const meter = buildMeter(gated);
-  const questions = sortQuestionsRequiredFirst(buildQuestions(gated, profile));
+  let meter = buildMeter(gated);
+  let questions = sortQuestionsRequiredFirst(buildQuestions(gated, profile));
   emit({ type: "questions", questions, meter });
 
   // Ranking readiness: without the required basics (see readiness.ts) the
@@ -106,6 +112,23 @@ export async function runAnalysis(
       questions,
       evidence: {},
     };
+  }
+
+  // Fast-extracted profiles lack the gov-language keywords ranking and
+  // retrieval quality depend on — enrich with the full extraction now, then
+  // re-retrieve/gate so ranking sees the complete candidate set.
+  if (profile.govKeywords.length === 0) {
+    emit({
+      type: "activity",
+      message: "Translating your profile into government program language...",
+    });
+    profile = await extractProfile(profile.description, profile);
+    emit({ type: "profile", profile });
+    candidates = retrieveCandidates(profile);
+    gated = candidates.map((opp) => evaluateGates(profile, opp));
+    meter = buildMeter(gated);
+    questions = sortQuestionsRequiredFirst(buildQuestions(gated, profile));
+    emit({ type: "questions", questions, meter });
   }
 
   emit({

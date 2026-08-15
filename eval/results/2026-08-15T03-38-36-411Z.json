@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-08-15T03:38:36.411Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.9864,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.93,
+      "total": 0.986,
+      "notes": "all mustSee themes covered | The explanations are highly tailored to the company’s nursing-focused AI SaaS and hospital-pilot goals, distinguish direct from conditional fit, and provide concrete verification and outreach steps, though a few fit claims rely heavily on broad program language and do not consistently address the company’s existing commercialization stage or requested award range."
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.88,
+      "total": 0.976,
+      "notes": "all mustSee themes covered | The explanations are highly specific, appropriately distinguish R&D from capacity financing, and offer concrete verification steps, though labeling the rural Utah program a likely fit before establishing that the Ogden facility qualifies and asserting several precise program terms slightly weakens grounding."
+    },
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.992,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the company’s water-loss technology, funding range, location, and pilot goals, clearly distinguish direct from adjacent fit, flag concrete eligibility uncertainties, and provide actionable go/no-go next steps without obvious unsupported invention."
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.95,
+      "total": 0.99,
+      "notes": "all mustSee themes covered | The explanations consistently connect the company’s AI-cybersecurity work, Utah location, funding target, and federal-market goal to opportunity-specific constraints, while clearly flagging uncertainties and providing concrete next steps without materially inventing founder facts."
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.988,
+      "notes": "all mustSee themes covered | The explanations consistently tie each program to the Utah-based marketplace’s expansion financing need, distinguish generic or adjacent fit from mission alignment, and provide specific verification and pre-screening actions without asserting unsupported founder facts."
+    }
+  ]
+}

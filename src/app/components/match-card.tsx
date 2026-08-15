@@ -1,15 +1,15 @@
 "use client";
 
-// One opportunity match card: title row, meta row, odds, evidence strip,
-// why-fit/disqualify/verify/next-steps, plan-backward timeline, program
-// officer preview, and the outbound link.
+// One opportunity match card: tier rail, title row, mono meta row, odds,
+// evidence strip, why-fit/disqualify/verify/next-steps, plan-backward
+// timeline, program officer preview, and the outbound link.
 
 import Link from "next/link";
 import { useState } from "react";
 import type { CompanyProfile, EvidenceSummary, Opportunity, RankedMatch } from "@/lib/types";
 import { buildTimeline, oddsLabel } from "@/lib/engine/timeline";
 import type { OfficerPreview } from "@/lib/engine/officer";
-import { daysUntil, fmtUsd } from "./shared";
+import { daysUntil, fmtUsd, tierRail } from "./shared";
 
 export default function MatchCard({
   match,
@@ -52,19 +52,21 @@ export default function MatchCard({
   }
 
   return (
-    <article className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
+    <article
+      className={`space-y-2.5 rounded-lg border border-hairline border-l-2 bg-panel p-4 ${tierRail(match.tier)}`}
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-semibold">
+        <h3 className="font-semibold text-paper">
           <Link
             href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
-            className="hover:text-blue-300 hover:underline"
+            className="transition-colors hover:text-brass-bright hover:underline"
           >
             {opp?.title ?? match.opportunityId}
           </Link>
         </h3>
-        <span className="text-xs text-neutral-500">score {match.score}</span>
+        <span className="font-mono text-xs text-faint">score {match.score}</span>
       </div>
-      <p className="text-xs text-neutral-400">
+      <p className="font-mono text-xs text-muted">
         {opp ? (
           <>
             {dedupeAgency(opp.agency)} · {opp.kind.replace(/_/g, "/")} ·{" "}
@@ -74,7 +76,7 @@ export default function MatchCard({
                 ? `up to ${fmtUsd(opp.awardCeilingUsd)}`
                 : "award size unlisted"}
             {opp.closeDate && (
-              <span className={close != null && close <= 30 ? " text-red-400" : ""}>
+              <span className={close != null && close <= 30 ? " text-signal" : ""}>
                 {" "}· closes {opp.closeDate}
                 {close != null && close >= 0 ? ` (${close}d)` : ""}
               </span>
@@ -84,31 +86,33 @@ export default function MatchCard({
           "details unavailable"
         )}
       </p>
-      {odds && <p className="text-xs text-neutral-500">{odds}</p>}
+      {odds && <p className="font-mono text-xs text-faint">{odds}</p>}
       {evidence && <EvidenceStrip evidence={evidence} />}
       <dl className="space-y-1.5 text-sm">
-        <CardRow label="Why it fits" text={match.whyFit} tone="text-green-400" />
-        <CardRow label="Could disqualify" text={match.whatCouldDisqualify} tone="text-red-400" />
-        <CardRow label="Verify" text={match.whatToVerify} tone="text-yellow-400" />
-        <CardRow label="Next steps" text={match.nextSteps} tone="text-blue-400" />
+        <CardRow label="Why it fits" text={match.whyFit} tone="text-treasury" />
+        <CardRow label="Could disqualify" text={match.whatCouldDisqualify} tone="text-signal" />
+        <CardRow label="Verify" text={match.whatToVerify} tone="text-brass" />
+        <CardRow label="Next steps" text={match.nextSteps} tone="text-paper/70" />
       </dl>
       {actionable && opp && profile && (
         <div>
           <button
             type="button"
             onClick={() => setShowPlan((v) => !v)}
-            className="text-xs font-semibold text-neutral-400 hover:text-neutral-200"
+            className="font-mono text-xs font-semibold text-muted transition-colors hover:text-paper"
           >
             {showPlan ? "▾" : "▸"} Plan backward
           </button>
           {showPlan && (
-            <ol className="mt-1 space-y-1">
+            <ol className="mt-1.5 space-y-1.5 border-l border-hairline pl-3">
               {buildTimeline(opp, profile).map((s) => (
                 <li key={s.title} className="text-xs">
-                  <span className={`font-semibold ${s.urgent ? "text-red-400" : "text-neutral-300"}`}>
+                  <span
+                    className={`font-mono font-semibold ${s.urgent ? "text-signal" : "text-paper/85"}`}
+                  >
                     {s.due ?? "rolling"} · {s.title}
                   </span>
-                  <span className="text-neutral-500"> — {s.detail}</span>
+                  <span className="text-muted"> — {s.detail}</span>
                 </li>
               ))}
             </ol>
@@ -117,21 +121,21 @@ export default function MatchCard({
       )}
       {officer && <OfficerPanel preview={officer} />}
       {officerErr && (
-        <p className="text-xs text-neutral-500">Officer preview unavailable ({officerErr})</p>
+        <p className="text-xs text-faint">Officer preview unavailable ({officerErr})</p>
       )}
       <div className="flex flex-wrap items-center gap-3 pt-1">
         <Link
           href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
-          className="rounded-md border border-blue-500/50 px-3 py-1 text-xs font-semibold text-blue-300 hover:bg-blue-500/10"
+          className="rounded-md border border-brass/50 px-3 py-1 text-xs font-semibold text-brass transition-colors hover:bg-brass/10"
         >
-          Details & submission plan →
+          Details &amp; submission plan →
         </Link>
         {actionable && profile && !officer && (
           <button
             type="button"
             onClick={() => void loadOfficer()}
             disabled={officerBusy}
-            className="rounded-md border border-neutral-700 px-3 py-1 text-xs font-semibold text-neutral-300 hover:bg-neutral-800 disabled:opacity-50"
+            className="rounded-md border border-hairline px-3 py-1 text-xs font-semibold text-muted transition-colors hover:bg-panel-2 hover:text-paper disabled:opacity-50"
           >
             {officerBusy ? "Reviewing…" : "Program officer preview"}
           </button>
@@ -141,7 +145,7 @@ export default function MatchCard({
             href={opp.url}
             target="_blank"
             rel="noreferrer"
-            className="text-xs text-blue-400 underline hover:text-blue-300"
+            className="text-xs text-muted underline transition-colors hover:text-paper"
           >
             Official notice ↗
           </a>
@@ -179,13 +183,15 @@ function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
   if (stats.length === 0 && similar.length === 0) return null;
 
   return (
-    <div className="space-y-1 rounded-md border border-neutral-800 bg-neutral-950 p-2.5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-        Who wins this money
+    <div className="space-y-1 rounded-md border border-hairline bg-ink p-2.5">
+      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+        WHO WINS THIS MONEY
       </p>
-      {stats.length > 0 && <p className="text-xs text-neutral-300">{stats.join(" · ")}</p>}
+      {stats.length > 0 && (
+        <p className="font-mono text-xs text-paper/85">{stats.join(" · ")}</p>
+      )}
       {similar.length > 0 && (
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-muted">
           {similar.map((a, i) => {
             const label = `${a.recipient} · ${fmtUsd(a.amountUsd)}${a.year ? ` · ${a.year}` : ""}`;
             return (
@@ -196,7 +202,7 @@ function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
                     href={a.link}
                     target="_blank"
                     rel="noreferrer"
-                    className="underline hover:text-blue-300"
+                    className="underline transition-colors hover:text-paper"
                   >
                     {label}
                   </a>
@@ -212,40 +218,46 @@ function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
   );
 }
 
-/** Inline result of the "how would a program officer read this?" simulation. */
+/** Inline result of the "how would a program officer read this?" simulation —
+ *  styled as the memo it is. */
 function OfficerPanel({ preview }: { preview: OfficerPreview }) {
   const b = preview.breakdown;
   return (
-    <div className="space-y-1.5 rounded-md border border-neutral-800 bg-neutral-950 p-2.5">
-      <p className="text-sm font-semibold">
-        Program officer preview · {preview.score}{" "}
-        <span className="rounded-full border border-neutral-700 px-2 py-0.5 text-xs font-normal text-neutral-300">
+    <div className="space-y-2 rounded-md border border-hairline bg-ink p-3">
+      <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+        PROGRAM OFFICER PREVIEW
+      </p>
+      <p className="text-sm font-semibold text-paper">
+        <span className="font-mono">{preview.score}</span>{" "}
+        <span className="ml-1 rounded-full border border-hairline px-2 py-0.5 text-xs font-normal text-muted">
           {preview.tier}
         </span>
       </p>
-      <p className="text-xs text-neutral-500">
+      <p className="font-mono text-xs text-faint">
         merit {b.technical_merit} · mission {b.mission_alignment} · stage {b.stage_readiness} ·
         budget {b.budget_realism}
       </p>
       <dl className="space-y-1.5 text-sm">
         <OfficerList
           label="Strengths"
-          tone="text-green-400"
+          tone="text-treasury"
           items={preview.strengths.map((s) => [s.headline, s.detail])}
         />
         <OfficerList
           label="Concerns"
-          tone="text-red-400"
+          tone="text-signal"
           items={preview.concerns.map((c) => [c.headline, c.detail])}
         />
         <OfficerList
           label="What to improve"
-          tone="text-yellow-400"
+          tone="text-brass"
           items={preview.whatToImprove.map((w) => [w.action, w.detail])}
         />
       </dl>
-      <p className="text-sm italic text-neutral-400">{preview.officerNote}</p>
-      <p className="text-xs text-neutral-500">
+      <p className="border-l-2 border-hairline pl-3 font-display text-sm italic leading-relaxed text-paper/80">
+        {preview.officerNote}
+      </p>
+      <p className="font-mono text-xs text-faint">
         confidence {preview.confidence}% — {preview.confidenceNote}
       </p>
     </div>
@@ -267,8 +279,9 @@ function OfficerList({
     <div>
       <dt className={`text-xs font-semibold uppercase tracking-wide ${tone}`}>{label}</dt>
       {items.map(([head, detail], i) => (
-        <dd key={i} className="text-neutral-300">
-          <span className="font-medium">{head}</span> — {detail}
+        <dd key={i} className="text-paper/85">
+          <span className="font-medium">{head}</span>{" "}
+          <span className="text-muted">— {detail}</span>
         </dd>
       ))}
     </div>
@@ -279,7 +292,7 @@ function CardRow({ label, text, tone }: { label: string; text: string; tone: str
   return (
     <div>
       <dt className={`text-xs font-semibold uppercase tracking-wide ${tone}`}>{label}</dt>
-      <dd className="text-neutral-300">{text}</dd>
+      <dd className="text-paper/85">{text}</dd>
     </div>
   );
 }

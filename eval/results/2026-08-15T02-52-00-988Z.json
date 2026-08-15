@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-15T02:52:00.988Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.501,
+  "scores": [
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 0.5,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.88,
+      "total": 0.501,
+      "notes": "missed themes: workforce, community | honesty wrong: expected honestNo=true, got false | The explanations are generally founder-specific, opportunity-specific, appropriately caveated, and actionable, but they slightly overreach by recasting the need as “runway,” calling one option the “strongest” without supporting comparison, and occasionally implying unprovided plans such as Utah hiring."
+    }
+  ]
+}

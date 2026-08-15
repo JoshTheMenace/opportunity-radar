@@ -13,6 +13,7 @@ export type FundingIntent =
   | "pilot_deployment"
   | "federal_market_entry"
   | "working_capital"
+  | "growth"
   | "workforce_training";
 
 interface IntentRule {
@@ -52,6 +53,12 @@ const RULES: IntentRule[] = [
     keywords: ["working capital", "runway", "hiring", "payroll", "operating costs"],
     kinds: ["loan", "equity"],
     label: "extend runway and working capital",
+  },
+  {
+    intent: "growth",
+    keywords: ["expand", "expansion", "new markets", "new metro", "customer acquisition", "go-to-market", "scale sales"],
+    kinds: ["loan", "equity", "services"],
+    label: "fund commercial expansion",
   },
   {
     intent: "workforce_training",
@@ -99,7 +106,10 @@ export function classifyFundingIntent(profile: CompanyProfile): IntentResult {
   };
 }
 
-/** One prompt-ready sentence describing the funding intent for the ranker. */
+/** One prompt-ready sentence describing the funding intent for the ranker.
+ *  Direction matters: intent DEMOTES kind-mismatched programs; it must never
+ *  lift a generic program over the rubric's swap test (that regression
+ *  flipped the honest-no trap case). */
 export function intentPromptLine(profile: CompanyProfile): string {
   const { primary, all, preferredKinds, label } = classifyFundingIntent(profile);
   const alsoRnd = all.includes("rnd");
@@ -107,5 +117,9 @@ export function intentPromptLine(profile: CompanyProfile): string {
     primary === "rnd" || alsoRnd
       ? ""
       : " Pure R&D programs fit only if the company also has active R&D.";
-  return `Funding intent: ${label} — programs of kind ${preferredKinds.join("/")} serve this need best.${caveat}`;
+  return (
+    `Funding intent: ${label}. Score a program lower when its kind does not serve this need ` +
+    `(${preferredKinds.join("/")} do); a matching kind is necessary, never sufficient — ` +
+    `it does not make a generic program a fit.${caveat}`
+  );
 }
