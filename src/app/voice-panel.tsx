@@ -7,9 +7,11 @@
 // - The AGENT speaks first: a [SESSION STARTED] turn is injected on connect.
 // - analyze_company is intercepted CLIENT-SIDE: the tool returns
 //   "analysis_started" immediately and the real engine run streams in the
-//   background (driving the on-screen UI via onEngineEvent). Progress and
-//   results are queued as [ANALYSIS UPDATE] turns, flushed between model
-//   turns so the agent weaves them in naturally while it keeps interviewing.
+//   background (driving the on-screen UI via onEngineEvent). Interim state
+//   (screening done + askable questions) is appended as SILENT context
+//   (clientContent turnComplete:false — no model turn); only the final
+//   summary/error triggers ONE spoken turn. Both wait for a quiet seam,
+//   because any clientContent interrupts in-flight generation.
 // - answer_question is instant (incremental refine, no re-ranking). Answers
 //   given while ranking is still running are buffered and applied the
 //   moment the analysis lands.
@@ -69,9 +71,10 @@ export default function VoicePanel({
   const openLineRef = useRef<{ you: boolean; radar: boolean }>({ you: false, radar: false });
   // Background-analysis machinery
   const modelSpeakingRef = useRef(false);
-  const updatesRef = useRef<string[]>([]);
+  const updatesRef = useRef<{ text: string; speak: boolean }[]>([]);
   const analysisBusyRef = useRef(false);
-  const lastProgressAtRef = useRef(0);
+  const lastUserInputAtRef = useRef(0);
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAnswersRef = useRef<{ field: string; answer: string }[]>([]);
 
   useEffect(() => {
@@ -88,12 +91,19 @@ export default function VoicePanel({
     setLog((l) => [...l, { who: "sys", text }]);
   }
 
-  /** Transcription arrives in fragments; extend the open line for that speaker. */
+  /** Transcription arrives in fragments; extend the open line for that
+   *  speaker. Fragments often omit the space at chunk boundaries ("looks
+   *  likeyour strongest") — glue with a space unless one side already has
+   *  whitespace or the fragment opens with punctuation. */
   function appendLine(who: "you" | "radar", text: string) {
     setLog((l) => {
       const i = l.length - 1;
-      if (openLineRef.current[who] && i >= 0 && l[i].who === who)
-        return [...l.slice(0, i), { who, text: l[i].text + text }];
+      if (openLineRef.current[who] && i >= 0 && l[i].who === who) {
+        const prev = l[i].text;
+        const glue =
+          prev && !/\s$/.test(prev) && !/^[\s.,!?;:%)\]'"’”—-]/.test(text) ? " " : "";
+        return [...l.slice(0, i), { who, text: prev + glue + text }];
+      }
       openLineRef.current[who] = true;
       return [...l, { who, text }];
     });
@@ -163,31 +173,61 @@ export default function VoicePanel({
     proc.connect(ctx.destination); // required for onaudioprocess to fire in Chrome
   }
 
-  // ---------- update queue (flushed between model turns) ----------
+  // ---------- update delivery: silent context vs. spoken turns ----------
+  //
+  // Live API semantics (verified against the docs):
+  // - clientContent with turnComplete:false is appended to the conversation
+  //   WITHOUT starting generation — silent context the model uses at its
+  //   next natural turn. With turnComplete:true it forces a model turn.
+  // - EITHER kind "will interrupt any current model generation", so all
+  //   updates go through the seam-guarded queue below, never directly.
 
-  function sendText(text: string) {
+  function sendContent(text: string, speak: boolean) {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN || !readyRef.current) return false;
     ws.send(
       JSON.stringify({
-        clientContent: { turns: [{ role: "user", parts: [{ text }] }], turnComplete: true },
+        clientContent: { turns: [{ role: "user", parts: [{ text }] }], turnComplete: speak },
       }),
     );
     return true;
   }
 
-  function queueUpdate(text: string) {
-    updatesRef.current.push(text);
+  /** speak:false (default) = silent context; speak:true = one spoken turn. */
+  function queueUpdate(text: string, opts: { speak?: boolean } = {}) {
+    updatesRef.current.push({ text, speak: opts.speak ?? false });
     flushUpdates();
   }
 
+  /** Deliver queued updates at a quiet seam — model idle AND the founder not
+   *  mid-utterance. Silent items merge into one context-only append. A spoken
+   *  item (final summary / error) supersedes everything queued before it and
+   *  triggers exactly ONE model turn — this is what stops the old behavior of
+   *  the agent monologuing after every background event. */
   function flushUpdates() {
-    if (modelSpeakingRef.current || updatesRef.current.length === 0) return;
-    const items = updatesRef.current.splice(0);
-    const ok = sendText(
-      `[ANALYSIS UPDATE — system data, weave in naturally, never read verbatim]\n${items.join("\n")}`,
-    );
-    if (!ok) updatesRef.current.unshift(...items); // connection not ready — requeue
+    if (updatesRef.current.length === 0 || flushTimerRef.current) return;
+    flushTimerRef.current = setTimeout(() => {
+      flushTimerRef.current = null;
+      if (updatesRef.current.length === 0) return;
+      const quiet =
+        !modelSpeakingRef.current && Date.now() - lastUserInputAtRef.current > 1500;
+      if (!quiet) {
+        flushUpdates(); // try again at the next seam
+        return;
+      }
+      const items = updatesRef.current.splice(0);
+      const spoken = [...items].reverse().find((u) => u.speak);
+      const ok = spoken
+        ? sendContent(
+            `[ANALYSIS UPDATE — system data, not the founder speaking. Tell the founder these results now in ONE short conversational turn (top match + one number), then ask one question. Never say this bracketed note aloud, and never announce these same results again in later turns.]\n${spoken.text}`,
+            true,
+          )
+        : sendContent(
+            `[BACKGROUND CONTEXT — system data, not the founder speaking. Silent knowledge for you: use it when it helps the conversation. Never read it aloud as an announcement and never mention this note.]\n${items.map((u) => u.text).join("\n")}`,
+            false,
+          );
+      if (!ok) updatesRef.current.unshift(...items); // connection not ready — requeue
+    }, 700);
   }
 
   // ---------- background analysis ----------
@@ -274,33 +314,32 @@ export default function VoicePanel({
           if (ev.type === "questions" && !questionsSent) {
             questionsSent = true;
             const qs = ev.questions.map((q) => `${q.question} (${q.whyAsking})`).join(" | ");
+            // Silent context: the agent learns the questions and weaves them
+            // into its NEXT natural reply — no forced announcement.
             queueUpdate(
               `Screening done: ${ev.meter.unlockedCount} programs already eligible (${usd(ev.meter.unlockedUsd)}). ` +
-                `Ranking runs ~30s more. ` +
+                `Ranking runs ~30-60s more; final results will arrive separately. ` +
                 (qs
-                  ? `Interview questions you can ask RIGHT NOW while we wait: ${qs}`
-                  : `No open questions — make small talk about their plans until results land.`),
+                  ? `Eligibility questions worth asking while you wait: ${qs}`
+                  : `No open questions — keep the conversation on their plans until results land.`),
             );
-          } else if (ev.type === "activity") {
-            const m = ev.message.match(/Scored (\d+)\/(\d+) candidates — (\d+) matches/);
-            if (m && Date.now() - lastProgressAtRef.current > 9000) {
-              lastProgressAtRef.current = Date.now();
-              queueUpdate(`progress: ${m[3]} matches found so far (${m[1]}/${m[2]} scored)`);
-            }
           } else if (ev.type === "report") {
             finalReport = ev.report;
           } else if (ev.type === "error") {
-            queueUpdate(`Analysis FAILED (${ev.message}). Apologize briefly and offer to retry.`);
+            queueUpdate(`Analysis FAILED (${ev.message}). Apologize briefly and offer to retry.`, {
+              speak: true,
+            });
           }
         }
       }
       if (finalReport) {
         const after = await applyPendingAnswers(finalReport);
-        queueUpdate(finalSummary(after as UiReport));
+        queueUpdate(finalSummary(after as UiReport), { speak: true });
       }
     } catch (e) {
       queueUpdate(
         `Analysis failed (${e instanceof Error ? e.message : String(e)}). Apologize and offer to retry.`,
+        { speak: true },
       );
     } finally {
       analysisBusyRef.current = false;
@@ -384,8 +423,9 @@ export default function VoicePanel({
       readyRef.current = true;
       setStatus("live");
       pushSys("connected — Radar speaks first");
-      // The agent greets first: hand it an opening turn.
-      sendText("[SESSION STARTED] The founder just joined the voice session. Greet them now.");
+      // The agent greets first: hand it an opening turn (model is idle at
+      // setup, so a direct triggered send is safe here).
+      sendContent("[SESSION STARTED] The founder just joined the voice session. Greet them now.", true);
     }
     const sc = msg.serverContent;
     if (sc) {
@@ -397,7 +437,10 @@ export default function VoicePanel({
       for (const p of sc.modelTurn?.parts ?? []) {
         if (p.inlineData?.data) playChunk(p.inlineData.data);
       }
-      if (sc.inputTranscription?.text) appendLine("you", sc.inputTranscription.text);
+      if (sc.inputTranscription?.text) {
+        lastUserInputAtRef.current = Date.now(); // founder has the floor — hold updates
+        appendLine("you", sc.inputTranscription.text);
+      }
       if (sc.outputTranscription?.text) appendLine("radar", sc.outputTranscription.text);
       if (sc.turnComplete) {
         openLineRef.current = { you: false, radar: false };
@@ -461,6 +504,11 @@ export default function VoicePanel({
   function stop() {
     readyRef.current = false;
     modelSpeakingRef.current = false;
+    if (flushTimerRef.current) {
+      clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+    updatesRef.current = [];
     const ws = wsRef.current;
     wsRef.current = null;
     ws?.close();

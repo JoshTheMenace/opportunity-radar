@@ -7,6 +7,7 @@
 import { useState } from "react";
 import type { GateField, InterviewQuestion } from "@/lib/types";
 import { isRequiredField } from "@/lib/engine/readiness";
+import FieldWidget, { hasRichWidget } from "./field-widgets";
 import type { QuickReply } from "./shared";
 
 /** Small brass tag for questions ranking can't run without. */
@@ -108,26 +109,11 @@ function CapitalNeedCard({
         </p>
         <p className="text-xs text-faint">Needed before we can rank accurately</p>
       </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (val.trim()) onSend(`We're looking for about ${val.trim()} in funding.`);
-        }}
-        className="flex gap-2"
-      >
-        <input
-          value={val}
-          onChange={(e) => setVal(e.target.value)}
-          placeholder="$500K"
-          className="w-28 rounded-md border border-hairline bg-panel px-2 py-1 font-mono text-sm text-paper focus:border-brass focus:outline-none"
-        />
-        <button
-          disabled={disabled || !val.trim()}
-          className="rounded-md border border-hairline px-3 py-1 text-sm text-muted transition-colors hover:bg-panel-2 hover:text-paper disabled:opacity-40"
-        >
-          Answer
-        </button>
-      </form>
+      <FieldWidget
+        field="capitalNeed"
+        disabled={disabled}
+        onPick={(a) => onSend(`We're looking for about ${a.sayAs} in funding.`)}
+      />
     </div>
   );
 }
@@ -142,6 +128,25 @@ function QuestionCard({
   onAnswer: (field: GateField, value: unknown) => void;
 }) {
   const [val, setVal] = useState("");
+  // Purpose-built control (map, pickers) — full-width layout.
+  if (hasRichWidget(q.field)) {
+    return (
+      <div className="space-y-2.5 rounded-lg border border-hairline bg-ink p-3">
+        <div>
+          <p className="text-sm text-paper">
+            {q.question}
+            {isRequiredField(q.field) && <RequiredTag />}
+          </p>
+          <p className="text-xs text-faint">{q.whyAsking}</p>
+        </div>
+        <FieldWidget
+          field={q.field}
+          disabled={disabled}
+          onPick={(a) => onAnswer(q.field, a.value)}
+        />
+      </div>
+    );
+  }
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-lg border border-hairline bg-ink p-3">
       <div className="min-w-0 flex-1">

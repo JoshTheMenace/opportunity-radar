@@ -66,6 +66,33 @@ voice agent instead of calling the pipeline directly:
   `realtimeInput.audio` upload shape (browser mic path); fallback if rejected:
   `realtimeInput.mediaChunks:[{mimeType,data}]` in `voice-panel.tsx`.
 
+## Update delivery redesign (2026-08-15 late): silent context vs. spoken turns
+
+The old queue sent every background update as a `turnComplete:true` user turn,
+forcing a model response — screening + throttled progress + final = 5-7 chained
+monologues per run ("Just to clarify, those results are still populating…").
+Fixed using the Live API's own mechanism, verified empirically on
+gemini-3.1-flash-live-preview (scripts/smoke/live-silent-context.smoke.ts —
+PASS via the app-minted ephemeral token; note: raw `?key=` WS auth now fails
+1008 with the current AQ.-format key, so the smoke goes through
+/api/voice/token like the panel does):
+
+- `clientContent turnComplete:false` appends SILENT context — no generation;
+  the model uses it at its next natural turn (confirmed: it answered a later
+  question from silently-appended context).
+- `clientContent turnComplete:true` triggers exactly one model turn.
+- EITHER kind "will interrupt any current model generation" (docs), so all
+  sends wait for a quiet seam: model idle AND >1.5s since the founder's last
+  inputTranscription; retried on a 700ms timer + on turnComplete events.
+
+Policy in voice-panel.tsx: screening-done + interview questions → silent
+[BACKGROUND CONTEXT]; progress-count updates REMOVED entirely (the screen
+shows them); final summary / errors → ONE spoken [ANALYSIS UPDATE], and a
+queued spoken item supersedes all interim items. Persona (schema.ts) updated
+to match: never re-announce results, never narrate scoring progress, never
+speak bracketed text. Also fixed transcript fragment glue (fragments often
+omit boundary spaces — "looks likeyour strongest").
+
 ## Restructure (2026-08-15): agent-first, background analysis, instant answers
 
 - The agent GREETS FIRST: voice-panel injects a "[SESSION STARTED]" turn on
