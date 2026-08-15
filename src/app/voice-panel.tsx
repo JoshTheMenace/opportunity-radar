@@ -21,6 +21,7 @@ import type { AnalyzeEvent, CompanyProfile, MatchReport } from "@/lib/types";
 import { formatUsdCompact } from "@/lib/engine/meter";
 import { profileReadiness } from "@/lib/engine/readiness";
 import { SYSTEM_INSTRUCTION, TOOL_DECLARATIONS } from "@/lib/voice/schema";
+import { sessionOpening } from "@/lib/voice/opening";
 import FieldWidget, { type WidgetAnswer } from "./components/field-widgets";
 import { useAssistant } from "./components/assistant/context";
 
@@ -494,8 +495,10 @@ export default function VoicePanel({
       setStatus("live");
       pushSys("connected — Radar speaks first");
       // The agent greets first: hand it an opening turn (model is idle at
-      // setup, so a direct triggered send is safe here).
-      sendContent("[SESSION STARTED] The founder just joined the voice session. Greet them now.", true);
+      // setup, so a direct triggered send is safe here). A returning founder's
+      // turn carries their profile + last report so the agent RESUMES —
+      // stop/start used to reset the conversation to "what are you building?".
+      sendContent(sessionOpening(getProfile(), getReport()), true);
     }
     const sc = msg.serverContent;
     if (sc) {
