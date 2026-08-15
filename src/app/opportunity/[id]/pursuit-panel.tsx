@@ -33,7 +33,7 @@ function fmtUsd(n: number): string {
   return `$${n}`;
 }
 
-const LABEL = "font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-faint";
+const LABEL = "text-[11px] font-semibold uppercase tracking-[0.08em] text-faint";
 
 export default function PursuitPanel({ opportunityId }: { opportunityId: string }) {
   const [phase, setPhase] = useState<Phase>("loading");
@@ -134,11 +134,8 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
 
   if (phase !== "ready") {
     return (
-      <section
-        id="pursuit"
-        className="space-y-2.5 rounded-xl border border-hairline bg-card p-5 shadow-card"
-      >
-        <h2 className="font-display text-lg font-bold tracking-tight text-ink">
+      <section id="pursuit" className="card space-y-2.5 p-6">
+        <h2 className="font-display text-[18px] font-bold tracking-tight text-ink">
           Go after this funding
         </h2>
         <p className="text-sm leading-relaxed text-muted">
@@ -150,7 +147,7 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
         <button
           onClick={start}
           disabled={phase === "building"}
-          className="rounded-lg bg-brand px-4 py-2 font-mono text-[13px] font-medium text-white transition-colors hover:bg-brand-strong disabled:opacity-60"
+          className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong disabled:opacity-60"
         >
           {phase === "building" ? "Building your plan… (~30s)" : "Start Pre-flight →"}
         </button>
@@ -209,7 +206,7 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
     <section id="pursuit" className="space-y-5">
       {/* workspace header: title, official notice, status */}
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h2 className="font-display text-xl font-bold tracking-tight text-ink sm:text-2xl">
+        <h2 className="font-display text-[20px] font-bold tracking-tight text-ink">
           {opp?.title ?? "Pursuit"} Workspace
         </h2>
         <div className="flex flex-wrap items-center gap-3">
@@ -218,7 +215,7 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
               href={opp.url}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full border border-hairline bg-card px-4 py-2 font-mono text-[12px] font-medium text-brand transition-colors hover:bg-soft"
+              className="rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-muted transition-colors hover:bg-surface-low"
             >
               Review official notice ↗
             </a>
@@ -228,7 +225,7 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
             <select
               value={pursuit?.status ?? "active"}
               onChange={(e) => void setStatus(e.target.value)}
-              className="rounded-lg border border-hairline bg-card px-2.5 py-1.5 font-mono text-xs font-medium normal-case tracking-normal text-ink focus:border-brand"
+              className="rounded-xl border border-line bg-card px-4 py-2.5 text-[14px] font-medium normal-case tracking-normal text-ink focus:border-accent focus:outline-none"
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
@@ -241,22 +238,22 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
       </div>
 
       {/* progress & tracker card: % ready + target + phase stepper + stat tiles */}
-      <div className="rounded-xl border border-hairline bg-card p-5 shadow-card">
+      <div className="card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-display text-2xl font-bold tracking-tight text-brand">
+          <p className="tnum font-display text-[26px] font-bold tracking-tight text-brand">
             {pct}% ready{" "}
             <span className="font-mono text-xs font-medium tracking-normal text-faint">
               · {done}/{tasks.length} tasks
             </span>
           </p>
           {target && (
-            <span className="rounded bg-surface-high px-2 py-1 font-mono text-[11px] font-medium uppercase text-muted">
-              Target: {monthDay(target)}
+            <span className="rounded-full bg-soft px-3 py-1 text-[12px] font-semibold text-brand">
+              Target: <span className="font-mono">{monthDay(target)}</span>
             </span>
           )}
         </div>
 
-        <div id="pursuit-progress" className="mt-3 h-1 overflow-hidden rounded-full bg-surface-high">
+        <div id="pursuit-progress" className="mt-3 h-2 overflow-hidden rounded-full bg-surface">
           <div
             className="h-full rounded-full bg-brand transition-[width] duration-700"
             style={{ width: `${pct}%` }}
@@ -273,19 +270,19 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
                   <span
                     aria-hidden
                     className={`-mx-3 mb-5 h-[3px] min-w-4 flex-1 rounded-full ${
-                      phaseState(i - 1) === "done" ? "bg-good" : "bg-surface-high"
+                      phaseState(i - 1) === "done" ? "bg-good" : "bg-surface"
                     }`}
                   />
                 )}
                 <span className="flex w-20 flex-none flex-col items-center gap-1.5">
                   <span
-                    className={`grid size-8 place-items-center rounded-full font-mono text-xs font-semibold shadow-sm ${DOT[st]}`}
+                    className={`tnum grid size-8 place-items-center rounded-full text-xs font-semibold shadow-sm ${DOT[st]}`}
                   >
                     {st === "done" ? "✓" : i + 1}
                   </span>
                   <span
-                    className={`text-center font-mono text-[10.5px] uppercase tracking-[0.05em] ${
-                      st === "current" ? "font-semibold text-brand" : "text-faint"
+                    className={`text-center text-[12px] font-semibold ${
+                      st === "done" ? "text-good" : st === "current" ? "text-brand" : "text-faint"
                     }`}
                   >
                     {ph}
@@ -299,22 +296,22 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
         {/* stat tiles: fit score (only if a real score exists) + funding */}
         <div className="mt-4 flex flex-wrap gap-3 border-t border-hairline pt-4">
           {match && (
-            <div className="flex items-center gap-2.5 rounded-lg border border-hairline bg-card px-4 py-2">
+            <div className="flex items-center gap-2.5 rounded-2xl bg-surface-low p-4">
               <span className="text-good">✓</span>
               <div>
                 <p className={LABEL}>Fit Score</p>
                 <p className="text-[15px] font-semibold capitalize text-ink">
-                  {match.tier.replace(/_/g, " ")} ({match.score})
+                  {match.tier.replace(/_/g, " ")} (<span className="tnum">{match.score}</span>)
                 </p>
               </div>
             </div>
           )}
           {funding && (
-            <div className="flex items-center gap-2.5 rounded-lg border border-hairline bg-card px-4 py-2">
+            <div className="flex items-center gap-2.5 rounded-2xl bg-surface-low p-4">
               <span className="font-mono font-semibold text-brand">$</span>
               <div>
                 <p className={LABEL}>Funding</p>
-                <p className="text-[15px] font-semibold text-ink">{funding}</p>
+                <p className="tnum text-[15px] font-semibold text-ink">{funding}</p>
               </div>
             </div>
           )}
@@ -329,17 +326,14 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
             const phTasks = tasks.filter((t) => t.phase === ph);
             const phDone = phTasks.filter((t) => t.done).length;
             return (
-              <div
-                key={ph}
-                className="overflow-hidden rounded-xl border border-hairline bg-card shadow-card"
-              >
-                <div className="flex items-center justify-between border-b border-hairline bg-surface-low/60 px-4 py-3">
-                  <h3 className="font-display text-[15px] font-semibold text-ink">{ph}</h3>
-                  <span className="font-mono text-[11px] text-faint">
+              <div key={ph} className="card p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-display text-[16px] font-bold text-ink">{ph}</h3>
+                  <span className="font-mono text-[12px] text-faint">
                     {phDone}/{phTasks.length} done
                   </span>
                 </div>
-                <div>
+                <div className="space-y-2">
                   {phTasks.map((t) => {
                     const overdue = !t.done && t.dueDate != null && t.dueDate < today;
                     const urgent = !t.done && t.dueDate != null && t.dueDate <= soon;
@@ -348,17 +342,15 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
                       <div
                         key={t.id}
                         id={`task-${t.id}`}
-                        className={`flex items-start gap-3 border-b border-hairline px-4 py-3 transition-colors last:border-b-0 ${
-                          current
-                            ? "border-l-4 border-l-brand bg-soft/40"
-                            : "hover:bg-surface-low/50"
+                        className={`flex items-start gap-3 rounded-xl p-3.5 transition-colors ${
+                          current ? "bg-soft" : "bg-surface-low hover:bg-surface"
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={t.done}
                           onChange={() => void toggle(t)}
-                          className="mt-1 h-4 w-4 accent-good"
+                          className="mt-1 h-4 w-4 accent-brand"
                         />
                         <div className="min-w-0 flex-1">
                           <p
@@ -373,26 +365,27 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
                         <div className="flex shrink-0 items-center gap-3">
                           {t.dueDate && (
                             <span
-                              className={`font-mono text-[11px] ${
-                                overdue || urgent ? "font-bold text-risk" : "text-faint"
+                              className={`rounded-full px-3 py-1 font-mono text-[12px] font-semibold ${
+                                overdue || urgent
+                                  ? "bg-risk-soft text-risk"
+                                  : "bg-surface text-muted"
                               }`}
                               title={`due ${t.dueDate}${overdue ? " · overdue" : ""}`}
                             >
                               {monthDay(t.dueDate)}
-                              {overdue ? " ⚠" : ""}
                             </span>
                           )}
                           <button
                             onClick={() => void assist(t)}
                             disabled={assistBusy === t.id}
-                            className="rounded-lg border border-hairline bg-card px-2.5 py-1 font-mono text-[11px] font-semibold text-brand transition-colors hover:bg-soft disabled:opacity-50"
+                            className="rounded-xl border border-line bg-card px-3 py-1.5 text-[12px] font-semibold text-brand transition-colors hover:bg-soft disabled:opacity-50"
                           >
                             {assistBusy === t.id
                               ? "Thinking…"
                               : t.assist
                                 ? openAssistId === t.id
-                                  ? "Hide ▴"
-                                  : "Help ▾"
+                                  ? "Hide"
+                                  : "Help"
                                 : "Help me"}
                           </button>
                         </div>
@@ -405,21 +398,21 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
           })}
 
           {/* document panel: assist guidance when open, plan strategy otherwise */}
-          <div className="overflow-hidden rounded-xl border border-hairline bg-card shadow-card">
-            <div className="flex items-center justify-between gap-3 border-b border-hairline bg-surface-low/60 px-4 py-3">
+          <div className="card p-6">
+            <div className="flex items-center justify-between gap-3">
               <p className={`${LABEL} min-w-0 truncate`}>
                 {openTask?.assist ? `How to finish this — ${openTask.title}` : "Strategy"}
               </p>
               {openTask?.assist && (
                 <button
                   onClick={() => setOpenAssistId(null)}
-                  className="shrink-0 font-mono text-[11px] font-semibold text-faint transition-colors hover:text-ink"
+                  className="shrink-0 text-[12px] font-semibold text-faint transition-colors hover:text-ink"
                 >
-                  ✕ Close
+                  Close
                 </button>
               )}
             </div>
-            <div className="whitespace-pre-wrap px-5 py-4 text-sm leading-relaxed text-ink/85">
+            <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
               {openTask?.assist ??
                 pursuit?.planSummary ??
                 "Pick a task and hit “Help me” for step-by-step guidance."}
@@ -430,40 +423,35 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
         {/* right rail: SAM.gov warning + deadline timeline */}
         <div className="flex flex-col gap-5 xl:col-span-4">
           {samTask && (
-            <div className="flex gap-3 rounded-xl border border-warn/25 bg-warn-soft p-4 shadow-card">
-              <span aria-hidden className="mt-0.5 text-warn">
-                ⚠
-              </span>
-              <div className="min-w-0">
-                <h4 className="font-mono text-[12px] font-bold uppercase tracking-[0.05em] text-warn">
-                  SAM.gov status unconfirmed
-                </h4>
-                <p className="mt-1 text-[13px] leading-relaxed text-muted">
-                  Active registration is required at time of submission.
-                  {samTask.dueDate && (
-                    <>
-                      {" "}
-                      Confirm or update before{" "}
-                      <strong className="font-mono text-warn">{monthDay(samTask.dueDate)}</strong>.
-                    </>
-                  )}
-                </p>
-                <a
-                  href={`#task-${samTask.id}`}
-                  className="mt-2 inline-block font-mono text-[12px] font-bold text-warn hover:underline"
-                >
-                  Verify now →
-                </a>
-              </div>
+            <div className="rounded-2xl bg-warn-soft p-4">
+              <h4 className="text-[12px] font-semibold uppercase tracking-[0.05em] text-warn">
+                SAM.gov status unconfirmed
+              </h4>
+              <p className="mt-1 text-[13.5px] leading-relaxed text-warn">
+                Active registration is required at time of submission.
+                {samTask.dueDate && (
+                  <>
+                    {" "}
+                    Confirm or update before{" "}
+                    <strong className="font-mono">{monthDay(samTask.dueDate)}</strong>.
+                  </>
+                )}
+              </p>
+              <a
+                href={`#task-${samTask.id}`}
+                className="mt-2 inline-block text-[13px] font-semibold text-warn hover:underline"
+              >
+                Verify now →
+              </a>
             </div>
           )}
 
-          <div className="rounded-xl border border-hairline bg-card p-5 shadow-card">
-            <h3 className="mb-4 border-b border-hairline pb-2 font-display text-[15px] font-semibold text-ink">
+          <div className="card p-6">
+            <h3 className="mb-4 font-display text-[16px] font-bold tracking-tight text-ink">
               Deadline Timeline
             </h3>
             <div className="relative space-y-5">
-              <div aria-hidden className="absolute bottom-2 left-[5px] top-2 w-px bg-line" />
+              <div aria-hidden className="absolute bottom-2 left-[5px] top-2 border-l-2 border-line" />
               {pursuit && (
                 <TimelineEntry
                   date={monthDay(pursuit.createdAt.slice(0, 10))}
@@ -482,8 +470,8 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
                     chip={
                       !t.done && du >= 0 && du <= 3
                         ? du === 0
-                          ? "DUE TODAY"
-                          : `IN ${du} DAY${du === 1 ? "" : "S"}`
+                          ? "Due today"
+                          : `In ${du} day${du === 1 ? "" : "s"}`
                         : undefined
                     }
                   />
@@ -523,18 +511,18 @@ function TimelineEntry({
         : "border border-line bg-surface-variant";
   return (
     <div className="relative z-10 flex gap-3">
-      <span aria-hidden className={`mt-1 size-[11px] shrink-0 rounded-full ${dot}`} />
+      <span aria-hidden className={`mt-1 h-3 w-3 shrink-0 rounded-full ${dot}`} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span
-            className={`font-mono text-[11px] font-semibold ${
+            className={`font-mono text-[12px] font-semibold ${
               state === "done" ? "text-good" : state === "current" ? "text-brand" : "text-faint"
             }`}
           >
             {date}
           </span>
           <span
-            className={`text-[13px] ${
+            className={`text-[13.5px] ${
               state === "current"
                 ? "font-semibold text-ink"
                 : state === "todo"
@@ -545,7 +533,7 @@ function TimelineEntry({
             {label}
           </span>
           {chip && (
-            <span className="rounded bg-risk-soft px-1.5 py-0.5 font-mono text-[10px] font-bold text-risk">
+            <span className="rounded-full bg-risk-soft px-3 py-1 text-[12px] font-semibold text-risk">
               {chip}
             </span>
           )}

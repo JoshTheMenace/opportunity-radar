@@ -38,7 +38,7 @@ export default async function OpportunityPage({ params }: Params) {
     <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
       {/* header */}
       <header id="opp-header" className="space-y-3">
-        <p className="font-mono text-xs text-muted">
+        <p className="text-[13px] text-muted">
           <Link href="/pursuits" className="transition-colors hover:text-brand">
             Pursuit Workspace
           </Link>
@@ -46,7 +46,7 @@ export default async function OpportunityPage({ params }: Params) {
           <span className="text-faint">{o.title}</span>
         </p>
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <h1 className="max-w-3xl font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="max-w-3xl font-display text-[26px] font-bold tracking-tight text-ink sm:text-[30px]">
             {o.title}
           </h1>
           {o.url && (
@@ -54,13 +54,13 @@ export default async function OpportunityPage({ params }: Params) {
               href={o.url}
               target="_blank"
               rel="noreferrer"
-              className="shrink-0 rounded-full border border-hairline bg-card px-4 py-2 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-soft"
+              className="shrink-0 rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-muted transition-colors hover:bg-surface-low"
             >
               Review official notice ↗
             </a>
           )}
         </div>
-        <p className="font-mono text-[11.5px] uppercase tracking-[0.02em] text-muted">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
           {o.agency}
           {o.agencyCode ? ` · ${o.agencyCode}` : ""}
         </p>
@@ -74,7 +74,7 @@ export default async function OpportunityPage({ params }: Params) {
       {/* key facts — stat strip */}
       <section
         id="opp-facts"
-        className="grid grid-cols-2 divide-hairline overflow-hidden rounded-xl border border-hairline bg-card shadow-card sm:grid-cols-4 sm:divide-x"
+        className="card grid grid-cols-2 divide-hairline overflow-hidden sm:grid-cols-4 sm:divide-x"
       >
         <Fact
           label="Award range"
@@ -131,14 +131,16 @@ export default async function OpportunityPage({ params }: Params) {
           {/* funding stat card */}
           <Section id="opp-funding" title="FUNDING">
             <p
-              className={`text-2xl font-bold tracking-tight ${
+              className={`tnum font-display text-2xl font-bold tracking-tight ${
                 o.awardCeilingUsd != null ? "text-good" : "text-faint"
               }`}
             >
               {o.awardCeilingUsd != null ? `Up to ${fmt(o.awardCeilingUsd)}` : "Unlisted"}
             </p>
             {o.awardFloorUsd != null && (
-              <p className="font-mono text-xs text-muted">floor {fmt(o.awardFloorUsd)}</p>
+              <p className="text-[13.5px] text-muted">
+                floor <span className="font-mono">{fmt(o.awardFloorUsd)}</span>
+              </p>
             )}
           </Section>
 
@@ -146,14 +148,14 @@ export default async function OpportunityPage({ params }: Params) {
           <Section id="opp-deadline" title="DEADLINE TIMELINE">
             {o.closeDate ? (
               <div className="flex items-baseline gap-3 py-1">
-                <span className="w-[78px] flex-none font-mono text-[11px] font-semibold text-brand">
+                <span className="w-[82px] flex-none font-mono text-[12px] font-semibold text-brand">
                   {o.closeDate}
                 </span>
                 <p className="text-[13.5px] text-ink">
                   Submission closes{" "}
                   {closeSoon && (
-                    <span className="rounded-full bg-risk-soft px-2.5 py-0.5 font-mono text-[11px] font-semibold text-risk">
-                      IN {close} DAYS
+                    <span className="rounded-full bg-risk-soft px-3 py-1 text-[12px] font-semibold text-risk">
+                      in {close} days
                     </span>
                   )}
                 </p>
@@ -202,7 +204,7 @@ export default async function OpportunityPage({ params }: Params) {
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-hairline bg-card px-3 py-1 font-mono text-[11px] font-semibold text-muted">
+    <span className="rounded-full bg-soft px-3 py-1 text-[12px] font-semibold text-brand">
       {children}
     </span>
   );
@@ -220,15 +222,15 @@ function Fact({
   alert?: boolean;
 }) {
   return (
-    <div className="px-4 py-3">
+    <div className="px-5 py-4">
       <p
-        className={`text-lg font-bold tracking-tight ${
+        className={`tnum font-display text-[20px] font-bold tracking-tight ${
           money && value !== "unlisted" ? "text-good" : alert ? "text-risk" : value === "unlisted" || value === "—" ? "text-faint" : "text-ink"
         }`}
       >
         {value}
       </p>
-      <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] text-faint">
+      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
         {label}
       </p>
     </div>
@@ -237,8 +239,8 @@ function Fact({
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="space-y-2 rounded-2xl border border-hairline bg-card p-5 shadow-card">
-      <h2 className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
+    <section id={id} className="card space-y-2 p-6">
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
         {title}
       </h2>
       {children}

@@ -23,7 +23,7 @@ export default function TopNav() {
             key={l.href}
             href={l.href}
             aria-current={active ? "page" : undefined}
-            className={`-mb-px border-b-2 pb-[20px] pt-[22px] font-mono text-[13px] transition-colors ${
+            className={`-mb-px border-b-2 pb-[19px] pt-[21px] text-[14px] font-medium transition-colors ${
               active
                 ? "border-brand font-semibold text-brand"
                 : "border-transparent text-muted hover:text-ink"

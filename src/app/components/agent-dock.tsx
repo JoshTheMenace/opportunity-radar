@@ -11,6 +11,7 @@
 // canvas via onFocusMatch.
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { RadarMark } from "./brand";
 import RadarScope from "./radar-scope";
 import StatusStrip from "./status-strip";
 import type { UiReport } from "./shared";
@@ -61,21 +62,19 @@ export default function AgentDock({
   return (
     <section id="agent" className="space-y-3.5" aria-label="Radar, your funding analyst">
       {/* the agent itself */}
-      <div className="rounded-2xl border border-hairline bg-card p-5 shadow-card">
+      <div className="card p-6">
         {/* identity row */}
         <div className="flex items-center gap-3">
           <div
             aria-hidden
-            className="h-[38px] w-[38px] flex-none rounded-full"
-            style={{ background: "radial-gradient(circle at 32% 28%, #4C86E8, #1D4F91)" }}
-          />
+            className="flex h-[44px] w-[44px] flex-none items-center justify-center rounded-full bg-soft"
+          >
+            <RadarMark size={30} className="text-brand" />
+          </div>
           <div className="min-w-0">
-            <p className="text-[14.5px] font-semibold tracking-tight text-ink">Radar Agent</p>
-            <p
-              className={`font-mono text-[11.5px] ${started ? "text-good" : "text-muted"}`}
-              aria-live="polite"
-            >
-              ● {busy ? "Live — " : ""}
+            <p className="font-display text-[16px] font-bold tracking-tight text-ink">Radar</p>
+            <p className="text-[13px] text-muted" aria-live="polite">
+              {busy ? "Live — " : ""}
               {statusLine(busy, lines, report)}
             </p>
           </div>
@@ -93,10 +92,10 @@ export default function AgentDock({
         {started && lines.length > 0 && (
           <div
             ref={logRef}
-            className="mt-3 max-h-36 space-y-1 overflow-y-auto border-t border-hairline pt-3 text-[13px] leading-relaxed text-muted"
+            className="mt-3 max-h-36 space-y-1 overflow-y-auto border-t border-hairline pt-3 text-[12.5px] leading-relaxed text-muted"
           >
             {lines.length > shown.length && (
-              <div className="font-mono text-[11px] text-faint">
+              <div className="text-[12px] text-faint">
                 … {lines.length - shown.length} earlier lines
               </div>
             )}
@@ -107,7 +106,7 @@ export default function AgentDock({
                   <button
                     type="button"
                     onClick={() => onFocusMatch(target)}
-                    className="rounded-lg border border-hairline bg-card px-2.5 py-1 text-left font-mono text-[11.5px] font-semibold text-brand transition-colors hover:bg-soft"
+                    className="text-left text-brand underline decoration-brand/30 underline-offset-2 transition-colors hover:decoration-brand"
                     title="Show me this card"
                   >
                     {line}
@@ -118,7 +117,7 @@ export default function AgentDock({
               );
             })}
             {busy && (
-              <div className="animate-pulse font-mono text-[11.5px] text-accent">● working…</div>
+              <div className="animate-pulse text-[12.5px] text-accent">working…</div>
             )}
           </div>
         )}

@@ -1,57 +1,60 @@
 @import "tailwindcss";
 
 /* ============================================================
-   Opportunity Radar — "Federal Catalyst". Tokens are EXACT hexes
-   from the teammate's Federal Catalyst UI kit + Stitch screens
-   (design/claude-design/*.html): deep federal blue on a cool
-   ground, white cards with ice borders, Hanken Grotesk headlines,
-   Inter body, JetBrains Mono labels/data.
+   Opportunity Radar — "Federal Catalyst, warmed up."
+   Kit structure, Halda-grade craft: warm paper canvas, deep
+   federal navy ink, one confident blue for action, soft lush
+   card shadows, generous radii. Mono is for NUMBERS ONLY
+   (amounts, dates, counts, IDs) — never labels or buttons.
    ============================================================ */
 
 @theme inline {
-  /* surfaces (kit: background / surface-container-*) */
-  --color-bg: #f7f9fb;
+  /* canvas + surfaces */
+  --color-bg: #f6f4ef;
   --color-card: #ffffff;
-  --color-surface-low: #f2f4f6;
-  --color-surface: #eceef0;
-  --color-surface-high: #e6e8ea;
-  --color-surface-variant: #e0e3e5;
-  /* borders (kit: border-ice / outline-variant) */
-  --color-hairline: rgba(3, 105, 161, 0.12);
-  --color-line: #c0c7d1;
-  /* text (kit: text-deep / on-surface-variant / outline) */
-  --color-ink: #0f172a;
-  --color-muted: #40474f;
-  --color-faint: #707881;
-  /* brand (kit: primary / primary-container / primary-fixed) */
-  --color-brand: #00507d;
-  --color-brand-strong: #004b74;
-  --color-accent: #0369a1;
-  --color-soft: #e7f2fa;
-  --color-brand-fixed: #cde5ff;
-  /* status (kit: fit green, confidence amber, error) */
-  --color-good: #006c4a;
-  --color-good-soft: #e0f0ea;
-  --color-warn: #92400e;
-  --color-warn-soft: #fef3c7;
-  --color-risk: #ba1a1a;
-  --color-risk-soft: #ffdad6;
-  /* funding-twin (kit: secondary) */
-  --color-twin: #006686;
-  --color-twin-soft: #c0e8ff;
-  /* legacy aliases — remapped so unswept corners degrade to sane
-     Catalyst colors. Migrate on touch. */
-  --color-paper: #0f172a;
+  --color-surface-low: #f1efe9;
+  --color-surface: #eae7df;
+  --color-surface-high: #e3dfd5;
+  --color-surface-variant: #e3dfd5;
+  /* one warm-navy line everywhere */
+  --color-hairline: rgba(18, 40, 63, 0.12);
+  --color-line: rgba(18, 40, 63, 0.18);
+  /* text */
+  --color-ink: #12283f;
+  --color-muted: #47617a;
+  --color-faint: #7d90a5;
+  /* brand — confident federal blue */
+  --color-brand: #155e9e;
+  --color-brand-strong: #0f4173;
+  --color-accent: #1a74c2;
+  --color-soft: #e8f1f9;
+  --color-brand-fixed: #cfe5f6;
+  /* status */
+  --color-good: #177a53;
+  --color-good-soft: #e2f3ea;
+  --color-warn: #a06514;
+  --color-warn-soft: #fdf0d9;
+  --color-risk: #b3402f;
+  --color-risk-soft: #fbe9e5;
+  /* funding twin */
+  --color-twin: #0e6f8a;
+  --color-twin-soft: #d8eef5;
+  /* legacy aliases — degrade to sane colors; migrate on touch */
+  --color-paper: #12283f;
   --color-panel: #ffffff;
-  --color-panel-2: #f2f4f6;
-  --color-brass: #92400e;
-  --color-brass-bright: #b45309;
-  --color-treasury: #006c4a;
-  --color-signal: #ba1a1a;
-  /* type — Hanken Grotesk display, Inter body, JetBrains Mono chrome */
+  --color-panel-2: #f1efe9;
+  --color-brass: #a06514;
+  --color-brass-bright: #b8791f;
+  --color-treasury: #177a53;
+  --color-signal: #b3402f;
+  /* type */
   --font-display: var(--font-hanken);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jbmono);
+}
+
+* {
+  border-color: var(--color-hairline);
 }
 
 body {
@@ -59,30 +62,83 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans), system-ui, sans-serif;
   font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Card elevation — whisper shadow, matches the reference. */
-.shadow-card {
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* THE card. One elevation language everywhere. */
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-hairline);
+  border-radius: 1.25rem;
   box-shadow:
-    0 1px 2px rgba(20, 33, 58, 0.05),
-    0 10px 28px -14px rgba(20, 33, 58, 0.1);
+    0 1px 2px rgba(18, 40, 63, 0.04),
+    0 12px 30px rgba(18, 40, 63, 0.07);
 }
 
-/* Numbers read as ledger entries everywhere. */
+/* Numbers read as ledger entries — tabular everywhere they appear. */
 .font-mono,
 code,
 pre {
   font-variant-numeric: tabular-nums;
 }
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
 
 ::selection {
-  background: rgba(46, 111, 219, 0.22);
+  background: var(--color-brand-fixed);
+  color: var(--color-brand-strong);
 }
 
 :focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
+}
+
+*::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(18, 40, 63, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(18, 40, 63, 0.34);
+  background-clip: content-box;
+}
+
+/* Thinking shimmer for skeletons / working states. */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  animation: shimmer 1.8s infinite;
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 /* Radar scope sweep + blip pop-in. Both sit still under reduced motion. */
@@ -110,6 +166,7 @@ pre {
   transform-origin: center;
   transform-box: fill-box;
 }
+
 /* Match cards materialize onto the canvas as scoring batches land. */
 @keyframes card-in {
   from {
@@ -130,12 +187,12 @@ pre {
   0% {
     box-shadow:
       0 0 0 2px var(--color-accent),
-      0 0 28px rgba(46, 111, 219, 0.3);
+      0 0 28px rgba(26, 116, 194, 0.3);
   }
   100% {
     box-shadow:
-      0 0 0 2px rgba(46, 111, 219, 0),
-      0 0 0 rgba(46, 111, 219, 0);
+      0 0 0 2px rgba(26, 116, 194, 0),
+      0 0 0 rgba(26, 116, 194, 0);
   }
 }
 .card-spotlight {
@@ -143,21 +200,8 @@ pre {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scope-sweep {
-    animation: none;
-    opacity: 0;
-  }
-  .scope-blip {
-    animation: none;
-  }
-  .animate-pulse {
-    animation: none;
-  }
-  .card-in {
-    animation: none;
-  }
-  .card-spotlight {
-    animation: none;
-    box-shadow: 0 0 0 2px var(--color-accent);
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
   }
 }

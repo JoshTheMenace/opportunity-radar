@@ -113,8 +113,8 @@ const STATE_NAMES: Record<string, string> = {
   WI: "Wisconsin", WV: "West Virginia", WY: "Wyoming",
 };
 
-const CELL = 30;
-const GAP = 3;
+const CELL = 34;
+const GAP = 4;
 
 function UsStateMap({ disabled, onPick }: Omit<WidgetProps, "field">) {
   const [hover, setHover] = useState<string | null>(null);
@@ -156,7 +156,7 @@ function UsStateMap({ disabled, onPick }: Omit<WidgetProps, "field">) {
                 x={CELL / 2}
                 y={CELL / 2 + 3.5}
                 textAnchor="middle"
-                className={`pointer-events-none font-mono text-[10px] font-semibold ${
+                className={`pointer-events-none font-mono text-[11px] font-semibold ${
                   lit ? "fill-white" : "fill-brand"
                 }`}
               >
@@ -166,8 +166,8 @@ function UsStateMap({ disabled, onPick }: Omit<WidgetProps, "field">) {
           );
         })}
       </svg>
-      <p className="font-mono text-[11px] text-faint">
-        {hover ? STATE_NAMES[hover] : picked ? `${STATE_NAMES[picked]} ✓` : "tap your state"}
+      <p className="text-[12.5px] text-faint">
+        {hover ? STATE_NAMES[hover] : picked ? `${STATE_NAMES[picked]} selected` : "Tap your state"}
       </p>
     </div>
   );
@@ -198,10 +198,10 @@ function AmountPicker({
                 sayAs: label,
               });
             }}
-            className={`rounded-xl px-3 py-1.5 font-mono text-[12.5px] font-semibold transition-colors disabled:opacity-40 ${
+            className={`rounded-xl border px-4 py-2.5 text-[13.5px] transition-colors disabled:opacity-40 ${
               picked === label
-                ? "bg-brand text-white"
-                : "bg-soft text-brand hover:bg-brand hover:text-white"
+                ? "border-brand bg-soft font-semibold text-brand"
+                : "border-line bg-card font-medium text-muted hover:bg-surface-low"
             }`}
           >
             {label}
@@ -225,11 +225,11 @@ function AmountPicker({
           value={custom}
           onChange={(e) => setCustom(e.target.value)}
           placeholder="or exact: 750k"
-          className="w-32 rounded-xl border border-hairline bg-[#FBFCFE] px-2.5 py-1.5 font-mono text-[12.5px] text-ink placeholder:text-faint focus:border-brand focus:outline-none"
+          className="w-36 rounded-xl border border-line bg-card px-4 py-2.5 font-mono text-[13.5px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
         />
         <button
           disabled={disabled || !custom.trim()}
-          className="rounded-xl bg-soft px-3 py-1.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
+          className="rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-brand transition-colors hover:bg-surface-low disabled:opacity-40"
         >
           Set
         </button>
@@ -268,10 +268,10 @@ function TeamSizePicker({ disabled, onPick }: Omit<WidgetProps, "field">) {
             setPicked(value);
             onPick({ field: "employees", value, sayAs: `${label} people` });
           }}
-          className={`rounded-xl px-3 py-1.5 font-mono text-[12.5px] font-semibold transition-colors disabled:opacity-40 ${
+          className={`rounded-xl border px-4 py-2.5 text-[13.5px] transition-colors disabled:opacity-40 ${
             picked === value
-              ? "bg-brand text-white"
-              : "bg-soft text-brand hover:bg-brand hover:text-white"
+              ? "border-brand bg-soft font-semibold text-brand"
+              : "border-line bg-card font-medium text-muted hover:bg-surface-low"
           }`}
         >
           {label}
@@ -304,29 +304,19 @@ function MaturityStepper({ disabled, onPick }: Omit<WidgetProps, "field">) {
               setPicked(key);
               onPick({ field: "productMaturity", value: key, sayAs: `${label} stage` });
             }}
-            className={`group rounded-xl p-2 text-left transition-colors disabled:opacity-40 ${
-              on ? "bg-brand" : "bg-soft hover:bg-brand"
+            className={`rounded-xl border p-3 text-left transition-colors disabled:opacity-40 ${
+              on ? "border-brand bg-soft" : "border-line bg-card hover:bg-surface-low"
             }`}
           >
-            <span
-              className={`font-mono text-[10px] ${
-                on ? "text-white/70" : "text-brand/60 group-hover:text-white/70"
-              }`}
-            >
+            <span className={`font-mono text-[11px] ${on ? "text-brand/60" : "text-faint"}`}>
               0{i + 1}
             </span>
             <span
-              className={`block font-mono text-[12.5px] font-semibold ${
-                on ? "text-white" : "text-brand group-hover:text-white"
-              }`}
+              className={`block text-[13.5px] font-semibold ${on ? "text-brand" : "text-ink"}`}
             >
               {label}
             </span>
-            <span
-              className={`block text-[11px] ${
-                on ? "text-white/80" : "text-muted group-hover:text-white/80"
-              }`}
-            >
+            <span className={`block text-[12px] ${on ? "text-brand/70" : "text-muted"}`}>
               {hint}
             </span>
           </button>
@@ -344,14 +334,14 @@ function BigYesNo({ field, disabled, onPick }: WidgetProps) {
       <button
         disabled={disabled}
         onClick={() => onPick({ field, value: "true", sayAs: "yes" })}
-        className="flex-1 rounded-xl bg-soft py-2.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
+        className="flex-1 rounded-xl bg-soft py-2.5 text-[14px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
       >
         Yes
       </button>
       <button
         disabled={disabled}
         onClick={() => onPick({ field, value: "false", sayAs: "no" })}
-        className="flex-1 rounded-xl bg-soft py-2.5 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
+        className="flex-1 rounded-xl bg-soft py-2.5 text-[14px] font-semibold text-brand transition-colors hover:bg-brand hover:text-white disabled:opacity-40"
       >
         No
       </button>

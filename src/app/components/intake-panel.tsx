@@ -33,21 +33,21 @@ export default function IntakePanel({
   onAnalyze: () => void;
 }) {
   return (
-    <section id="intake" className="space-y-3 rounded-2xl border border-hairline bg-card p-5 shadow-card">
+    <section id="intake" className="card space-y-4 p-6 sm:p-7">
       <div className="space-y-1.5">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
-          Company intake · Funding fit determination
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+          Company intake
         </p>
-        <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+        <h1 className="font-display text-[27px] font-bold leading-tight tracking-tight text-ink sm:text-[31px]">
           Find the government funding your startup qualifies for
         </h1>
-        <p className="text-[13.5px] text-muted">
+        <p className="text-[14.5px] text-muted">
           Describe your company. We map it to US government funding — honestly.
         </p>
       </div>
       {restored && (
-        <p className="font-mono text-[11px] text-faint">
-          Restored your saved profile — interview answers carry over. Click Analyze to re-run.
+        <p className="text-[12.5px] text-faint">
+          Restored your saved profile — interview answers carry over.
         </p>
       )}
       <textarea
@@ -55,24 +55,24 @@ export default function IntakePanel({
         onChange={(e) => onText(e.target.value)}
         placeholder="Tell us about your company — what you build, who it's for, your stage, where you're based…"
         rows={5}
-        className="w-full resize-y rounded-xl border border-hairline bg-[#FBFCFE] p-4 text-[15px] text-ink placeholder:text-faint focus:border-brand focus:outline-none"
+        className="w-full resize-y rounded-2xl border border-line bg-surface-low/60 p-4 text-[15px] leading-relaxed text-ink placeholder:text-faint focus:border-accent focus:bg-card focus:outline-none"
       />
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={onAnalyze}
           disabled={busy || !text.trim()}
-          className="rounded-xl bg-brand px-5 py-2.5 font-mono text-[12.5px] font-semibold text-white transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
         >
           {busy ? "Scanning…" : "Scan programs →"}
         </button>
         {!text.trim() && (
           <>
-            <span className="font-mono text-[11px] text-faint">or try:</span>
+            <span className="text-[12.5px] text-faint">or try:</span>
             {SAMPLES.map((s) => (
               <button
                 key={s.label}
                 onClick={() => onText(s.text)}
-                className="rounded-full border border-hairline px-3 py-1 font-mono text-[12px] text-muted transition-colors hover:border-brand hover:text-brand"
+                className="rounded-full bg-soft px-3.5 py-1.5 text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand-fixed"
               >
                 {s.label}
               </button>

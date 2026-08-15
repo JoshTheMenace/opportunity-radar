@@ -40,21 +40,21 @@ export function ReportView({
   if (report.matches.length === 0 && !readiness.ready) {
     return (
       <section id="report">
-        <article className="rounded-xl border-2 border-dashed border-line bg-surface-low p-5">
+        <article className="rounded-[1.25rem] border-2 border-dashed border-line bg-surface-low/70 p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <span className="rounded bg-surface-variant px-2 py-0.5 font-mono text-[11px] font-medium text-muted">
-                Held — Missing Data
+              <span className="rounded-full bg-surface-variant px-3 py-1 text-[12px] font-semibold text-muted">
+                Held — missing data
               </span>
-              <h4 className="mt-2 font-display text-lg font-semibold text-ink">
+              <h4 className="mt-2.5 font-display text-[19px] font-bold tracking-tight text-ink">
                 Your matches are ready to rank
               </h4>
-              <p className="mt-1 max-w-2xl text-[13.5px] leading-relaxed text-muted">
+              <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-muted">
                 We screen 4,600 programs, but ranking without these facts would show numbers
                 that collapse the moment you answer one more question. Still needed (
                 {readiness.knownCount}/{readiness.requiredCount} known):
               </p>
-              <ul className="mt-2 space-y-1 text-[13.5px] text-ink">
+              <ul className="mt-2.5 space-y-1.5 text-[14px] font-medium text-ink">
                 {readiness.missing.map((m) => (
                   <li key={m.key}>
                     <span className="mr-1 text-brand">•</span> {m.question}
@@ -64,12 +64,12 @@ export function ReportView({
             </div>
             <a
               href="#unlock"
-              className="shrink-0 font-mono text-[12.5px] font-medium text-brand hover:underline"
+              className="shrink-0 rounded-xl bg-brand px-4 py-2 text-[13.5px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong"
             >
-              Resolve ▸
+              Resolve
             </a>
           </div>
-          <p className="mt-3 font-mono text-[11px] text-faint">
+          <p className="mt-3.5 text-[12.5px] text-faint">
             Ranking runs automatically the moment the last answer is in.
           </p>
         </article>
@@ -85,9 +85,9 @@ export function ReportView({
     return (
       <section
         id="report"
-        className="space-y-2 rounded-xl border border-hairline bg-card p-6 text-center shadow-sm"
+        className="card space-y-2 p-8 text-center"
       >
-        <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
+        <h2 className="font-display text-[21px] font-bold tracking-tight text-ink">
           {scoring ? "Scoring your candidates…" : "No strong matches yet"}
         </h2>
         <p className="mx-auto max-w-md text-sm text-muted">
@@ -109,10 +109,10 @@ export function ReportView({
     <section id="report" className="space-y-4">
       {/* kit header line: Top Matches + live counts */}
       <div className="flex flex-wrap items-end justify-between gap-2">
-        <h3 className="font-display text-[22px] font-semibold tracking-tight text-ink">
+        <h3 className="font-display text-[22px] font-bold tracking-tight text-ink">
           Top Matches
         </h3>
-        <span className="font-mono text-[11.5px] text-faint">
+        <span className="tnum text-[13px] text-faint">
           {report.meter.unlockedCount} eligible · {visible.length} ranked
           {matchedUsd > 0 ? ` · up to ${fmtUsd(matchedUsd)}` : ""}
         </span>
@@ -130,8 +130,8 @@ export function ReportView({
         />
       ))}
       {hidden > 0 && (
-        <p className="font-mono text-[11px] text-faint">
-          {hidden} weaker {hidden === 1 ? "match" : "matches"} (score &lt; {MIN_SCORE}) hidden.
+        <p className="text-[12.5px] text-faint">
+          {hidden} weaker {hidden === 1 ? "match" : "matches"} (score below {MIN_SCORE}) hidden.
         </p>
       )}
     </section>
@@ -149,13 +149,13 @@ export function HonestNoPanel({
   return (
     <section
       id="report"
-      className="space-y-3 rounded-xl border border-hairline bg-card p-6 shadow-sm"
+      className="card space-y-3 p-6 sm:p-7"
     >
       {/* the one small risk accent this panel gets */}
-      <span className="inline-block rounded-full bg-risk-soft px-3 py-1 font-mono text-[11px] font-semibold text-risk">
-        DETERMINATION
+      <span className="inline-block rounded-full bg-risk-soft px-3 py-1 text-[12px] font-semibold text-risk">
+        Determination
       </span>
-      <h2 className="font-display text-xl font-semibold tracking-tight text-ink">
+      <h2 className="font-display text-[21px] font-bold tracking-tight text-ink">
         No strong federal match — here&apos;s the honest read
       </h2>
       {report.honestNoExplanation && (
@@ -163,7 +163,7 @@ export function HonestNoPanel({
       )}
       {report.matches.length > 0 && (
         <div className="space-y-2.5 pt-1">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.09em] text-faint">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
             ADJACENT &amp; STATE OPTIONS WORTH A LOOK
           </p>
           {report.matches.map((m, i) => (
@@ -181,7 +181,7 @@ export function HonestNoPanel({
       )}
       {report.rejected.length > 0 && (
         <div className="space-y-1 border-t border-hairline pt-3">
-          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.09em] text-faint">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
             NEAR-MISSES (AND WHY THEY FAIL)
           </p>
           {report.rejected.map((g: GatedOpportunity) => (
@@ -203,7 +203,7 @@ export function ReportSkeleton() {
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="animate-pulse space-y-2.5 rounded-xl border border-hairline bg-card p-5 shadow-sm"
+          className="shimmer card space-y-3 p-6"
         >
           <div className="h-4 w-2/3 rounded bg-soft" />
           <div className="h-3 w-1/2 rounded bg-hairline" />
@@ -236,14 +236,14 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="grid gap-3 sm:grid-cols-3">
       {steps.map((s) => (
-        <div key={s.n} className="rounded-xl border border-hairline bg-card p-5 shadow-sm">
-          <div className="grid h-[30px] w-[30px] place-items-center rounded-full bg-soft font-mono text-xs font-semibold text-brand">
+        <div key={s.n} className="card p-6">
+          <div className="grid h-9 w-9 place-items-center rounded-full bg-soft font-display text-[14px] font-bold text-brand">
             {s.n}
           </div>
-          <p className="mt-2.5 font-display text-[15px] font-semibold tracking-tight text-ink">
+          <p className="mt-3 font-display text-[16px] font-bold tracking-tight text-ink">
             {s.title}
           </p>
-          <p className="mt-1 text-[13px] leading-relaxed text-muted">{s.body}</p>
+          <p className="mt-1 text-[13.5px] leading-relaxed text-muted">{s.body}</p>
         </div>
       ))}
     </section>

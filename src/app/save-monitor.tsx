@@ -42,33 +42,33 @@ export default function SaveMonitor({ profile }: { profile: CompanyProfile }) {
   }
 
   return (
-    <div className="mt-6 rounded-2xl border border-hairline bg-card p-5 shadow-card">
-      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
-        STANDING WATCH
+    <div className="card mt-6 p-6">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+        Standing watch
       </p>
-      <div className="mt-1 text-base font-semibold tracking-tight text-ink">
+      <div className="mt-1 font-display text-[17px] font-bold tracking-tight text-ink">
         Keep watching for me
       </div>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-1 text-[13.5px] text-muted">
         Save this profile and Opportunity Radar will screen every newly posted opportunity
         against it — you get notified when something fits. No more re-running searches.
       </p>
       {state !== "done" ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <input
-            className="rounded-xl border border-hairline bg-[#FBFCFE] px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-brand focus:outline-none"
+            className="rounded-xl border border-line bg-card px-4 py-2.5 text-[14px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
             placeholder="Company name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input
-            className="rounded-xl border border-hairline bg-[#FBFCFE] px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-brand focus:outline-none"
+            className="rounded-xl border border-line bg-card px-4 py-2.5 text-[14px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
             placeholder="Email for alerts (optional)"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <button
-            className="rounded-xl border border-hairline bg-card px-4 py-2 font-mono text-[12.5px] font-semibold text-brand transition-colors hover:bg-soft disabled:opacity-50"
+            className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong disabled:opacity-50"
             disabled={!name.trim() || state === "saving"}
             onClick={save}
           >
@@ -77,7 +77,7 @@ export default function SaveMonitor({ profile }: { profile: CompanyProfile }) {
         </div>
       ) : null}
       {message && (
-        <p className={`mt-2 text-sm ${state === "error" ? "text-risk" : "text-good"}`}>
+        <p className={`mt-2 text-[13.5px] ${state === "error" ? "text-risk" : "text-good"}`}>
           {message}
         </p>
       )}

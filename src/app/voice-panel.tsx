@@ -605,46 +605,46 @@ export default function VoicePanel({
 
   const busy = status === "connecting" || status === "live";
   return (
-    <section className="space-y-2.5 rounded-2xl border border-hairline bg-card p-3.5 shadow-card">
+    <section className="card space-y-3 p-6">
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={busy ? stop : () => void start()}
-          className={`rounded-full px-5 py-2 font-mono text-[12.5px] font-semibold transition-colors ${
+          className={`rounded-full px-5 py-2.5 text-[14px] font-semibold transition-colors ${
             busy
-              ? "border border-hairline bg-card text-risk hover:bg-risk-soft"
-              : "bg-brand text-white hover:bg-brand-strong"
+              ? "border border-line bg-card text-risk hover:bg-risk-soft"
+              : "bg-brand text-white shadow-sm hover:bg-brand-strong"
           }`}
         >
-          {status === "live" ? "■ Stop" : status === "connecting" ? "Connecting…" : "🎙 Voice"}
+          {status === "live" ? "Stop" : status === "connecting" ? "Connecting…" : "Start voice"}
         </button>
         {status === "live" && (
-          <span className="flex items-center gap-1.5 font-mono text-[11.5px] text-good">
+          <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-good">
             <span className="h-2 w-2 animate-pulse rounded-full bg-good" />
             Live — Radar will greet you
           </span>
         )}
-        {err && <span className="text-xs text-risk">{err}</span>}
+        {err && <span className="text-[12.5px] text-risk">{err}</span>}
       </div>
       {stage && status === "live" && (
-        <div className="card-in space-y-2 rounded-xl border border-hairline border-l-[3px] border-l-accent bg-[#FBFCFE] p-3.5">
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-faint">
+        <div className="card-in space-y-2 rounded-2xl bg-soft/70 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
             Radar is asking — tap or just say it
           </p>
-          <p className="text-[13.5px] font-semibold text-ink">{stage.question}</p>
+          <p className="text-[14px] font-semibold text-ink">{stage.question}</p>
           <FieldWidget field={stage.field} onPick={(a) => void submitWidgetAnswer(a)} />
         </div>
       )}
       {log.length > 0 && (
-        <div className="max-h-40 space-y-1.5 overflow-y-auto border-t border-hairline pt-2.5 text-xs">
+        <div className="max-h-40 space-y-1.5 overflow-y-auto border-t border-hairline pt-3 text-[12.5px]">
           {log.map((line, i) => (
             <p
               key={i}
               className={
                 line.who === "you"
-                  ? "w-fit max-w-[92%] rounded-xl border border-hairline bg-card px-3 py-1.5 text-ink"
+                  ? "w-fit max-w-[92%] rounded-xl bg-surface-low px-3 py-1.5 text-ink"
                   : line.who === "radar"
                     ? "w-fit max-w-[92%] rounded-xl bg-soft px-3 py-1.5 text-ink"
-                    : "font-mono text-[11px] text-faint"
+                    : "text-[12px] text-faint"
               }
             >
               {line.who === "you" ? "You: " : line.who === "radar" ? "Radar: " : ""}

@@ -73,7 +73,7 @@ export default function ProfileCard({ profile }: { profile: CompanyProfile | nul
   return (
     <section
       id="dossier"
-      className="relative flex flex-col items-center overflow-hidden rounded-xl border border-hairline bg-card p-5 text-center shadow-sm"
+      className="card relative flex flex-col items-center overflow-hidden p-6 text-center"
     >
       {/* completeness bar (kit: thin brand bar across the card top) */}
       <div className="absolute left-0 top-0 h-1 w-full bg-surface">
@@ -86,17 +86,15 @@ export default function ProfileCard({ profile }: { profile: CompanyProfile | nul
       <div className="mb-2 mt-1 flex h-16 w-16 items-center justify-center rounded-full border-2 border-soft bg-soft font-display text-xl font-bold text-brand">
         {initials(profile.name)}
       </div>
-      <h3 className="font-display text-lg font-semibold text-ink">
+      <h3 className="font-display text-[18px] font-bold tracking-tight text-ink">
         {profile.name ?? "Your company"}
       </h3>
-      <span className="mb-2 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint">
+      <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
         {loc}
       </span>
       <div
-        className={`mb-4 flex w-full items-center justify-center gap-1 rounded-md border px-2 py-1 font-mono text-[11px] font-medium ${
-          confidence === "High"
-            ? "border-good/30 bg-good-soft text-good"
-            : "border-warn-soft bg-warn-soft text-warn"
+        className={`mb-4 rounded-full px-3 py-1 text-[12px] font-semibold ${
+          confidence === "High" ? "bg-good-soft text-good" : "bg-warn-soft text-warn"
         }`}
       >
         Confidence: {confidence}
@@ -109,7 +107,7 @@ export default function ProfileCard({ profile }: { profile: CompanyProfile | nul
           return (
             <div key={r.label} className="flex items-baseline justify-between gap-3 border-b border-hairline pb-1 last:border-0">
               <dt
-                className={`flex items-center gap-1.5 font-mono text-[11px] tracking-[0.05em] ${
+                className={`flex items-center gap-1.5 text-[12.5px] ${
                   hot ? "text-risk" : "text-faint"
                 }`}
               >
@@ -123,11 +121,11 @@ export default function ProfileCard({ profile }: { profile: CompanyProfile | nul
               </dt>
               {r.value != null ? (
                 // key on the value so a fresh fact re-triggers the entrance animation
-                <dd key={r.value} className="card-in text-[13px] font-medium text-ink">
+                <dd key={r.value} className="card-in tnum text-[13.5px] font-semibold text-ink">
                   {r.value}
                 </dd>
               ) : (
-                <dd className={`text-[13px] font-medium ${hot ? "text-risk" : "text-faint"}`}>
+                <dd className={`text-[13.5px] font-medium ${hot ? "text-risk" : "text-faint"}`}>
                   Unknown
                 </dd>
               )}

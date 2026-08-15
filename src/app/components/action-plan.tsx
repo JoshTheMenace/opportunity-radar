@@ -16,9 +16,9 @@ export default function ActionPlan({ report }: { report: UiReport | null }) {
   if (steps.length === 0) return null;
 
   return (
-    <section className="rounded-xl border border-hairline bg-card p-5 shadow-sm">
-      <h4 className="mb-4 font-display text-[17px] font-semibold text-ink">Action Plan</h4>
-      <p className="-mt-3 mb-4 font-mono text-[10.5px] uppercase tracking-[0.08em] text-faint">
+    <section className="card p-6">
+      <h4 className="mb-4 font-display text-[17px] font-bold tracking-tight text-ink">Action Plan</h4>
+      <p className="-mt-3 mb-4 text-[12.5px] text-faint">
         for {opp.title.length > 34 ? opp.title.slice(0, 34) + "…" : opp.title}
       </p>
       <div className="relative ml-2 space-y-5 border-l-2 border-surface-variant">
@@ -32,14 +32,14 @@ export default function ActionPlan({ report }: { report: UiReport | null }) {
               }`}
             />
             <span
-              className={`mb-0.5 block font-mono text-[11px] font-medium ${
+              className={`mb-0.5 block text-[12px] font-semibold ${
                 s.urgent ? "text-risk" : i === 0 ? "text-brand" : "text-faint"
               }`}
             >
               {s.due ?? "Rolling"}
             </span>
-            <h5 className="text-[13.5px] font-medium text-ink">{s.title}</h5>
-            <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{s.detail}</p>
+            <h5 className="text-[14px] font-semibold text-ink">{s.title}</h5>
+            <p className="mt-0.5 text-[13px] leading-relaxed text-muted">{s.detail}</p>
           </div>
         ))}
       </div>

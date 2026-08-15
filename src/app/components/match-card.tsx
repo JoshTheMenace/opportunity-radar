@@ -101,14 +101,14 @@ export default function MatchCard({
   return (
     <article
       ref={cardRef}
-      className={`card-in overflow-hidden rounded-xl border bg-card shadow-sm ${
-        match.tier === "likely_fit" ? "border-accent/40" : "border-hairline"
+      className={`card-in card overflow-hidden ${
+        match.tier === "likely_fit" ? "!border-accent/40" : ""
       }`}
       style={{ animationDelay: `${Math.min(index * 70, 490)}ms` }}
     >
       {/* header band */}
       <div
-        className={`border-b border-hairline p-5 ${
+        className={`border-b border-hairline p-6 ${
           match.tier === "likely_fit" ? "bg-soft/60" : "bg-card"
         }`}
       >
@@ -116,16 +116,17 @@ export default function MatchCard({
           <div className="min-w-0">
             <div className="mb-1 flex flex-wrap items-center gap-2">
               <span
-                className={`rounded px-2 py-0.5 font-mono text-[11px] font-medium ${tier?.badge ?? ""}`}
+                className={`rounded-full px-3 py-1 text-[12px] font-semibold ${tier?.badge ?? ""}`}
               >
                 {match.tier === "likely_fit" ? "✓ " : ""}
                 {tier?.label ?? match.tier}
               </span>
-              <span className="font-mono text-[11px] text-faint">
-                ID: {shortId(match.opportunityId)} · score {match.score}
+              <span className="text-[12px] text-faint">
+                ID <span className="font-mono">{shortId(match.opportunityId)}</span> · score{" "}
+                <span className="font-mono font-semibold text-ink/70">{match.score}</span>
               </span>
             </div>
-            <h4 className="font-display text-[19px] font-semibold leading-6 text-ink">
+            <h4 className="font-display text-[20px] font-bold leading-[1.25] tracking-tight text-ink">
               <Link
                 href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
                 className="transition-colors hover:text-brand"
@@ -133,81 +134,78 @@ export default function MatchCard({
                 {opp?.title ?? match.opportunityId}
               </Link>
             </h4>
-            <p className="mt-0.5 font-mono text-[11.5px] text-faint">
+            <p className="mt-1 text-[12.5px] text-faint">
               {opp ? dedupeAgency(opp.agency) : "details unavailable"}
             </p>
           </div>
           <div className="text-right">
             {money && (
-              <span className="block font-display text-[19px] font-semibold leading-6 text-brand">
+              <span className="tnum block font-display text-[20px] font-bold leading-6 text-brand">
                 {money}
               </span>
             )}
             {opp?.closeDate ? (
               <span
-                className={`font-mono text-[11.5px] ${
-                  close != null && close <= 30 ? "font-medium text-risk" : "text-faint"
+                className={`text-[12.5px] ${
+                  close != null && close <= 30 ? "font-semibold text-risk" : "text-faint"
                 }`}
               >
                 Deadline: {opp.closeDate}
                 {close != null && close >= 0 ? ` (${close}d)` : ""}
               </span>
             ) : (
-              <span className="font-mono text-[11.5px] text-faint">rolling deadline</span>
+              <span className="text-[12.5px] text-faint">rolling deadline</span>
             )}
           </div>
         </div>
         {opp?.description && (
-          <p className="mt-2 line-clamp-2 text-[13.5px] leading-relaxed text-muted">
+          <p className="mt-2.5 line-clamp-2 text-[14px] leading-relaxed text-muted">
             {opp.description}
           </p>
         )}
       </div>
 
       {/* body: why / disqualify columns */}
-      <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
         <div>
-          <h5 className="mb-1.5 font-mono text-[12px] font-medium tracking-[0.05em] text-ink">
-            <span className="mr-1 text-good">✓✓</span> Why it fits
+          <h5 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-good">
+            Why it fits
           </h5>
-          <ul className="list-inside list-disc space-y-1 text-[13.5px] leading-relaxed text-muted">
+          <ul className="list-inside list-disc space-y-1.5 text-[14px] leading-relaxed text-muted">
             {bullets(match.whyFit).map((b, i) => (
               <li key={i}>{b}</li>
             ))}
           </ul>
         </div>
         <div>
-          <h5 className="mb-1.5 font-mono text-[12px] font-medium tracking-[0.05em] text-risk">
-            <span className="mr-1">⚠</span> What could disqualify
+          <h5 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-risk">
+            What could disqualify
           </h5>
-          <ul className="list-inside list-disc space-y-1 text-[13.5px] leading-relaxed text-muted">
+          <ul className="list-inside list-disc space-y-1.5 text-[14px] leading-relaxed text-muted">
             {bullets(match.whatCouldDisqualify).map((b, i) => (
               <li key={i}>{b}</li>
             ))}
           </ul>
-          <p className="mt-2 text-[12.5px] leading-relaxed text-faint">
-            <span className="font-mono font-medium text-warn">Verify:</span> {match.whatToVerify}
+          <p className="mt-2.5 text-[13px] leading-relaxed text-faint">
+            <span className="font-semibold text-warn">Verify:</span> {match.whatToVerify}
           </p>
         </div>
 
         {/* who wins this money + funding twin */}
         {evidence && (twin || (evidence.totalAwards != null && evidence.totalAwards > 0)) && (
           <div className="border-t border-hairline pt-4 md:col-span-2">
-            <h5 className="mb-2 font-mono text-[12px] font-medium tracking-[0.05em] text-ink">
+            <h5 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-faint">
               Who else got this money
             </h5>
             <EvidenceStats evidence={evidence} />
             {twin && (
-              <div className="mt-2 flex items-start gap-3 rounded-lg border border-twin-soft bg-bg p-3">
-                <div className="mt-0.5 rounded-full bg-twin-soft/50 px-2 py-1 font-mono text-[13px] text-twin">
-                  ⇄
-                </div>
+              <div className="mt-2.5 rounded-2xl bg-twin-soft/45 p-4">
                 <div className="min-w-0">
-                  <span className="block font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-twin">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-twin">
                     Your funding twin
                   </span>
-                  <p className="mt-0.5 text-[13.5px] font-medium text-ink">{twin.recipient}</p>
-                  <p className="text-[13px] text-muted">
+                  <p className="mt-1 text-[14.5px] font-semibold text-ink">{twin.recipient}</p>
+                  <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">
                     Received {fmtUsd(twin.amountUsd)}
                     {twin.year ? ` in ${twin.year}` : ""} from this program
                     {twin.state ? ` (${twin.state})` : ""}.{" "}
@@ -216,7 +214,7 @@ export default function MatchCard({
                         href={twin.link}
                         target="_blank"
                         rel="noreferrer"
-                        className="font-mono text-[12px] text-brand underline-offset-2 hover:underline"
+                        className="font-medium text-brand underline decoration-brand/30 underline-offset-2 hover:decoration-brand"
                       >
                         award record ↗
                       </a>
@@ -234,16 +232,16 @@ export default function MatchCard({
             <button
               type="button"
               onClick={() => setShowPlan((v) => !v)}
-              className="font-mono text-[12px] font-medium text-muted transition-colors hover:text-ink"
+              className="text-[13px] font-semibold text-brand transition-colors hover:text-brand-strong"
             >
               {showPlan ? "▾" : "▸"} Plan backward from the deadline
             </button>
             {showPlan && (
-              <ol className="mt-2 space-y-1.5 border-l-2 border-surface-variant pl-4">
+              <ol className="mt-3 space-y-2 border-l-2 border-surface pl-4">
                 {buildTimeline(opp, profile).map((s) => (
                   <li key={s.title} className="text-[13px]">
                     <span
-                      className={`font-mono font-medium ${s.urgent ? "text-risk" : "text-ink"}`}
+                      className={`font-medium ${s.urgent ? "text-risk" : "text-ink"}`}
                     >
                       {s.due ?? "rolling"} · {s.title}
                     </span>
@@ -267,8 +265,8 @@ export default function MatchCard({
       </div>
 
       {/* footer / actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline bg-card px-5 py-3">
-        <span className="font-mono text-[11.5px] text-faint">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline bg-surface-low/50 px-6 py-4">
+        <span className="max-w-[46%] text-[12.5px] leading-snug text-faint">
           {odds ?? bullets(match.nextSteps, 1)[0] ?? ""}
         </span>
         <div className="flex flex-wrap items-center gap-2">
@@ -277,7 +275,7 @@ export default function MatchCard({
               href={opp.url}
               target="_blank"
               rel="noreferrer"
-              className="rounded-lg border border-line px-3.5 py-2 font-mono text-[12.5px] font-medium text-muted transition-colors hover:bg-surface-low"
+              className="rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-muted transition-colors hover:bg-surface-low"
             >
               Official notice ↗
             </a>
@@ -287,14 +285,14 @@ export default function MatchCard({
               type="button"
               onClick={() => void loadOfficer()}
               disabled={officerBusy}
-              className="rounded-lg border border-line px-3.5 py-2 font-mono text-[12.5px] font-medium text-muted transition-colors hover:bg-surface-low disabled:opacity-50"
+              className="rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-muted transition-colors hover:bg-surface-low disabled:opacity-50"
             >
               {officerBusy ? "Reviewing…" : "Officer preview"}
             </button>
           )}
           <Link
             href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
-            className="rounded-lg bg-brand px-3.5 py-2 font-mono text-[12.5px] font-medium text-white shadow-sm transition-colors hover:bg-brand-strong"
+            className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong"
           >
             Start Pre-flight →
           </Link>
@@ -328,15 +326,15 @@ function EvidenceStats({ evidence }: { evidence: EvidenceSummary }) {
   if (evidence.utahCount != null && evidence.utahCount > 0)
     stats.push(`${evidence.utahCount} in Utah`);
   if (stats.length === 0) return null;
-  return <p className="font-mono text-[12px] text-muted">{stats.join(" · ")}</p>;
+  return <p className="tnum text-[13px] text-muted">{stats.join(" · ")}</p>;
 }
 
 /** Inline result of the "how would a program officer read this?" simulation. */
 function OfficerPanel({ preview }: { preview: OfficerPreview }) {
   const b = preview.breakdown;
   return (
-    <div className="space-y-2 rounded-lg border border-hairline bg-surface-low p-4">
-      <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-faint">
+    <div className="space-y-2.5 rounded-2xl bg-surface-low p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
         Program officer preview
       </p>
       <p className="text-sm font-semibold text-ink">
@@ -345,7 +343,7 @@ function OfficerPanel({ preview }: { preview: OfficerPreview }) {
           {preview.tier}
         </span>
       </p>
-      <p className="font-mono text-[11.5px] text-faint">
+      <p className="tnum text-[12.5px] text-faint">
         merit {b.technical_merit} · mission {b.mission_alignment} · stage {b.stage_readiness} ·
         budget {b.budget_realism}
       </p>
@@ -369,7 +367,7 @@ function OfficerPanel({ preview }: { preview: OfficerPreview }) {
       <p className="border-l-2 border-line pl-3 text-[13.5px] italic leading-relaxed text-muted">
         {preview.officerNote}
       </p>
-      <p className="font-mono text-[11.5px] text-faint">
+      <p className="tnum text-[12.5px] text-faint">
         confidence {preview.confidence}% — {preview.confidenceNote}
       </p>
     </div>
@@ -389,7 +387,7 @@ function OfficerList({
   if (items.length === 0) return null;
   return (
     <div>
-      <dt className={`font-mono text-[11px] font-medium uppercase tracking-[0.05em] ${tone}`}>
+      <dt className={`text-[11px] font-semibold uppercase tracking-[0.07em] ${tone}`}>
         {label}
       </dt>
       {items.map(([head, detail], i) => (
