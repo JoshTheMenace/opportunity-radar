@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Hanken_Grotesk, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import TopNav from "./components/side-nav";
-import { Wordmark } from "./components/brand";
-import { countBySource } from "@/lib/engine/retrieve";
+import AppNav from "./components/app-nav";
+import { AssistantProvider } from "./components/assistant/context";
+import AssistantDrawer from "./components/assistant/drawer";
 
 // Type system (Federal Catalyst kit): Hanken Grotesk headlines,
-// Inter body, JetBrains Mono labels/data/buttons.
+// Inter body, JetBrains Mono labels/data. globals.css rebinds the kit's
+// --font-* roles to these next/font variables.
 const hanken = Hanken_Grotesk({
   variable: "--font-hanken",
   subsets: ["latin"],
@@ -30,56 +30,42 @@ export const metadata: Metadata = {
   description: "Match your startup to US government funding — honestly.",
 };
 
-/** Live program count for the navbar; falls back quietly if the DB is cold. */
-function programCount(): string {
-  try {
-    const counts = countBySource();
-    const total = Object.values(counts).reduce((a, n) => a + n, 0);
-    if (total > 0) return total.toLocaleString("en-US");
-  } catch {
-    // ingest hasn't run — show nothing rather than a made-up number
-  }
-  return "";
-}
-
-// App shell (Federal Catalyst): white top navbar — wordmark in the federal
-// blue, section tabs with the active underline, live monitoring count on the
-// right. Pages render full-width below and compose their own columns.
+// App shell (Federal Catalyst): kit top nav, page below, Assistant drawer
+// floating over everything. Pages compose their own mk-page/mk-grid columns.
 export default function RootLayout({ children }: LayoutProps<"/">) {
-  const count = programCount();
   return (
     <html
       lang="en"
       className={`${hanken.variable} ${inter.variable} ${jbMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <header className="sticky top-0 z-30 border-b border-hairline bg-card shadow-sm">
-          <div className="mx-auto flex h-16 w-full max-w-[1440px] items-center gap-4 px-4 sm:gap-8 sm:px-6 lg:px-10">
-            <Link href="/" className="shrink-0">
-              <Wordmark />
-            </Link>
-            <TopNav />
-            <div className="flex-1" />
-            {count && (
-              <p className="hidden items-center gap-2 rounded-full bg-good-soft px-3.5 py-1.5 text-[12.5px] font-medium text-good md:flex">
-                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-good" />
-                Monitoring <span className="tnum font-semibold">{count}</span> programs
+        {/* Material Symbols — the kit's only icon source. React hoists these. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          precedence="default"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
+        />
+        <AssistantProvider>
+          <header className="sticky top-0 z-30">
+            <AppNav />
+          </header>
+
+          <div className="flex-1">{children}</div>
+
+          <footer style={{ borderTop: "1px solid var(--color-border-ice)", background: "var(--surface-card)" }}>
+            <div className="mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-2 px-4 py-6 text-[12.5px] text-faint sm:px-6 lg:px-10">
+              <p>
+                <span className="font-semibold text-muted">Sources</span> · Grants.gov · SAM.gov
+                Assistance Listings · USAspending · Utah state programs
               </p>
-            )}
-          </div>
-        </header>
+              <p>Honest matches only — we say so when there&apos;s no fit.</p>
+            </div>
+          </footer>
 
-        <div className="flex-1">{children}</div>
-
-        <footer className="border-t border-hairline bg-card">
-          <div className="mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-2 px-4 py-6 text-[12.5px] text-faint sm:px-6 lg:px-10">
-            <p>
-              <span className="font-semibold text-muted">Sources</span> · Grants.gov · SAM.gov
-              Assistance Listings · USAspending · Utah state programs
-            </p>
-            <p>Honest matches only — we say so when there&apos;s no fit.</p>
-          </div>
-        </footer>
+          <AssistantDrawer />
+        </AssistantProvider>
       </body>
     </html>
   );

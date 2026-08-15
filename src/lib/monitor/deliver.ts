@@ -17,14 +17,20 @@ function from(): string {
  *  API error (callers decide whether delivery failure is fatal). */
 export async function sendViaResend(
   to: string,
-  email: { subject: string; body: string },
+  email: { subject: string; body: string; html?: string | null },
 ): Promise<string> {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("RESEND_API_KEY not set (.env.local)");
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: from(), to: [to], subject: email.subject, text: email.body }),
+    body: JSON.stringify({
+      from: from(),
+      to: [to],
+      subject: email.subject,
+      text: email.body, // plain-text fallback part
+      ...(email.html ? { html: email.html } : {}),
+    }),
   });
   const data = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
   if (!res.ok || !data.id)

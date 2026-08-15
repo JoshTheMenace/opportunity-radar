@@ -9,10 +9,14 @@ import path from "path";
 import type { Opportunity, RankedMatch } from "../types";
 import { formatUsdCompact } from "../engine/meter";
 import type { CompanyRecord } from "./db";
+import { renderMatchEmailHtml, type EmailKind } from "./email-html";
 
 export interface DraftedEmail {
   subject: string;
+  /** Plain-text version — source of truth for the DB + .eml outbox. */
   body: string;
+  /** Catalyst-styled HTML (email-html.ts) sent as the rich part. */
+  html: string;
 }
 
 function awardRange(opp: Opportunity): string {
@@ -27,6 +31,7 @@ export function draftMatchEmail(
   company: CompanyRecord,
   opp: Opportunity,
   match: RankedMatch,
+  kind: EmailKind = "match",
 ): DraftedEmail {
   const odds =
     opp.expectedAwards && opp.expectedApplications
@@ -38,7 +43,9 @@ export function draftMatchEmail(
   const lines = [
     `Hi ${company.name} team,`,
     ``,
-    `Opportunity Radar found a new government funding opportunity that matches your profile:`,
+    kind === "unlock"
+      ? `A program that previously blocked you now clears every eligibility gate for your updated profile:`
+      : `Opportunity Radar found a new government funding opportunity that matches your profile:`,
     ``,
     `${opp.title}`,
     `${opp.agency} · ${awardRange(opp)}${opp.closeDate ? ` · closes ${opp.closeDate}` : " · rolling deadline"}`,
@@ -54,9 +61,11 @@ export function draftMatchEmail(
     `— Opportunity Radar`,
     `You're receiving this because you saved your company profile for monitoring. Reply STOP to unsubscribe.`,
   ];
+  const prefix = kind === "unlock" ? "Now eligible" : "New funding match";
   return {
-    subject: `New funding match: ${opp.title.slice(0, 80)} (${awardRange(opp)})`,
+    subject: `${prefix}: ${opp.title.slice(0, 80)} (${awardRange(opp)})`,
     body: lines.join("\n"),
+    html: renderMatchEmailHtml(company, opp, match, kind),
   };
 }
 

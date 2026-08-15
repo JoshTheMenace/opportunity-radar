@@ -29,6 +29,7 @@ export interface NotificationRecord {
   whyFit: string;
   emailSubject: string | null;
   emailBody: string | null;
+  emailHtml: string | null;
   emailedAt: string | null;
   createdAt: string;
 }
@@ -69,6 +70,12 @@ function db() {
     // Additive migration: future-fit snapshot ("not yet" matches) per company.
     try {
       d.exec("ALTER TABLE companies ADD COLUMN future_fits TEXT");
+    } catch {
+      // column already exists
+    }
+    // Additive migration: rich HTML version of the drafted email.
+    try {
+      d.exec("ALTER TABLE notifications ADD COLUMN email_html TEXT");
     } catch {
       // column already exists
     }
@@ -225,13 +232,14 @@ export function recordNotification(n: {
   whyFit: string;
   emailSubject: string | null;
   emailBody: string | null;
+  emailHtml?: string | null;
   emailedAt: string | null;
 }): boolean {
   const r = db()
     .prepare(
       `INSERT OR IGNORE INTO notifications
-       (company_id, opportunity_id, score, tier, why_fit, email_subject, email_body, emailed_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (company_id, opportunity_id, score, tier, why_fit, email_subject, email_body, email_html, emailed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       n.companyId,
@@ -241,6 +249,7 @@ export function recordNotification(n: {
       n.whyFit,
       n.emailSubject,
       n.emailBody,
+      n.emailHtml ?? null,
       n.emailedAt,
     );
   return r.changes > 0;
@@ -265,6 +274,7 @@ export function listNotifications(companyId?: number, limit = 50): NotificationR
     whyFit: r.why_fit as string,
     emailSubject: (r.email_subject as string) ?? null,
     emailBody: (r.email_body as string) ?? null,
+    emailHtml: (r.email_html as string) ?? null,
     emailedAt: (r.emailed_at as string) ?? null,
     createdAt: r.created_at as string,
   }));

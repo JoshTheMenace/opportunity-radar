@@ -87,7 +87,7 @@ async function checkFutureFitUnlocks(
       whatToVerify: "Confirm the program is in an open cycle before investing application time.",
       nextSteps: "Open the program page and re-run your analysis to get a fresh fit read.",
     };
-    const email = company.email ? draftMatchEmail(company, opp, match) : null;
+    const email = company.email ? draftMatchEmail(company, opp, match, "unlock") : null;
     const inserted = recordNotification({
       companyId: company.id,
       opportunityId: opp.id,
@@ -96,6 +96,7 @@ async function checkFutureFitUnlocks(
       whyFit: match.whyFit,
       emailSubject: email?.subject ?? null,
       emailBody: email?.body ?? null,
+      emailHtml: email?.html ?? null,
       emailedAt: email ? new Date().toISOString() : null,
     });
     if (inserted) {
@@ -149,6 +150,7 @@ async function matchCompany(
       whyFit: m.whyFit,
       emailSubject: email?.subject ?? null,
       emailBody: email?.body ?? null,
+      emailHtml: email?.html ?? null,
       emailedAt,
     });
     if (inserted) {

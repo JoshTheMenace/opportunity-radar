@@ -1,67 +1,79 @@
 @import "tailwindcss";
+@import "./styles/catalyst-kit.css";
+@import "./styles/catalyst-extras.css";
 
 /* ============================================================
-   Opportunity Radar — "Federal Catalyst, warmed up."
-   Kit structure, Halda-grade craft: warm paper canvas, deep
-   federal navy ink, one confident blue for action, soft lush
-   card shadows, generous radii. Mono is for NUMBERS ONLY
-   (amounts, dates, counts, IDs) — never labels or buttons.
+   Opportunity Radar — Federal Catalyst design system.
+   Tokens, .or-* components and type roles live in
+   styles/catalyst-kit.css (vendored verbatim from the design
+   branch — keep it byte-identical so re-syncs are a copy).
+   Mock-graduated additions live in styles/catalyst-extras.css.
+   Below: font binding, the Tailwind token bridge that keeps
+   legacy utility classes on-palette, and app-wide motion.
    ============================================================ */
 
+/* The kit hardcodes Google family names; next/font serves the same faces
+   under generated names. Rebind the kit's font roles to the loaded fonts. */
+:root {
+  --font-display: var(--font-hanken), system-ui, sans-serif;
+  --font-headline: var(--font-hanken), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-label: var(--font-jbmono), ui-monospace, monospace;
+  --font-mono: var(--font-jbmono), ui-monospace, monospace;
+}
+
+/* Tailwind bridge: legacy utility tokens now RESOLVE TO kit variables, so
+   every not-yet-converted component renders in the kit palette. Convert
+   components to .or-* classes on touch; new work uses the kit directly. */
 @theme inline {
   /* canvas + surfaces */
-  --color-bg: #f6f4ef;
-  --color-card: #ffffff;
-  --color-surface-low: #f1efe9;
-  --color-surface: #eae7df;
-  --color-surface-high: #e3dfd5;
-  --color-surface-variant: #e3dfd5;
-  /* one warm-navy line everywhere */
-  --color-hairline: rgba(18, 40, 63, 0.12);
-  --color-line: rgba(18, 40, 63, 0.18);
+  --color-bg: var(--surface-page);
+  --color-card: var(--surface-card);
+  --color-surface-low: var(--color-surface-container-low);
+  --color-surface: var(--color-surface-container);
+  --color-surface-high: var(--color-surface-container-high);
+  --color-surface-variant: var(--color-surface-variant);
+  /* lines */
+  --color-hairline: var(--color-border-ice);
+  --color-line: var(--color-outline-variant);
   /* text */
-  --color-ink: #12283f;
-  --color-muted: #47617a;
-  --color-faint: #7d90a5;
-  /* brand — confident federal blue */
-  --color-brand: #155e9e;
-  --color-brand-strong: #0f4173;
-  --color-accent: #1a74c2;
-  --color-soft: #e8f1f9;
-  --color-brand-fixed: #cfe5f6;
+  --color-ink: var(--color-text-deep);
+  --color-muted: var(--color-on-surface-variant);
+  --color-faint: var(--color-outline);
+  /* brand */
+  --color-brand: var(--color-primary);
+  --color-brand-strong: var(--color-on-primary-fixed-variant);
+  --color-accent: var(--color-primary-container);
+  --color-soft: var(--surface-selected);
+  --color-brand-fixed: var(--color-primary-fixed-dim);
   /* status */
-  --color-good: #177a53;
-  --color-good-soft: #e2f3ea;
-  --color-warn: #a06514;
-  --color-warn-soft: #fdf0d9;
-  --color-risk: #b3402f;
-  --color-risk-soft: #fbe9e5;
+  --color-good: var(--color-fit-strong);
+  --color-good-soft: var(--color-fit-strong-surface);
+  --color-warn: var(--color-caution-text);
+  --color-warn-soft: var(--color-caution-surface);
+  --color-risk: var(--color-error);
+  --color-risk-soft: var(--color-error-container);
   /* funding twin */
-  --color-twin: #0e6f8a;
-  --color-twin-soft: #d8eef5;
-  /* legacy aliases — degrade to sane colors; migrate on touch */
-  --color-paper: #12283f;
-  --color-panel: #ffffff;
-  --color-panel-2: #f1efe9;
-  --color-brass: #a06514;
-  --color-brass-bright: #b8791f;
-  --color-treasury: #177a53;
-  --color-signal: #b3402f;
+  --color-twin: var(--color-secondary);
+  --color-twin-soft: var(--color-secondary-fixed);
+  /* legacy aliases — degrade to sane kit colors; migrate on touch */
+  --color-paper: var(--color-text-deep);
+  --color-panel: var(--surface-card);
+  --color-panel-2: var(--color-surface-container-low);
+  --color-brass: var(--color-caution-text);
+  --color-brass-bright: var(--color-caution-text);
+  --color-treasury: var(--color-fit-strong);
+  --color-signal: var(--color-error);
   /* type */
   --font-display: var(--font-hanken);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jbmono);
 }
 
-* {
-  border-color: var(--color-hairline);
-}
-
 body {
-  background-color: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 15px;
+  background-color: var(--surface-page);
+  color: var(--color-on-surface);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -70,19 +82,17 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: var(--font-headline);
   letter-spacing: -0.015em;
   text-wrap: balance;
 }
 
-/* THE card. One elevation language everywhere. */
+/* Legacy .card ≙ kit .or-card minus padding (components pad themselves). */
 .card {
-  background: var(--color-card);
-  border: 1px solid var(--color-hairline);
-  border-radius: 1.25rem;
-  box-shadow:
-    0 1px 2px rgba(18, 40, 63, 0.04),
-    0 12px 30px rgba(18, 40, 63, 0.07);
+  background: var(--surface-card);
+  border: 1px solid var(--color-border-ice);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Numbers read as ledger entries — tabular everywhere they appear. */
@@ -97,12 +107,12 @@ pre {
 }
 
 ::selection {
-  background: var(--color-brand-fixed);
-  color: var(--color-brand-strong);
+  background: var(--color-primary-fixed);
+  color: var(--color-on-primary-fixed);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -112,13 +122,13 @@ pre {
   height: 9px;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(18, 40, 63, 0.18);
+  background: rgba(15, 23, 42, 0.18);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: rgba(18, 40, 63, 0.34);
+  background: rgba(15, 23, 42, 0.34);
   background-clip: content-box;
 }
 
@@ -186,13 +196,13 @@ pre {
 @keyframes card-spotlight {
   0% {
     box-shadow:
-      0 0 0 2px var(--color-accent),
-      0 0 28px rgba(26, 116, 194, 0.3);
+      0 0 0 2px var(--color-primary-container),
+      0 0 28px rgba(3, 105, 161, 0.3);
   }
   100% {
     box-shadow:
-      0 0 0 2px rgba(26, 116, 194, 0),
-      0 0 0 rgba(26, 116, 194, 0);
+      0 0 0 2px rgba(3, 105, 161, 0),
+      0 0 0 rgba(3, 105, 161, 0);
   }
 }
 .card-spotlight {

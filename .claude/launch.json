@@ -8,6 +8,12 @@
       "port": 3000
     },
     {
+      "name": "dev-redesign",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev", "--port", "3100"],
+      "port": 3100
+    },
+    {
       "name": "design-mocks",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4173", "-d", "/private/tmp/claude-501/-Users-joshthemenace-Documents-code-Sandbox/59862f0f-9256-40ce-a25c-d2c8cec3c148/scratchpad/design"],
