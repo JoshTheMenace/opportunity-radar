@@ -141,6 +141,7 @@ CALIBRATION (follow strictly):
 
 For each opportunity write 1-2 sentences each for whyFit, whatCouldDisqualify, whatToVerify, nextSteps.
 Ground every statement ONLY in the data provided above. Never invent numbers, deadlines, dollar amounts, or program details that are not given. If something is unknown, say it is unknown.
+HARD RULE: any profile field shown as "unknown" (e.g. Active R&D, SAM registration, product maturity) must NEVER be asserted as fact in whyFit — treat it as unresolved and put it in whatToVerify instead. Do not attribute customers, partnerships, facilities, or capabilities the profile does not state.
 
 Return a JSON object {"matches": [...]} with one entry per opportunity, using each opportunity's exact "id" as opportunityId.`;
 
@@ -170,34 +171,46 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-export async function rankOpportunities(
-  profile: CompanyProfile,
-  gated: GatedOpportunity[],
-): Promise<RankResult> {
-  // Only pass/unknown ever reach the LLM (defensive re-filter).
-  const candidates = gated.filter(
-    (g) => g.verdict === "pass" || g.verdict === "unknown",
-  );
-  const byId = new Map(candidates.map((g) => [g.opportunity.id, g]));
-
-  // Score batches in parallel; one failed batch degrades, all failing throws.
-  const chunks = chunk(candidates, BATCH_SIZE);
-  let failed = 0;
-  const results = await Promise.all(
-    chunks.map((batch) =>
-      scoreBatch(profile, batch).catch((err) => {
-        failed++;
-        console.error(`rank: scoreBatch failed (${batch.length} items):`, err);
-        return [] as ScoredItem[];
-      }),
-    ),
-  );
-  if (chunks.length > 0 && failed === chunks.length) {
-    throw new Error(`rank: all ${chunks.length} scoring batches failed`);
+/** Agency-diverse cut. A plain score-sorted top-N can fill up with one
+ *  agency's programs and crowd out the best NSF/DOE/SBIR/etc. option.
+ *  Protect each agency's and each funding kind's single best match, then
+ *  fill remaining slots by score. Output stays score-sorted. */
+function diverseCut(
+  sorted: RankedMatch[],
+  byId: Map<string, GatedOpportunity>,
+  max: number,
+): RankedMatch[] {
+  if (sorted.length <= max) return sorted;
+  const protect = new Set<RankedMatch>();
+  const seenAgency = new Set<string>();
+  const seenKind = new Set<string>();
+  for (const m of sorted) {
+    const o = byId.get(m.opportunityId)?.opportunity;
+    const agency = o?.agency.toLowerCase() ?? "?";
+    const kind = o?.kind ?? "?";
+    if (!seenAgency.has(agency)) {
+      seenAgency.add(agency);
+      protect.add(m);
+    }
+    if (!seenKind.has(kind)) {
+      seenKind.add(kind);
+      protect.add(m);
+    }
   }
-  const scored: ScoredItem[] = results.flat();
+  const keep = new Set(sorted.filter((m) => protect.has(m)).slice(0, max));
+  for (const m of sorted) {
+    if (keep.size >= max) break;
+    keep.add(m);
+  }
+  return sorted.filter((m) => keep.has(m));
+}
 
-  const today = localIsoDate();
+/** Deterministic guards + tiering + sort. Shared by partial and final results. */
+function toMatches(
+  scored: ScoredItem[],
+  byId: Map<string, GatedOpportunity>,
+  today: string,
+): RankedMatch[] {
   const matches: RankedMatch[] = [];
   for (const item of scored) {
     const g = byId.get(item.opportunityId);
@@ -218,9 +231,52 @@ export async function rankOpportunities(
       nextSteps: item.nextSteps ?? "",
     });
   }
-
   matches.sort((a, b) => b.score - a.score);
-  const top = matches.slice(0, MAX_MATCHES);
+  return diverseCut(matches, byId, MAX_MATCHES);
+}
+
+export async function rankOpportunities(
+  profile: CompanyProfile,
+  gated: GatedOpportunity[],
+  /** Called as each parallel batch lands: matches-so-far (guarded+sorted),
+   *  candidates scored so far, and total candidates. */
+  onProgress?: (matchesSoFar: RankedMatch[], scoredCount: number, totalCount: number) => void,
+): Promise<RankResult> {
+  // Only pass/unknown ever reach the LLM (defensive re-filter).
+  const candidates = gated.filter(
+    (g) => g.verdict === "pass" || g.verdict === "unknown",
+  );
+  const byId = new Map(candidates.map((g) => [g.opportunity.id, g]));
+  const today = localIsoDate();
+
+  // Score batches in parallel; one failed batch degrades, all failing throws.
+  // Each finished batch reports progress so callers can stream partial results.
+  const chunks = chunk(candidates, BATCH_SIZE);
+  let failed = 0;
+  let scoredCount = 0;
+  const scored: ScoredItem[] = [];
+  await Promise.all(
+    chunks.map((batch) =>
+      scoreBatch(profile, batch)
+        .catch((err) => {
+          failed++;
+          console.error(`rank: scoreBatch failed (${batch.length} items):`, err);
+          return [] as ScoredItem[];
+        })
+        .then((items) => {
+          scored.push(...items);
+          scoredCount += batch.length;
+          if (onProgress && scoredCount < candidates.length) {
+            onProgress(toMatches(scored, byId, today), scoredCount, candidates.length);
+          }
+        }),
+    ),
+  );
+  if (chunks.length > 0 && failed === chunks.length) {
+    throw new Error(`rank: all ${chunks.length} scoring batches failed`);
+  }
+
+  const top = toMatches(scored, byId, today);
 
   const honestNo = !top.some((m) => m.score >= TIER_VERIFY);
   let honestNoExplanation: string | null = null;

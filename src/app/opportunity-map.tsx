@@ -1,25 +1,27 @@
 "use client";
 
-// Minimal functional UI for Opportunity Radar. A designer restyles later —
-// keep everything Tailwind utilities, dark, and legible.
+// Opportunity Map — the stateful orchestrator. Owns the SSE stream + profile
+// state and composes the page structure; all visual regions live in
+// ./components/* so the styling pass can go file-by-file.
+//
+// Page structure (stable for the restyle):
+//   #intake                    — description box + analyze + sample chips
+//   #workspace                 — two-column grid below lg, stacked on mobile
+//     #results  (main column)  — activity feed, skeleton/partial note,
+//                                #report or honest-no, save-&-monitor
+//     #guidance (right rail)   — #meter, #interview, voice panel (sticky)
 
-import { useRef, useState } from "react";
-import type {
-  CompanyProfile,
-  EligibilityMeter,
-  EvidenceSummary,
-  FitTier,
-  GateField,
-  GatedOpportunity,
-  InterviewQuestion,
-  MatchReport,
-  Opportunity,
-  RankedMatch,
-} from "@/lib/types";
-import { formatUsdCompact } from "@/lib/engine/meter";
-
-/** The report event carries an id→Opportunity lookup added by the API facade. */
-type UiReport = MatchReport & { opportunities?: Record<string, Opportunity> };
+import { useEffect, useRef, useState } from "react";
+import type { CompanyProfile, GateField } from "@/lib/types";
+import VoicePanel from "./voice-panel";
+import SaveMonitor from "./save-monitor";
+import IntakePanel from "./components/intake-panel";
+import ActivityFeed from "./components/activity-feed";
+import MeterPanel from "./components/meter-panel";
+import InterviewPanel from "./components/interview-panel";
+import { HonestNoPanel, HowItWorks, ReportSkeleton, ReportView } from "./components/report-view";
+import type { QuickReply, UiReport } from "./components/shared";
+import type { EligibilityMeter, InterviewQuestion } from "@/lib/types";
 
 type Ev =
   | { type: "activity"; message: string }
@@ -27,26 +29,6 @@ type Ev =
   | { type: "questions"; questions: InterviewQuestion[]; meter: EligibilityMeter }
   | { type: "report"; report: UiReport }
   | { type: "error"; message: string };
-
-// ---------- formatting helpers ----------
-
-/** Null-guarded wrapper around the engine's shared USD formatter. */
-function fmtUsd(n: number | null | undefined): string {
-  return n == null ? "—" : formatUsdCompact(n);
-}
-
-function daysUntil(iso: string | null): number | null {
-  if (!iso) return null;
-  return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000);
-}
-
-const TIERS: { tier: FitTier; label: string; badge: string }[] = [
-  { tier: "likely_fit", label: "Likely fit", badge: "border-green-500/50 bg-green-500/10 text-green-400" },
-  { tier: "verify_eligibility", label: "Verify eligibility", badge: "border-yellow-500/50 bg-yellow-500/10 text-yellow-400" },
-  { tier: "adjacent", label: "Adjacent", badge: "border-orange-500/50 bg-orange-500/10 text-orange-400" },
-];
-
-// ---------- component ----------
 
 export default function OpportunityMap() {
   const [text, setText] = useState("");
@@ -56,8 +38,40 @@ export default function OpportunityMap() {
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [report, setReport] = useState<UiReport | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [chat, setChat] = useState("");
+  const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
+  const [restored, setRestored] = useState(false);
   const profileRef = useRef<CompanyProfile | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Restore the most recently saved profile so a refresh doesn't lose
+  // interview answers. Best-effort; failures leave a blank slate.
+  useEffect(() => {
+    void fetch("/api/companies")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { companies?: { profile: CompanyProfile; updatedAt: string }[] } | null) => {
+        const latest = (data?.companies ?? []).reduce<
+          { profile: CompanyProfile; updatedAt: string } | null
+        >((a, b) => (!a || b.updatedAt > a.updatedAt ? b : a), null);
+        if (latest?.profile && !profileRef.current) {
+          profileRef.current = latest.profile;
+          setText((t) => t || latest.profile.description || "");
+          setRestored(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  /** Debounced autosave to the companies API (durable across refreshes). */
+  function persist(profile: CompanyProfile) {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      void fetch("/api/companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: profile.name ?? "My company", profile }),
+      }).catch(() => {});
+    }, 800);
+  }
 
   function handle(ev: Ev) {
     switch (ev.type) {
@@ -66,6 +80,7 @@ export default function OpportunityMap() {
         break;
       case "profile":
         profileRef.current = ev.profile;
+        persist(ev.profile);
         break;
       case "questions":
         setQuestions(ev.questions);
@@ -76,6 +91,7 @@ export default function OpportunityMap() {
         setQuestions(ev.report.questions);
         setMeter(ev.report.meter);
         profileRef.current = ev.report.profile;
+        persist(ev.report.profile);
         break;
       case "error":
         setError(ev.message);
@@ -119,7 +135,21 @@ export default function OpportunityMap() {
     setReport(null);
     setMeter(null);
     setQuestions([]);
-    void stream("/api/analyze", { founderText: text });
+    // Carry durable interview answers (gate fields) into re-analysis; the
+    // rest of the profile is re-extracted from whatever is in the box.
+    const p = profileRef.current;
+    const prior = p && {
+      employees: p.employees,
+      annualRevenueUsd: p.annualRevenueUsd,
+      isForProfit: p.isForProfit,
+      isSmallBusiness: p.isSmallBusiness,
+      majorityUsOwned: p.majorityUsOwned,
+      hasActiveRnD: p.hasActiveRnD,
+      samRegistered: p.samRegistered,
+      productMaturity: p.productMaturity,
+      location: p.location,
+    };
+    void stream("/api/analyze", { founderText: text, prior });
   };
 
   const answer = (field: GateField, value: unknown) => {
@@ -127,415 +157,86 @@ export default function OpportunityMap() {
     void stream("/api/answer", { profile: profileRef.current, field, answer: value });
   };
 
-  const answerFreeform = () => {
-    if (!profileRef.current || !chat.trim()) return;
-    const message = chat.trim();
-    setChat("");
-    void stream("/api/answer", { profile: profileRef.current, message });
+  const sendMessage = (message: string) => {
+    if (!profileRef.current || !message.trim()) return;
+    void stream("/api/answer", { profile: profileRef.current, message: message.trim() });
   };
 
+  // Quick replies: fetch one-tap suggestions once a stream settles and
+  // questions are open. Best-effort — chips just don't show on failure.
+  useEffect(() => {
+    setQuickReplies([]);
+    if (busy || questions.length === 0) return;
+    const ac = new AbortController();
+    void fetch("/api/suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questions }),
+      signal: ac.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { replies?: QuickReply[] } | null) => {
+        if (d?.replies) setQuickReplies(d.replies);
+      })
+      .catch(() => {});
+    return () => ac.abort();
+  }, [busy, questions]);
+
+  const started = busy || report != null || activity.length > 0;
+
   return (
-    <main className="min-h-screen bg-neutral-950 text-neutral-100">
-      <div className="mx-auto max-w-4xl space-y-6 px-4 py-10">
-        <header>
-          <h1 className="text-2xl font-bold tracking-tight">Opportunity Radar</h1>
-          <p className="text-sm text-neutral-400">
-            Describe your company. We map it to US government funding — honestly.
-          </p>
-        </header>
+    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
+      <IntakePanel
+        text={text}
+        busy={busy}
+        restored={restored}
+        onText={setText}
+        onAnalyze={analyze}
+      />
 
-        {/* 1. Intake */}
-        <section className="space-y-2">
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Tell us about your company — what you build, who it's for, your stage, where you're based…"
-            rows={5}
-            className="w-full resize-y rounded-lg border border-neutral-800 bg-neutral-900 p-3 text-sm placeholder:text-neutral-600 focus:border-neutral-600 focus:outline-none"
+      {error && (
+        <div
+          id="error"
+          className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400"
+        >
+          {error}
+        </div>
+      )}
+
+      {!started && <HowItWorks />}
+
+      {/* Workspace: results (main) + guidance rail. Rail sticks on desktop and
+          stacks above the report on mobile so questions stay reachable. */}
+      <div id="workspace" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
+        <aside id="guidance" className="min-w-0 space-y-4 lg:order-2 lg:sticky lg:top-20">
+          {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
+          <VoicePanel
+            getProfile={() => profileRef.current}
+            onReport={(r) => handle({ type: "report", report: r })}
           />
-          <button
-            onClick={analyze}
-            disabled={busy || !text.trim()}
-            className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {busy ? "Analyzing…" : "Analyze"}
-          </button>
-        </section>
+          {meter && <MeterPanel meter={meter} />}
+          <InterviewPanel
+            questions={questions}
+            quickReplies={quickReplies}
+            busy={busy}
+            onAnswer={answer}
+            onSend={sendMessage}
+          />
+        </aside>
 
-        {error && (
-          <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        {/* 2. Activity feed */}
-        {(busy || activity.length > 0) && (
-          <section className="rounded-lg border border-neutral-800 bg-neutral-900 p-3 font-mono text-xs text-neutral-400">
-            {activity.map((line, i) => (
-              <div key={i}>
-                <span className="text-neutral-600">›</span> {line}
-              </div>
-            ))}
-            {busy && <div className="animate-pulse text-neutral-500">› working…</div>}
-          </section>
-        )}
-
-        {/* 3. Eligibility meter + interview questions */}
-        {meter && (
-          <section className="space-y-3 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-            <div className="flex items-end gap-3">
-              <span className="text-3xl font-bold text-green-400">
-                {fmtUsd(meter.unlockedUsd)}
-              </span>
-              <span className="pb-1 text-sm text-neutral-400">
-                unlocked of {fmtUsd(meter.potentialUsd)} potential ·{" "}
-                {meter.unlockedCount} eligible
-              </span>
-            </div>
-            {meter.unlocks.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {meter.unlocks.map((u) => (
-                  <span
-                    key={u.field}
-                    className="rounded-full border border-green-500/40 bg-green-500/10 px-2.5 py-0.5 text-xs text-green-400"
-                  >
-                    up to +{fmtUsd(u.unlockUsd)} · {u.opportunityCount} opp
-                  </span>
-                ))}
-              </div>
-            )}
-            {questions.length > 0 && (
-              <div className="space-y-2 border-t border-neutral-800 pt-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Answer to unlock more
-                </p>
-                {questions.map((q) => (
-                  <QuestionCard key={q.field} q={q} disabled={busy} onAnswer={answer} />
-                ))}
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    answerFreeform();
-                  }}
-                  className="flex gap-2 pt-1"
-                >
-                  <input
-                    value={chat}
-                    onChange={(e) => setChat(e.target.value)}
-                    placeholder="Or answer in your own words — one message can cover several questions…"
-                    className="flex-1 rounded-lg border border-neutral-700 bg-neutral-950 px-3 py-2 text-sm placeholder:text-neutral-600 focus:border-neutral-500 focus:outline-none"
-                  />
-                  <button
-                    disabled={busy || !chat.trim()}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Send
-                  </button>
-                </form>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* 4. Report */}
-        {report &&
-          (report.honestNo ? (
-            <HonestNoPanel report={report} />
-          ) : (
-            <ReportView report={report} />
-          ))}
+        <div id="results" className="min-w-0 space-y-4 lg:order-1">
+          <ActivityFeed lines={activity} busy={busy} />
+          {report && busy && (
+            <p className="animate-pulse text-xs text-neutral-500">
+              Scoring in progress — matches below update live…
+            </p>
+          )}
+          {busy && !report && <ReportSkeleton />}
+          {report &&
+            (report.honestNo ? <HonestNoPanel report={report} /> : <ReportView report={report} />)}
+          {report && !busy && <SaveMonitor profile={report.profile} />}
+        </div>
       </div>
     </main>
-  );
-}
-
-// ---------- interview question ----------
-
-function QuestionCard({
-  q,
-  disabled,
-  onAnswer,
-}: {
-  q: InterviewQuestion;
-  disabled: boolean;
-  onAnswer: (field: GateField, value: unknown) => void;
-}) {
-  const [val, setVal] = useState("");
-  return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-950 p-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm">{q.question}</p>
-        <p className="text-xs text-neutral-500">{q.whyAsking}</p>
-      </div>
-      {q.answerType === "boolean" ? (
-        <div className="flex gap-2">
-          <button
-            disabled={disabled}
-            onClick={() => onAnswer(q.field, true)}
-            className="rounded-md border border-green-500/50 px-3 py-1 text-sm text-green-400 hover:bg-green-500/10 disabled:opacity-40"
-          >
-            Yes
-          </button>
-          <button
-            disabled={disabled}
-            onClick={() => onAnswer(q.field, false)}
-            className="rounded-md border border-neutral-700 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-800 disabled:opacity-40"
-          >
-            No
-          </button>
-        </div>
-      ) : q.answerType === "choice" && q.choices ? (
-        <div className="flex flex-wrap gap-2">
-          {q.choices.map((c) => (
-            <button
-              key={c}
-              disabled={disabled}
-              onClick={() => onAnswer(q.field, c)}
-              className="rounded-md border border-neutral-700 px-3 py-1 text-sm hover:bg-neutral-800 disabled:opacity-40"
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-      ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (val.trim()) onAnswer(q.field, val.trim());
-          }}
-          className="flex gap-2"
-        >
-          <input
-            value={val}
-            onChange={(e) => setVal(e.target.value)}
-            type={q.answerType === "number" ? "number" : "text"}
-            className="w-32 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm focus:border-neutral-500 focus:outline-none"
-          />
-          <button
-            disabled={disabled || !val.trim()}
-            className="rounded-md border border-neutral-700 px-3 py-1 text-sm hover:bg-neutral-800 disabled:opacity-40"
-          >
-            Answer
-          </button>
-        </form>
-      )}
-    </div>
-  );
-}
-
-// ---------- report views ----------
-
-function ReportView({ report }: { report: UiReport }) {
-  const opps = report.opportunities ?? {};
-  const resolved = report.matches
-    .map((m) => opps[m.opportunityId])
-    .filter((o): o is Opportunity => o != null);
-  const agencies = new Set(resolved.map((o) => o.agency)).size;
-  const closingSoon = resolved.filter((o) => {
-    const d = daysUntil(o.closeDate);
-    return d != null && d >= 0 && d <= 30;
-  }).length;
-
-  return (
-    <section className="space-y-4">
-      {/* summary stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Matches" value={String(report.matches.length)} />
-        <Stat label="Total potential" value={fmtUsd(report.meter.potentialUsd)} />
-        <Stat label="Agencies" value={String(agencies)} />
-        <Stat label="Closing ≤30d" value={String(closingSoon)} />
-      </div>
-
-      {/* tier groups */}
-      {TIERS.map(({ tier, label, badge }) => {
-        const group = report.matches.filter((m) => m.tier === tier);
-        if (group.length === 0) return null;
-        return (
-          <div key={tier} className="space-y-2">
-            <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badge}`}>
-              {label} · {group.length}
-            </span>
-            {group.map((m) => (
-              <MatchCard
-                key={m.opportunityId}
-                match={m}
-                opp={opps[m.opportunityId]}
-                evidence={report.evidence?.[m.opportunityId]}
-              />
-            ))}
-          </div>
-        );
-      })}
-    </section>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
-      <p className="text-lg font-bold">{value}</p>
-      <p className="text-xs text-neutral-500">{label}</p>
-    </div>
-  );
-}
-
-function MatchCard({
-  match,
-  opp,
-  evidence,
-}: {
-  match: RankedMatch;
-  opp?: Opportunity;
-  evidence?: EvidenceSummary;
-}) {
-  const close = daysUntil(opp?.closeDate ?? null);
-  const odds =
-    opp?.expectedAwards != null
-      ? `~${opp.expectedAwards} awards expected` +
-        (opp.expectedApplications != null && opp.expectedAwards > 0
-          ? ` · 1-in-${Math.max(1, Math.round(opp.expectedApplications / opp.expectedAwards))} odds`
-          : "")
-      : null;
-
-  return (
-    <div className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-semibold">{opp?.title ?? match.opportunityId}</h3>
-        <span className="text-xs text-neutral-500">score {match.score}</span>
-      </div>
-      <p className="text-xs text-neutral-400">
-        {opp ? (
-          <>
-            {opp.agency} · {opp.kind.replace(/_/g, "/")} ·{" "}
-            {opp.awardFloorUsd != null && opp.awardCeilingUsd != null
-              ? `${fmtUsd(opp.awardFloorUsd)}–${fmtUsd(opp.awardCeilingUsd)}`
-              : opp.awardCeilingUsd != null
-                ? `up to ${fmtUsd(opp.awardCeilingUsd)}`
-                : "award size unlisted"}
-            {opp.closeDate && (
-              <span className={close != null && close <= 30 ? " text-red-400" : ""}>
-                {" "}· closes {opp.closeDate}
-                {close != null && close >= 0 ? ` (${close}d)` : ""}
-              </span>
-            )}
-          </>
-        ) : (
-          "details unavailable"
-        )}
-      </p>
-      {odds && <p className="text-xs text-neutral-500">{odds}</p>}
-      {evidence && <EvidenceStrip evidence={evidence} />}
-      <dl className="space-y-1.5 text-sm">
-        <CardRow label="Why it fits" text={match.whyFit} tone="text-green-400" />
-        <CardRow label="Could disqualify" text={match.whatCouldDisqualify} tone="text-red-400" />
-        <CardRow label="Verify" text={match.whatToVerify} tone="text-yellow-400" />
-        <CardRow label="Next steps" text={match.nextSteps} tone="text-blue-400" />
-      </dl>
-      {opp?.url && (
-        <a
-          href={opp.url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-block text-xs text-blue-400 underline hover:text-blue-300"
-        >
-          View opportunity ↗
-        </a>
-      )}
-    </div>
-  );
-}
-
-/** Compact "who wins this money" strip built from historical-award evidence. */
-function EvidenceStrip({ evidence }: { evidence: EvidenceSummary }) {
-  const stats: string[] = [];
-  if (evidence.totalAwards != null) stats.push(`${evidence.totalAwards} awards`);
-  if (evidence.medianUsd != null) stats.push(`${fmtUsd(evidence.medianUsd)} median`);
-  if (evidence.utahCount != null && evidence.utahCount > 0)
-    stats.push(`${evidence.utahCount} in Utah`);
-  const similar = evidence.similarAwards.slice(0, 3);
-  if (stats.length === 0 && similar.length === 0) return null;
-
-  return (
-    <div className="space-y-1 rounded-md border border-neutral-800 bg-neutral-950 p-2.5">
-      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-        Who wins this money
-      </p>
-      {stats.length > 0 && (
-        <p className="text-xs text-neutral-300">{stats.join(" · ")}</p>
-      )}
-      {similar.length > 0 && (
-        <p className="text-xs text-neutral-400">
-          {similar.map((a, i) => {
-            const label = `${a.recipient} · ${fmtUsd(a.amountUsd)}${a.year ? ` · ${a.year}` : ""}`;
-            return (
-              <span key={i}>
-                {i > 0 && " · "}
-                {a.link ? (
-                  <a
-                    href={a.link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline hover:text-blue-300"
-                  >
-                    {label}
-                  </a>
-                ) : (
-                  label
-                )}
-              </span>
-            );
-          })}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function CardRow({ label, text, tone }: { label: string; text: string; tone: string }) {
-  return (
-    <div>
-      <dt className={`text-xs font-semibold uppercase tracking-wide ${tone}`}>{label}</dt>
-      <dd className="text-neutral-300">{text}</dd>
-    </div>
-  );
-}
-
-function HonestNoPanel({ report }: { report: UiReport }) {
-  const opps = report.opportunities ?? {};
-  return (
-    <section className="space-y-3 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
-      <h2 className="text-lg font-bold text-amber-400">No strong federal match</h2>
-      {report.honestNoExplanation && (
-        <p className="text-sm text-amber-100/90">{report.honestNoExplanation}</p>
-      )}
-      {report.matches.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-400/80">
-            Adjacent & state options worth a look
-          </p>
-          {report.matches.map((m) => (
-            <MatchCard
-              key={m.opportunityId}
-              match={m}
-              opp={opps[m.opportunityId]}
-              evidence={report.evidence?.[m.opportunityId]}
-            />
-          ))}
-        </div>
-      )}
-      {report.rejected.length > 0 && (
-        <div className="space-y-1 border-t border-amber-500/30 pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-400/80">
-            Near-misses (and why they fail)
-          </p>
-          {report.rejected.map((g: GatedOpportunity) => (
-            <p key={g.opportunity.id} className="text-sm text-amber-100/80">
-              <span className="font-semibold">{g.opportunity.title}</span> —{" "}
-              {g.gates.find((x) => x.verdict === "fail")?.detail ?? "hard eligibility fail"}
-            </p>
-          ))}
-        </div>
-      )}
-    </section>
   );
 }

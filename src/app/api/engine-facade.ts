@@ -24,7 +24,19 @@ export async function runAnalysis(
   prior: Partial<CompanyProfile> | null,
   emit: Emit,
 ): Promise<UiMatchReport> {
-  const report = await runPipeline(founderText, prior, emit);
+  // The pipeline streams partial report events while scoring; enrich each one
+  // with the id→Opportunity lookup so cards render fully as they appear.
+  const enriching: Emit = (e) =>
+    emit(
+      e.type === "report"
+        ? { type: "report", report: withOpportunities(e.report) }
+        : e,
+    );
+  const report = await runPipeline(founderText, prior, enriching);
+  return withOpportunities(report);
+}
+
+function withOpportunities(report: MatchReport): UiMatchReport {
   return { ...report, opportunities: lookupOpportunities(report) };
 }
 

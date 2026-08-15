@@ -1,9 +1,12 @@
 // ============================================================
 // Eval runner. Usage (from repo root):
 //
-//   pnpm tsx eval/run.ts               # run all 5 cases, print table
-//   pnpm tsx eval/run.ts --case cyber  # run one case
-//   pnpm tsx eval/run.ts --json        # machine-readable (for agent loops)
+//   pnpm tsx eval/run.ts                  # run all 5 cases, print table
+//   pnpm tsx eval/run.ts --case cyber     # run one case
+//   pnpm tsx eval/run.ts --json           # machine-readable (for agent loops)
+//   pnpm tsx eval/run.ts --provider live  # drive the Gemini Live voice agent
+//                                         # (text in/out) instead of the
+//                                         # pipeline; judges its transcript
 //
 // Results are always written to eval/results/<timestamp>.json.
 // Requires src/lib/engine/pipeline.ts to export:
@@ -43,14 +46,54 @@ async function loadPipeline(jsonMode: boolean): Promise<RunAnalysis> {
   return fn as RunAnalysis;
 }
 
-function parseArgs(argv: string[]): { caseId: string | null; json: boolean } {
+type Provider = "codex" | "live";
+
+/** What one provider run yields: the report, plus (live only) what the agent said. */
+type CaseRun = { report: MatchReport; spoken?: string };
+
+/** codex = call the pipeline directly; live = converse with the Gemini Live voice agent. */
+async function loadDriver(
+  provider: Provider,
+  jsonMode: boolean,
+): Promise<(founderInput: string) => Promise<CaseRun>> {
+  if (provider === "live") {
+    if (!process.env.GEMINI_API_KEY) {
+      const msg = "--provider live requires GEMINI_API_KEY in .env.local / env";
+      if (jsonMode) console.log(JSON.stringify({ error: "gemini_key_missing", message: msg }));
+      console.error(msg);
+      process.exit(1);
+    }
+    const { runLiveText } = await import("../src/lib/voice/live-text");
+    return async (input) => {
+      const r = await runLiveText(input);
+      return { report: r.report, spoken: r.agentText };
+    };
+  }
+  const fn = await loadPipeline(jsonMode);
+  return async (input) => ({ report: await fn(input) });
+}
+
+function parseArgs(argv: string[]): {
+  caseId: string | null;
+  json: boolean;
+  provider: Provider;
+} {
   let caseId: string | null = null;
   let json = false;
+  let provider: Provider = "codex";
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--case") caseId = argv[++i] ?? null;
     else if (argv[i] === "--json") json = true;
+    else if (argv[i] === "--provider") {
+      const p = argv[++i];
+      if (p !== "codex" && p !== "live") {
+        console.error(`--provider must be "codex" or "live", got "${p}"`);
+        process.exit(1);
+      }
+      provider = p;
+    }
   }
-  return { caseId, json };
+  return { caseId, json, provider };
 }
 
 function fmt(n: number): string {
@@ -78,7 +121,7 @@ function printTable(scores: EvalScore[], mock: boolean) {
 }
 
 async function main() {
-  const { caseId, json } = parseArgs(process.argv.slice(2));
+  const { caseId, json, provider } = parseArgs(process.argv.slice(2));
   const cases = caseId ? [getCase(caseId)].filter((c) => c != null) : EVAL_CASES;
   if (caseId && cases.length === 0) {
     console.error(
@@ -87,13 +130,15 @@ async function main() {
     process.exit(1);
   }
 
-  const runAnalysis = await loadPipeline(json);
+  const run = await loadDriver(provider, json);
   const scores: EvalScore[] = [];
+  const transcripts: Record<string, string> = {};
   for (const c of cases) {
-    if (!json) console.log(`\n=== running case: ${c.id} ===`);
+    if (!json) console.log(`\n=== running case: ${c.id} (${provider}) ===`);
     try {
-      const report = await runAnalysis(c.founderInput);
-      scores.push(await judgeReport(c, report));
+      const { report, spoken } = await run(c.founderInput);
+      if (spoken != null) transcripts[c.id] = spoken;
+      scores.push(await judgeReport(c, report, { spokenTranscript: spoken }));
     } catch (err) {
       scores.push({
         caseId: c.id,
@@ -102,16 +147,19 @@ async function main() {
         noDeadOpportunities: 0,
         explanationQuality: 0,
         total: 0,
-        notes: `pipeline threw: ${(err as Error).message}`,
+        notes: `${provider} run threw: ${(err as Error).message}`,
       });
     }
   }
 
   const result = {
     timestamp: new Date().toISOString(),
-    backend: process.env.LLM_BACKEND ?? "codex",
+    backend: process.env.LLM_BACKEND ?? "codex", // engine LLM (pipeline runs under both providers)
+    provider,
     averageTotal: scores.reduce((a, s) => a + s.total, 0) / Math.max(1, scores.length),
     scores,
+    // Live only: what the agent said per case, for inspection alongside scores.
+    ...(Object.keys(transcripts).length > 0 ? { transcripts } : {}),
   };
 
   const resultsDir = path.join(__dirname, "results");

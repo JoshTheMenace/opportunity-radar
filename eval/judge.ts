@@ -68,6 +68,7 @@ const JUDGE_SCHEMA = {
 async function judgeExplanations(
   evalCase: EvalCase,
   report: MatchReport,
+  spokenTranscript?: string,
 ): Promise<{ score: number; notes: string }> {
   if ((process.env.LLM_BACKEND ?? "codex") === "mock") {
     return { score: 0, notes: "explanationQuality n/a (mock backend)" };
@@ -79,20 +80,40 @@ async function judgeExplanations(
     whatToVerify: m.whatToVerify,
     nextSteps: m.nextSteps,
   }));
-  const prompt = [
-    "You are grading the explanation quality of a startup-to-government-funding matching report.",
-    "Rubric (score 0-1): explanations are grounded in the founder's actual situation,",
-    "specific to each opportunity (not generic boilerplate), invent no facts, numbers,",
-    "or program details not plausibly from the data, and give actionable next steps.",
-    "",
-    `FOUNDER INPUT:\n${evalCase.founderInput}`,
-    "",
-    `HONEST NO: ${report.honestNo}${report.honestNoExplanation ? ` — ${report.honestNoExplanation}` : ""}`,
-    "",
-    `MATCH EXPLANATIONS (JSON):\n${JSON.stringify(excerpts, null, 2)}`,
-    "",
-    'Return JSON: {"score": <0-1>, "notes": "<one-sentence justification>"}',
-  ].join("\n");
+  // Voice provider: grade what the agent actually said to the founder,
+  // with the report data it was grounded in for hallucination-checking.
+  const prompt = (spokenTranscript
+    ? [
+        "You are grading what a VOICE agent said to a startup founder about a government-funding matching report.",
+        "Rubric (score 0-1): replies are grounded in the founder's actual situation and the report data,",
+        "specific (not generic boilerplate), invent no facts, numbers, or program details not in the data,",
+        "honest about weak fits, and give actionable next steps in a natural spoken register.",
+        "",
+        `FOUNDER INPUT:\n${evalCase.founderInput}`,
+        "",
+        `HONEST NO: ${report.honestNo}${report.honestNoExplanation ? ` — ${report.honestNoExplanation}` : ""}`,
+        "",
+        `REPORT DATA the agent saw (JSON):\n${JSON.stringify(excerpts, null, 2)}`,
+        "",
+        `AGENT'S SPOKEN REPLIES:\n${spokenTranscript}`,
+        "",
+        'Return JSON: {"score": <0-1>, "notes": "<one-sentence justification>"}',
+      ]
+    : [
+        "You are grading the explanation quality of a startup-to-government-funding matching report.",
+        "Rubric (score 0-1): explanations are grounded in the founder's actual situation,",
+        "specific to each opportunity (not generic boilerplate), invent no facts, numbers,",
+        "or program details not plausibly from the data, and give actionable next steps.",
+        "",
+        `FOUNDER INPUT:\n${evalCase.founderInput}`,
+        "",
+        `HONEST NO: ${report.honestNo}${report.honestNoExplanation ? ` — ${report.honestNoExplanation}` : ""}`,
+        "",
+        `MATCH EXPLANATIONS (JSON):\n${JSON.stringify(excerpts, null, 2)}`,
+        "",
+        'Return JSON: {"score": <0-1>, "notes": "<one-sentence justification>"}',
+      ]
+  ).join("\n");
   try {
     const out = await completeJSON<{ score: number; notes: string }>(prompt, JUDGE_SCHEMA, {
       effort: "low",
@@ -106,7 +127,11 @@ async function judgeExplanations(
 
 // ---------- main entry ----------
 
-export async function judgeReport(evalCase: EvalCase, report: MatchReport): Promise<EvalScore> {
+export async function judgeReport(
+  evalCase: EvalCase,
+  report: MatchReport,
+  opts?: { spokenTranscript?: string },
+): Promise<EvalScore> {
   // coverage — search titles + agencies + whyFit of surfaced matches
   const haystack = report.matches
     .map((m) => {
@@ -132,7 +157,7 @@ export async function judgeReport(evalCase: EvalCase, report: MatchReport): Prom
     report.matches.length === 0 ? 1 : 1 - dead.length / report.matches.length;
 
   // explanation quality (LLM judge; n/a under mock)
-  const explanation = await judgeExplanations(evalCase, report);
+  const explanation = await judgeExplanations(evalCase, report, opts?.spokenTranscript);
 
   const total =
     0.35 * coverage + 0.3 * honesty + 0.15 * noDeadOpportunities + 0.2 * explanation.score;

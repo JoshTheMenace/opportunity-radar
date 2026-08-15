@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-08-14T23:46:39.301Z",
+  "backend": "mock",
+  "provider": "codex",
+  "averageTotal": 0.15,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0,
+      "total": 0.15,
+      "notes": "missed themes: NIH, NSF, HHS, SBIR, workforce | honesty wrong: expected honestNo=false, got true | explanationQuality n/a (mock backend)"
+    }
+  ]
+}

@@ -15,6 +15,10 @@ export interface CompleteOptions {
   maxTokens?: number;
   /** Rough effort knob; adapters map to their provider's equivalent. */
   effort?: "low" | "medium" | "high";
+  /** Per-call model override (e.g. a cheap/fast model for low-stakes calls
+   *  like quick-reply suggestions). Adapters fall back to their default
+   *  model when absent or unsupported. See NOTES-quick-replies.md. */
+  model?: string;
 }
 
 export interface LlmBackend {

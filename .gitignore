@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# sqlite sidecars + generated demo artifacts
+data/*.db-wal
+data/*.db-shm
+data/outbox/
+.claude/settings.local.json

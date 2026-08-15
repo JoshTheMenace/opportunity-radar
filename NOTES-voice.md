@@ -1,0 +1,67 @@
+# Notes from the voice module (Gemini Live)
+
+Voice mode is a fully separate provider — nothing in `src/lib/llm*.ts`,
+`types.ts`, `db.ts`, or `package.json` was touched, and no new dependency was
+added (raw browser WebSocket + server `fetch`). With no `GEMINI_API_KEY` in
+`.env.local`, `/api/voice/token` GET reports `enabled:false` and the voice
+panel renders nothing — the text app is unaffected.
+
+## Files
+
+- `src/lib/voice/schema.ts` — client-safe tool declarations + system prompt.
+- `src/lib/voice/execute.ts` — server-side tool executor; reuses
+  `engine-facade.runAnalysis`, `applyAnswer`, FTS search, `getOpportunityById`.
+- `src/app/api/voice/token/route.ts` — GET feature-detect; POST mints an
+  ephemeral token (v1alpha `auth_tokens`) so the key never reaches the browser.
+  Dev-only fallback: raw `?key=` WS URL when minting fails.
+- `src/app/api/voice/tools/route.ts` — executes one function call; stateless
+  (browser sends its current profile each call). Tool errors return 200 with
+  `{result:{error}}` so the model can relay them.
+- `src/app/voice-panel.tsx` — mic capture (16kHz PCM16 via ScriptProcessor),
+  playback (24kHz scheduled buffers, cleared on `interrupted`), transcripts,
+  tool bridging. Reports from voice-run analyses feed the same
+  `handle({type:"report"})` path as the text UI, so the screen stays in sync.
+
+## Tools exposed to the voice model
+
+`analyze_company(description)`, `answer_question(field, answer)`,
+`search_opportunities(query, limit?)`, `get_opportunity(id)` — i.e. everything
+the text agent can do (analyze, interview loop, DB lookup).
+
+## Eval integration
+
+`pnpm tsx eval/run.ts --provider live` drives the SAME eval cases through the
+voice agent instead of calling the pipeline directly:
+
+- `src/lib/voice/live-text.ts` — headless Live session over TEXT (Node >= 22
+  global WebSocket, raw key server-side, no ephemeral token needed). Sends the
+  founder paragraph as a typed user turn, executes tool calls in-process via
+  `executeVoiceTool`, nudges up to 4 turns if the agent stalls, and returns
+  `{report, agentText}` once a turn completes with a report.
+- Scoring: coverage/honesty/noDead run on the report its tool calls produced
+  (same as codex provider); explanationQuality judges the agent's TRANSCRIPT
+  (what a voice user would hear), hallucination-checked against the report
+  data. The judge LLM stays on `LLM_BACKEND` — independent of Gemini.
+- Results JSON gains `provider` and (live only) `transcripts` per case;
+  existing fields unchanged. Fails fast with a clear message if
+  `GEMINI_API_KEY` is unset.
+- `scripts/smoke/voice-tools.smoke.ts` — keyless smoke for the tool executor.
+
+## Verified live with the real key (2026-08-14)
+
+- Model id is `gemini-3.1-flash-live-preview` (`gemini-3.1-flash-live` does NOT
+  exist; discover via `GET /v1beta/models` filtering `bidiGenerateContent`).
+- The model is AUDIO-out only — `responseModalities:["TEXT"]` is rejected
+  (1007). Text output = `outputAudioTranscription:{}` +
+  `serverContent.outputTranscription.text`; audio arrives as
+  `inlineData audio/pcm;rate=24000` (matches the panel's playback rate).
+- Ephemeral tokens: mint works (POST v1alpha `auth_tokens`, token = `name`),
+  but they ONLY authenticate against the
+  `BidiGenerateContentConstrained` WS method with `?access_token=`; the plain
+  `BidiGenerateContent` method rejects them (1008), and `?key=<token>` is
+  invalid anywhere. Raw API keys use plain `BidiGenerateContent?key=`.
+- Eval results with `--provider live`: ai-healthcare 0.79 (transcript judged
+  0.66 — agent is brief by design), youth-marketplace honest-no 0.96.
+- Still assumed, works-in-eval but untested from a real mic:
+  `realtimeInput.audio` upload shape (browser mic path); fallback if rejected:
+  `realtimeInput.mediaChunks:[{mimeType,data}]` in `voice-panel.tsx`.

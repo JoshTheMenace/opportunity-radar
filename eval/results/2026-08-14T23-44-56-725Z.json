@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-08-14T23:44:56.725Z",
+  "backend": "codex",
+  "averageTotal": 0.9366,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.8,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.91,
+      "total": 0.912,
+      "notes": "missed themes: NSF | The explanations are highly tailored to the company’s nursing-workflow SaaS, funding range, Utah location, and hospital-pilot goals, with opportunity-specific diligence and actionable next steps, though a few phrases overstate unstated facts such as existing hospital access and “active R&D” and some program details require verification."
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.93,
+      "total": 0.8985000000000001,
+      "notes": "missed themes: DOE | The explanations are highly tailored to the founder’s Utah aerospace-manufacturing profile, distinguish R&D, workforce, supplier-support, and capacity needs, and provide concrete verification steps, with only minor risk that unshown claims about program priorities and award ranges may be overstated."
+    },
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.93,
+      "total": 0.986,
+      "notes": "all mustSee themes covered | The explanations are consistently tailored to the company’s water-loss technology, Utah location, funding range, and municipal deployment model, clearly flag uncertainties and give opportunity-specific next steps, with only minor speculative phrasing around broad technical fit and eligible uses."
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.93,
+      "total": 0.986,
+      "notes": "all mustSee themes covered | The explanations are highly specific to the company and each program, candid about funding and eligibility gaps, and provide concrete next steps, with only minor potentially unsupported phrasing such as “active R&D” and “cybersecurity workforce augmentation.”"
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.9005000000000001,
+      "notes": "missed themes: community | The report is strongly grounded in the founder’s Utah location, revenue, capital need, and expansion plan, gives opportunity-specific verification steps and actions, and avoids material invention, with only minor assumptions such as calling the business venture-backed or high-growth software."
+    }
+  ]
+}

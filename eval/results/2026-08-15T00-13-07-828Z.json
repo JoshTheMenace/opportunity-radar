@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-08-15T00:13:07.828Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.8492666666666666,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.8,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.82,
+      "total": 0.894,
+      "notes": "missed themes: NSF | The explanations are highly opportunity-specific and actionable, but they repeatedly introduce unsupported founder facts such as “hospital customers” and “active R&D,” and occasionally overstate rankings with boilerplate like “strongest match.”"
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.93,
+      "total": 0.8985000000000001,
+      "notes": "missed themes: DOE | The explanations consistently connect the founder’s location, manufacturing capabilities, aerospace focus, funding need, and R&D goals to each opportunity, acknowledge key unknowns, and provide concrete next steps, with only a few slightly overconfident or unsupported phrases such as “in-market product” and strong fit claims before a current solicitation is identified."
+    },
+    {
+      "caseId": "water",
+      "coverage": 0.6666666666666666,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.8713333333333333,
+      "notes": "missed themes: DOE | The explanations are highly tailored to the company’s water-loss sensing, AI, Utah location, funding range, and municipal-pilot goals, while consistently flagging eligibility and scope uncertainties and providing concrete next steps, with only minor repetitive superlatives and some broadly framed fit language."
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.91,
+      "total": 0.8945000000000001,
+      "notes": "missed themes: SBIR | The explanations are highly specific to the company’s cybersecurity technology, Utah location, R&D need, and federal-market goal, with clear verification gates and actionable next steps, though a few claims such as continuous monitoring, active R&D, and exact award or deadline details are not grounded in the founder input and depend on unseen opportunity data."
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.688,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations consistently connect the founder’s location, business model, revenue/funding stage, and target raise to opportunity-specific constraints, clearly flag unknowns, and provide concrete next actions without asserting unsupported eligibility, though a few classifications such as “high-growth” or “near-bankable” are mildly assumptive."
+    }
+  ]
+}

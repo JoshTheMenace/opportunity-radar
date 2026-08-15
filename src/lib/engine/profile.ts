@@ -78,7 +78,12 @@ Field rules:
   government / federal-grant vocabulary (agency program language, not startup
   jargon). Example: "reduces nurse admin burden" -> ["health information
   technology","healthcare workforce","hospital operations","clinical decision
-  support","labor productivity","digital health"].
+  support","labor productivity","digital health"]. Cover the program
+  vocabulary of EVERY agency that plausibly funds this space, not just the
+  obvious one (e.g. healthcare AI -> also NSF "translational research";
+  aerospace manufacturing -> also DOE "advanced manufacturing", "energy
+  efficient manufacturing"; consumer/youth services -> "community development",
+  "youth programs", "out-of-school time").
 - location: state as its 2-letter USPS code (e.g. "Utah" -> "UT").
 - productMaturity: one of "concept" | "prototype" | "pilot" | "in-market", else null.
 

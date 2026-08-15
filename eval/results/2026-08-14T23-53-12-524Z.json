@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-14T23:53:12.524Z",
+  "backend": "codex",
+  "provider": "live",
+  "averageTotal": 0.792,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.6,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.66,
+      "total": 0.792,
+      "notes": "missed themes: NSF, workforce | The reply appropriately asks about the recurring U.S.-ownership eligibility gate and invents no details, but it is overly generic and fails to surface the strongest health-IT match, the research-versus-routine-development constraint, funding-range limitations, or a concrete hospital-pilot next step."
+    }
+  ],
+  "transcripts": {
+    "ai-healthcare": "Thanks for sharing that, it gives us a great starting point. I've run a quick analysis, and it looks like there are quite a few potential matches, especially with programs focused on health tech and AI for clinical workflows.\n\nTo help narrow things down, I have one quick question. Is your company majority owned by U.S. citizens or permanent residents? That opens up a lot of possibilities, like specific small business grants."
+  }
+}

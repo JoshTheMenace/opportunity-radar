@@ -27,16 +27,23 @@ export const KIND_DEFAULT_USD: Record<FundingKind, number> = {
   other: 100_000,
 };
 
-/** awardCeiling ?? estimatedTotal/expectedAwards ?? kind-default (per types.ts). */
+/** Realism cap for meter math. Source "ceilings" are sometimes program-wide
+ *  totals or data errors (the DB has grant ceilings up to $108T); no single
+ *  first-time award plausibly exceeds this. */
+export const METER_CAP_USD = 5_000_000;
+
+/** min(awardCeiling ?? estimatedTotal/expectedAwards ?? kind-default, cap). */
 export function meterValueUsd(opp: Opportunity): number {
-  if (opp.awardCeilingUsd != null && opp.awardCeilingUsd > 0) return opp.awardCeilingUsd;
+  if (opp.awardCeilingUsd != null && opp.awardCeilingUsd > 0) {
+    return Math.min(opp.awardCeilingUsd, METER_CAP_USD);
+  }
   if (
     opp.estimatedTotalUsd != null &&
     opp.estimatedTotalUsd > 0 &&
     opp.expectedAwards != null &&
     opp.expectedAwards > 0
   ) {
-    return Math.round(opp.estimatedTotalUsd / opp.expectedAwards);
+    return Math.min(Math.round(opp.estimatedTotalUsd / opp.expectedAwards), METER_CAP_USD);
   }
   return KIND_DEFAULT_USD[opp.kind];
 }

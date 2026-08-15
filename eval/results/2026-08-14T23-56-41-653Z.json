@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-14T23:56:41.653Z",
+  "backend": "codex",
+  "provider": "live",
+  "averageTotal": 0.956,
+  "scores": [
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.78,
+      "total": 0.956,
+      "notes": "all mustSee themes covered | The reply is natural, grounded, and appropriately candid about weak federal fit while pointing to relevant Salt Lake City loans and Utah co-investment, but it remains nonspecific, overstates adjacent options as “strong,” omits actionable report-backed steps, and asks about U.S.-citizen ownership even though that verification criterion is not in the supplied data."
+    }
+  ],
+  "transcripts": {
+    "youth-marketplace": "It sounds like you've got a great business going. Honestly, federal grants and contracts aren't a great fit for a consumer marketplace like yours — that money is mostly for research or specific government needs.\n\nHowever, being in Salt Lake City, there are some strong local and state options. There's a city loan fund aimed at expansion, and also some programs through the state that do venture capital co-investment.\n\nTo help me narrow down which ones might work best, can you tell me — is your company majority-owned by U.S. citizens?"
+  }
+}

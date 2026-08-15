@@ -10,6 +10,24 @@ import type { CompanyProfile, Opportunity } from "../types";
 const DEFAULT_LIMIT = 120;
 const TERMS_PER_QUERY = 8; // keep each MATCH expression small
 const PER_QUERY_LIMIT = 60; // rows pulled per MATCH before merging
+const PER_AGENCY_SEATS = 5; // reserved candidate seats per major funder
+
+/** Major federal funders (agency LIKE patterns, verified against the DB).
+ *  Each family gets up to PER_AGENCY_SEATS reserved seats in the candidate
+ *  set so the ranker — not keyword luck against a 120-row cap — decides fit. */
+const AGENCY_FAMILIES: string[][] = [
+  ["%science foundation%"], // NSF
+  ["%energy, department of%", "%department of energy%", "%projects agency energy%", "%energy technology laboratory%"], // DOE
+  ["%national institutes of health%"], // NIH
+  ["%health and human services%"], // HHS
+  ["%defense%", "%air force%", "%army%", "%navy%", "%darpa%"], // DoD
+  ["%aeronautics%"], // NASA
+  ["%environmental protection%"], // EPA
+  ["%homeland%"], // DHS
+  ["%small business administration%"], // SBA
+  ["%housing and urban development%", "%community%"], // HUD / community programs
+  ["%agriculture%"], // USDA
+];
 
 /**
  * Make a term safe for fts5: strip all query-syntax characters
@@ -47,6 +65,30 @@ function buildMatchQueries(profile: CompanyProfile): string[] {
   return queries;
 }
 
+/** Loose single-word variant of the profile queries. Used only for the
+ *  agency reserved-seat pass: quoted phrases ("advanced manufacturing")
+ *  often miss an agency's own wording, and the agency filter + per-family
+ *  seat cap already bound the extra noise. */
+function buildWordQueries(profile: CompanyProfile): string[] {
+  const words = new Set<string>();
+  const raw = [
+    ...profile.technologyKeywords,
+    ...profile.govKeywords,
+    ...(profile.industry ? [profile.industry] : []),
+  ];
+  for (const t of raw) {
+    for (const w of t.toLowerCase().split(/[^a-z0-9]+/)) {
+      if (w.length >= 4) words.add(`"${w}"`);
+    }
+  }
+  const terms = [...words];
+  const queries: string[] = [];
+  for (let i = 0; i < terms.length; i += TERMS_PER_QUERY) {
+    queries.push(terms.slice(i, i + TERMS_PER_QUERY).join(" OR "));
+  }
+  return queries;
+}
+
 /**
  * Retrieve candidate opportunities for a profile.
  * - bm25-ranked FTS matches (best rank kept across queries), capped at
@@ -72,8 +114,9 @@ export function retrieveCandidates(
   );
 
   // Merge across queries, keeping the best (lowest) bm25 rank per id.
+  const queries = buildMatchQueries(profile);
   const best = new Map<string, { row: Record<string, unknown>; rank: number }>();
-  for (const match of buildMatchQueries(profile)) {
+  for (const match of queries) {
     let rows: Record<string, unknown>[];
     try {
       rows = stmt.all(match, PER_QUERY_LIMIT) as Record<string, unknown>[];
@@ -106,6 +149,47 @@ export function retrieveCandidates(
   union(`SELECT * FROM opportunities WHERE source = ?`, "utah");
   if (profile.hasActiveRnD !== false) {
     union(`SELECT * FROM opportunities WHERE kind = ?`, "sbir_sttr");
+  }
+
+  // Reserved seats per major funder: rerun the profile queries (phrase +
+  // loose word form) filtered to each agency family and union in its best
+  // few hits, so relevant NSF/DOE/community/etc. programs can't be crowded
+  // out of the global top-N.
+  const agencyQueries = [...queries, ...buildWordQueries(profile)];
+  for (const patterns of AGENCY_FAMILIES) {
+    const where = patterns.map(() => "o.agency LIKE ?").join(" OR ");
+    const agencyStmt = db.prepare(
+      `SELECT o.*, bm25(opportunities_fts) AS fts_rank
+       FROM opportunities_fts
+       JOIN opportunities o ON o.rowid = opportunities_fts.rowid
+       WHERE opportunities_fts MATCH ? AND (${where})
+       ORDER BY fts_rank
+       LIMIT ?`,
+    );
+    const bestAgency = new Map<string, { row: Record<string, unknown>; rank: number }>();
+    for (const match of agencyQueries) {
+      let rows: Record<string, unknown>[];
+      try {
+        rows = agencyStmt.all(match, ...patterns, PER_AGENCY_SEATS) as Record<string, unknown>[];
+      } catch {
+        continue;
+      }
+      for (const r of rows) {
+        const id = r.id as string;
+        const rank = r.fts_rank as number;
+        const prev = bestAgency.get(id);
+        if (!prev || rank < prev.rank) bestAgency.set(id, { row: r, rank });
+      }
+    }
+    for (const e of [...bestAgency.values()]
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, PER_AGENCY_SEATS)) {
+      const o = rowToOpportunity(e.row);
+      if (!seen.has(o.id)) {
+        seen.add(o.id);
+        results.push(o);
+      }
+    }
   }
   return results;
 }

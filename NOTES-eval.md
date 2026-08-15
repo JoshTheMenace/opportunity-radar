@@ -23,3 +23,9 @@ runner passes only the founder paragraph.)
   backend across runs.
 - Machine-readable output: `pnpm tsx eval/run.ts --json` prints one JSON object
   to stdout: `{timestamp, backend, averageTotal, scores: EvalScore[]}`.
+- `--provider codex|live` (default codex) picks who answers the founder:
+  the pipeline directly, or the Gemini Live voice agent (text in/out; needs
+  `GEMINI_API_KEY`). Live runs add `provider` and per-case `transcripts` to the
+  results JSON and judge explanationQuality on the transcript. `backend` still
+  records the engine LLM — the pipeline runs underneath both providers, so
+  cross-run comparisons should hold both `backend` and `provider` constant.

@@ -81,7 +81,33 @@ export async function runAnalysis(
     type: "activity",
     message: `Ranking ${gated.filter((g) => g.verdict !== "fail").length} eligible candidates for genuine fit...`,
   });
-  const { matches, honestNo, honestNoExplanation } = await rankOpportunities(profile, gated);
+  // Stream partial reports as scoring batches land, so matches appear live.
+  // The facade/UI keep only the latest report event; the final one wins.
+  const rejected = pickRejected(gated);
+  const { matches, honestNo, honestNoExplanation } = await rankOpportunities(
+    profile,
+    gated,
+    (matchesSoFar, scoredCount, totalCount) => {
+      emit({
+        type: "activity",
+        message: `Scored ${scoredCount}/${totalCount} candidates — ${matchesSoFar.length} matches so far...`,
+      });
+      if (matchesSoFar.length > 0) {
+        emit({
+          type: "report",
+          report: {
+            profile,
+            matches: matchesSoFar,
+            rejected,
+            honestNo: false, // never claim "no match" before scoring finishes
+            honestNoExplanation: null,
+            meter,
+            questions,
+          },
+        });
+      }
+    },
+  );
 
   // Historical-award evidence for the top matches: surfaced live as
   // activity lines AND attached to the report (MatchReport.evidence).
@@ -124,7 +150,7 @@ export async function runAnalysis(
   return {
     profile,
     matches,
-    rejected: pickRejected(gated),
+    rejected,
     honestNo,
     honestNoExplanation,
     meter,

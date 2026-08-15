@@ -176,11 +176,19 @@ assert(
   noWhere.verdict === "unknown" && noWhere.missingFields.includes("location"),
 );
 
-// 9. meterValueUsd fallback chain.
+// 9. meterValueUsd fallback chain + realism cap.
 assert("meterValue: ceiling wins", meterValueUsd(makeOpp({ awardCeilingUsd: 750_000 })) === 750_000);
 assert(
   "meterValue: estimatedTotal/expectedAwards",
   meterValueUsd(makeOpp({ estimatedTotalUsd: 1_000_000, expectedAwards: 4 })) === 250_000,
+);
+assert(
+  "meterValue: absurd program-total ceiling capped at $5M",
+  meterValueUsd(makeOpp({ awardCeilingUsd: 108_300_000_000_000 })) === 5_000_000,
+);
+assert(
+  "meterValue: estimated/awards branch also capped",
+  meterValueUsd(makeOpp({ estimatedTotalUsd: 7_000_000_000, expectedAwards: 2 })) === 5_000_000,
 );
 assert("meterValue: grant default 250K", meterValueUsd(makeOpp()) === 250_000);
 assert(

@@ -167,11 +167,16 @@ class CodexAppServer {
   /** Run one prompt on a fresh ephemeral thread; resolves with final agent text. */
   async runTurn(
     prompt: string,
-    opts: { system?: string; effort?: "low" | "medium" | "high"; outputSchema?: object },
+    opts: {
+      system?: string;
+      effort?: "low" | "medium" | "high";
+      outputSchema?: object;
+      model?: string;
+    },
   ): Promise<string> {
     await this.ensureStarted();
     const started = (await this.request("thread/start", {
-      model: CODEX_MODEL,
+      model: opts.model ?? CODEX_MODEL,
       cwd: process.cwd(),
       ephemeral: true,
       sandbox: "read-only",
@@ -219,13 +224,18 @@ function extractJson(text: string): string {
 export const codexBackend: LlmBackend = {
   name: `codex:${CODEX_MODEL}`,
   async complete(prompt: string, opts?: CompleteOptions): Promise<string> {
-    return server.runTurn(prompt, { system: opts?.system, effort: opts?.effort });
+    return server.runTurn(prompt, {
+      system: opts?.system,
+      effort: opts?.effort,
+      model: opts?.model,
+    });
   },
   async completeJSON<T>(prompt: string, schema: object, opts?: CompleteOptions): Promise<T> {
     const run = async (extra: string): Promise<T> => {
       const text = await server.runTurn(prompt + extra, {
         system: opts?.system,
         effort: opts?.effort,
+        model: opts?.model,
         outputSchema: schema,
       });
       return JSON.parse(extractJson(text)) as T;
