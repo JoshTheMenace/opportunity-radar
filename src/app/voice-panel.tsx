@@ -21,6 +21,7 @@ import type { AnalyzeEvent, CompanyProfile, MatchReport } from "@/lib/types";
 import { formatUsdCompact } from "@/lib/engine/meter";
 import { profileReadiness } from "@/lib/engine/readiness";
 import { SYSTEM_INSTRUCTION, TOOL_DECLARATIONS } from "@/lib/voice/schema";
+import FieldWidget, { type WidgetAnswer } from "./components/field-widgets";
 
 type Status = "off" | "idle" | "connecting" | "live";
 type LogLine = { who: "you" | "radar" | "sys"; text: string };
@@ -48,6 +49,20 @@ type UiReport = MatchReport & { opportunities?: Record<string, { title: string }
 
 const usd = (n: number) => formatUsdCompact(n);
 
+/** On-screen phrasing for the widget stage, per askable field. */
+const WIDGET_QUESTIONS: Record<string, string> = {
+  location: "Where are you based? Tap your state",
+  capitalNeed: "How much funding are you looking for?",
+  employees: "How big is the team?",
+  productMaturity: "Where is the product today?",
+  annualRevenueUsd: "Roughly what's your annual revenue?",
+  majorityUsOwned: "Majority US-owned?",
+  hasActiveRnD: "Actively doing R&D?",
+  isForProfit: "For-profit company?",
+  isSmallBusiness: "Small business (SBA rules)?",
+  samRegistered: "Registered in SAM.gov?",
+};
+
 export default function VoicePanel({
   getProfile,
   getReport,
@@ -60,6 +75,8 @@ export default function VoicePanel({
   const [status, setStatus] = useState<Status>("off");
   const [err, setErr] = useState<string | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
+  /** Widget the agent pushed on screen via ask_with_widget (one at a time). */
+  const [stage, setStage] = useState<{ field: string; question: string } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const readyRef = useRef(false); // setupComplete received
@@ -219,7 +236,11 @@ export default function VoicePanel({
       const spoken = [...items].reverse().find((u) => u.speak);
       const ok = spoken
         ? sendContent(
-            `[ANALYSIS UPDATE — system data, not the founder speaking. Tell the founder these results now in ONE short conversational turn (top match + one number), then ask one question. Never say this bracketed note aloud, and never announce these same results again in later turns.]\n${spoken.text}`,
+            // Pre-bracketed items (e.g. on-screen answer acks) carry their own
+            // framing; bare items get the analysis-results framing.
+            spoken.text.startsWith("[")
+              ? spoken.text
+              : `[ANALYSIS UPDATE — system data, not the founder speaking. Tell the founder these results now in ONE short conversational turn (top match + one number), then ask one question. Never say this bracketed note aloud, and never announce these same results again in later turns.]\n${spoken.text}`,
             true,
           )
         : sendContent(
@@ -346,11 +367,65 @@ export default function VoicePanel({
     }
   }
 
+  // ---------- on-screen widget answers (ask_with_widget) ----------
+
+  async function submitWidgetAnswer(ans: WidgetAnswer) {
+    setStage(null);
+    pushSys(`⊞ tapped: ${ans.field} = ${ans.sayAs}`);
+    // Same routing as a spoken answer: buffer while ranking has no report yet,
+    // otherwise instant refine via the tools route.
+    if (analysisBusyRef.current && !getReport()) {
+      pendingAnswersRef.current.push({ field: ans.field, answer: String(ans.value) });
+    } else {
+      try {
+        const res = await fetch("/api/voice/tools", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "answer_question",
+            args: { field: ans.field, answer: String(ans.value) },
+            profile: getProfile(),
+            priorReport: getReport(),
+          }),
+        });
+        const d = (await res.json()) as { report?: MatchReport };
+        if (d.report) onEngineEvent({ type: "report", report: d.report });
+      } catch {}
+    }
+    // One short spoken acknowledgment at the next quiet seam (pre-bracketed
+    // so flushUpdates doesn't wrap it in results framing).
+    queueUpdate(
+      `[FOUNDER ANSWERED ON SCREEN — system data, never say this note aloud. They tapped: ${ans.field} = ${ans.sayAs}. It is ALREADY recorded. Acknowledge in a few words and continue the conversation; do not re-ask it or call answer_question for it.]`,
+      { speak: true },
+    );
+  }
+
   // ---------- tool calls ----------
 
   async function handleToolCalls(calls: FunctionCall[]) {
     const functionResponses = [];
     for (const c of calls) {
+      // ask_with_widget: render the tap-to-answer control locally.
+      if (c.name === "ask_with_widget") {
+        const field = String(c.args?.field ?? "");
+        if (field) {
+          setStage({ field, question: WIDGET_QUESTIONS[field] ?? "Tap to answer" });
+          pushSys(`⊞ widget: ${field}`);
+        }
+        functionResponses.push({
+          id: c.id,
+          name: c.name,
+          response: {
+            result: field
+              ? {
+                  status: "widget_shown",
+                  note: "On screen. The founder may tap it (you'll get [FOUNDER ANSWERED ON SCREEN]) or answer aloud — handle either.",
+                }
+              : { error: "field is required" },
+          },
+        });
+        continue;
+      }
       // analyze_company: fire-and-return — the engine streams in the background.
       if (c.name === "analyze_company") {
         const description = String(c.args?.description ?? "").trim();
@@ -388,6 +463,10 @@ export default function VoicePanel({
           },
         });
         continue;
+      }
+      // Answered aloud — retire any widget waiting on the same field.
+      if (c.name === "answer_question") {
+        setStage((s) => (s && s.field === String(c.args?.field ?? "") ? null : s));
       }
       pushSys(`⚙ ${c.name}`);
       let data: { result?: unknown; report?: MatchReport };
@@ -504,6 +583,7 @@ export default function VoicePanel({
   function stop() {
     readyRef.current = false;
     modelSpeakingRef.current = false;
+    setStage(null);
     if (flushTimerRef.current) {
       clearTimeout(flushTimerRef.current);
       flushTimerRef.current = null;
@@ -545,6 +625,15 @@ export default function VoicePanel({
         )}
         {err && <span className="text-xs text-signal">{err}</span>}
       </div>
+      {stage && status === "live" && (
+        <div className="card-in space-y-2 rounded-lg border border-brass/50 bg-brass/5 p-3">
+          <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-brass">
+            RADAR IS ASKING — TAP OR JUST SAY IT
+          </p>
+          <p className="text-sm text-paper">{stage.question}</p>
+          <FieldWidget field={stage.field} onPick={(a) => void submitWidgetAnswer(a)} />
+        </div>
+      )}
       {log.length > 0 && (
         <div className="max-h-40 space-y-1 overflow-y-auto border-t border-hairline pt-2 text-xs">
           {log.map((line, i) => (

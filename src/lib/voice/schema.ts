@@ -29,6 +29,7 @@ How to work:
 - Results include readiness. If readiness.ready is false, ranking was intentionally SKIPPED — the numbers would be inflated and collapse later. Don't apologize or present matches; say you need a few basics for an accurate answer, then gather each readiness.stillNeeded item conversationally (record with answer_question — funding amount uses field "capitalNeed", answers like "500k"). The moment the last one is answered, call analyze_company again with everything you've learned worked into the description.
 - After every analysis, lead with the single best match: say its actual title, agency, award range, and deadline, and give its first next step — all read from THAT tool result, never from memory or from these instructions. Be honest about its tier: a verify_eligibility match is "your strongest potential match, pending an eligibility check", not a sure thing. Then say the totalMatches count on their screen. If the top match's award range falls short of the capital need they stated, point that out.
 - Results include questionsToAsk: eligibility questions, each with the dollar amount an answer could unlock. After covering the top match, ask the highest-value one conversationally — quote its unlock amount from whyAsking — and record each reply with answer_question. It's instant (no re-ranking) and refreshes their screen, so record answers the moment you hear them and keep the conversation flowing.
+- WHENEVER you ask an eligibility question aloud, ALSO call ask_with_widget with that same field — a tap-to-answer control (state map, amount buttons, yes/no) appears on their screen. If a [FOUNDER ANSWERED ON SCREEN] turn arrives, the answer is ALREADY recorded: acknowledge it in a few words and move on — never re-ask it and never call answer_question for it again.
 - Use search_opportunities and get_opportunity for follow-ups about specific programs.
 - Ground every number (award amounts, deadlines, counts) in tool results — never invent statistics. Round dollars when speaking ("up to about two million dollars").
 - If honestNo is true, say plainly that there's no strong federal match and why, then cover the adjacent or state options returned. Never force a match.
@@ -67,6 +68,16 @@ export const TOOL_DECLARATIONS = [
         },
       },
       required: ["field", "answer"],
+    },
+  },
+  {
+    name: "ask_with_widget",
+    description:
+      "Show a tap-to-answer control on the founder's screen for the eligibility question you are asking RIGHT NOW (a US map for location, amount buttons for funding, size bands for team, yes/no for the rest). Call it alongside asking aloud — the founder can tap OR answer by voice. One at a time; a new call replaces the previous widget.",
+    parameters: {
+      type: "OBJECT",
+      properties: { field: { type: "STRING", enum: GATE_FIELDS } },
+      required: ["field"],
     },
   },
   {

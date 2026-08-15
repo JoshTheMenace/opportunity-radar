@@ -85,6 +85,17 @@ export async function executeVoiceTool(
         .all(words.map((w) => `"${w}"`).join(" OR "), limit) as Record<string, unknown>[];
       return { result: rows.map((r) => compactOpp(rowToOpportunity(r))) };
     }
+    case "ask_with_widget": {
+      // Browser-only affordance: the voice panel intercepts this client-side
+      // and renders the widget. Reaching here means text mode / eval driver —
+      // acknowledge as a no-op so the conversation proceeds normally.
+      return {
+        result: {
+          status: "no_screen",
+          note: "Text mode — no widget shown. Just ask the question conversationally.",
+        },
+      };
+    }
     case "get_opportunity": {
       const opp = getOpportunityById(String(args.id ?? ""));
       if (!opp) return { result: { error: "no opportunity with that id" } };

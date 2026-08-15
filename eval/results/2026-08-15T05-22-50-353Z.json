@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-08-15T05:22:50.353Z",
+  "backend": "codex",
+  "provider": "live",
+  "averageTotal": 0.9359999999999999,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.68,
+      "total": 0.9359999999999999,
+      "notes": "all mustSee themes covered | The response is specific and grounded in the top NIH match, but it awkwardly proceeds as though the unanswered ownership question was resolved and fails to flag that the $314,000 ceiling falls below the founder’s $500,000 minimum target."
+    }
+  ],
+  "transcripts": {
+    "ai-healthcare": "I understand you're building an AI platform to help nurses. To get you an accurate list of funding opportunities, I just need one clarification: is your\n\n company majority-owned by U.S. citizens or permanent residents?Thanks for that context. Based on what you've shared, your strongest match is an SBIR Phase I grant from the National Institutes of Health for AI tools to reduce clinical administrative burden. It offers up to about three hundred and fourteen thousand dollars, and the deadline is December 14th, with 25 total matches on your screen. The first step is to map a specific research question to those clinical use cases. Does that sound like something your team could define?"
+  }
+}

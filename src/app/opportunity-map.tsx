@@ -20,6 +20,7 @@ import VoicePanel from "./voice-panel";
 import SaveMonitor from "./save-monitor";
 import IntakePanel from "./components/intake-panel";
 import AgentDock from "./components/agent-dock";
+import ProfileCard from "./components/profile-card";
 import MeterPanel from "./components/meter-panel";
 import InterviewPanel from "./components/interview-panel";
 import { HonestNoPanel, HowItWorks, ReportSkeleton, ReportView } from "./components/report-view";
@@ -44,6 +45,8 @@ export default function OpportunityMap() {
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [restored, setRestored] = useState(false);
   const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
+  // Render mirror of profileRef so the dossier re-paints as facts land.
+  const [profileView, setProfileView] = useState<CompanyProfile | null>(null);
   const profileRef = useRef<CompanyProfile | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevBusy = useRef(false);
@@ -59,6 +62,7 @@ export default function OpportunityMap() {
         >((a, b) => (!a || b.updatedAt > a.updatedAt ? b : a), null);
         if (latest?.profile && !profileRef.current) {
           profileRef.current = latest.profile;
+          setProfileView(latest.profile);
           setText((t) => t || latest.profile.description || "");
           setRestored(true);
         }
@@ -85,6 +89,7 @@ export default function OpportunityMap() {
         break;
       case "profile":
         profileRef.current = ev.profile;
+        setProfileView(ev.profile);
         persist(ev.profile);
         break;
       case "questions":
@@ -96,6 +101,7 @@ export default function OpportunityMap() {
         setQuestions(ev.report.questions);
         setMeter(ev.report.meter);
         profileRef.current = ev.report.profile;
+        setProfileView(ev.report.profile);
         persist(ev.report.profile);
         break;
       case "error":
@@ -275,6 +281,7 @@ export default function OpportunityMap() {
                 getReport={() => report}
                 onEngineEvent={handle}
               />
+              <ProfileCard profile={profileView} />
               {meter && (
                 <MeterPanel
                   meter={meter}

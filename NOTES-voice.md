@@ -110,3 +110,26 @@ omit boundary spaces — "looks likeyour strongest").
   analysis lands.
 - Server-side executeVoiceTool keeps synchronous analyze (eval driver +
   text mode); it now accepts priorReport for the refine path.
+
+## Adaptive widgets (2026-08-15): ask_with_widget + shared field controls
+
+- `components/field-widgets.tsx` — per-field answer controls shared by text
+  and voice: US tile-map (location), amount presets+custom (capitalNeed /
+  annualRevenueUsd), team-size bands (employees), maturity stepper, big
+  Yes/No (boolean gates). Widgets emit {field, value, sayAs}; HOSTS submit.
+- Text: InterviewPanel renders the rich control inside the question card
+  (incl. readiness synthetic cards); capitalNeed card uses the amount picker.
+- Voice: new tool `ask_with_widget {field}` — intercepted CLIENT-SIDE in
+  voice-panel (server executeVoiceTool returns a no_screen no-op for text
+  mode/eval). Renders a "RADAR IS ASKING — tap or just say it" stage; a tap
+  routes exactly like a spoken answer (buffered during ranking, else instant
+  refine via /api/voice/tools) and the agent gets ONE seam-guarded spoken
+  ack ([FOUNDER ANSWERED ON SCREEN], pre-bracketed so flushUpdates doesn't
+  re-wrap it). Widget retires if the same field is answered aloud.
+- `components/profile-card.tsx` — live COMPANY DOSSIER in the rail: ledger
+  rows fill as facts land (profile/report events), readiness pill, fill bar.
+- Verified in-browser (text path): sparse intake -> map + amount picker +
+  yes/no cards render; tapping OR filled HQ instantly (0/5 -> 1/5 basics)
+  and retired the question. Live eval unchanged (0.94) with the new tool.
+  Voice tap path needs one real mic session to confirm the model calls
+  ask_with_widget when asking aloud.
