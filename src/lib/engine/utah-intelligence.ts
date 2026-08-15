@@ -59,8 +59,12 @@ function topNavigators(profile: CompanyProfile): UtahNavigator[] {
     let score = terms.reduce((sum, term) => sum + (term.split(/\W+/).some((word) => word.length >= 4 && haystack.includes(word)) ? 1 : 0), 0);
     if (isFederal && /apex|contract|procurement|federal market/.test(haystack)) score += 4;
     if (isResearch && /nucleus|research|commercialization|sbir|sttr/.test(haystack)) score += 3;
-    return { row, topics, score };
-  }).sort((a, b) => b.score - a.score || String(a.row.organization).localeCompare(String(b.row.organization))).slice(0, 4).map(({ row, topics }) => ({
+    // Nucleus Grow is Utah's official SBIR/STTR resource partner. Always put
+    // its public contacts before the broader directory, then rank by fit.
+    const nucleus = /nucleus/i.test(`${row.organization ?? ""} ${row.name ?? ""}`);
+    if (nucleus) score += 20;
+    return { row, topics, score, nucleus };
+  }).sort((a, b) => Number(b.nucleus) - Number(a.nucleus) || b.score - a.score || String(a.row.organization).localeCompare(String(b.row.organization))).slice(0, 4).map(({ row, topics }) => ({
     id: row.id as string, name: row.name as string, organization: row.organization as string, title: (row.title as string) ?? null,
     resourceKind: row.resource_kind as string, helpTopics: topics, summary: (row.summary as string) ?? null,
     publicContact: parse(row.public_contact, null), sourceUrl: (row.source_url as string) ?? null,

@@ -8,18 +8,18 @@ function PrecedentCard({ item }: { item: UtahPrecedent }) {
   const title = String(record.title ?? record.award_title ?? record.description ?? "Representative documented award");
   const source = String(record.source_url ?? item.sourceUrl ?? "");
   return (
-    <article className="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
+    <article className="card h-full p-5 transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">{item.pathKind === "grant" ? "Grant precedent" : "Contract precedent"}</p>
-          <h3 className="mt-1 text-sm font-semibold text-neutral-100">{item.company}</h3>
-          <p className="text-xs text-neutral-500">{item.city ?? "Utah"} · {item.awardCount} documented {item.pathKind === "grant" ? "award" : "contract"}{item.awardCount === 1 ? "" : "s"}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-brand">{item.pathKind === "grant" ? "Grant precedent" : "Contract precedent"}</p>
+          <h3 className="mt-1 font-display text-[17px] font-bold text-ink">{item.company}</h3>
+          <p className="mt-1 text-[12.5px] text-faint">{item.city ?? "Utah"} · {item.awardCount} documented {item.pathKind === "grant" ? "award" : "contract"}{item.awardCount === 1 ? "" : "s"}</p>
         </div>
-        {source && <a className="text-xs text-sky-300 hover:text-sky-200" href={source} target="_blank" rel="noreferrer">Source ↗</a>}
+        {source && <a className="shrink-0 text-[12px] font-semibold text-brand hover:text-brand-strong" href={source} target="_blank" rel="noreferrer">Source ↗</a>}
       </div>
-      {item.industryTags.length > 0 && <p className="mt-2 text-xs text-neutral-400">{item.industryTags.slice(0, 3).join(" · ").replaceAll("_", " ")}</p>}
-      <p className="mt-2 text-xs text-neutral-300">{title.slice(0, 170)}{title.length > 170 ? "…" : ""}</p>
-      <p className="mt-2 text-xs font-medium text-neutral-400">{fmtUsd(item.totalAmountUsd)} documented obligation / award total</p>
+      {item.industryTags.length > 0 && <p className="mt-3 text-[12px] font-medium text-muted">{item.industryTags.slice(0, 3).join(" · ").replaceAll("_", " ")}</p>}
+      <p className="mt-3 text-[13px] leading-relaxed text-muted">{title.slice(0, 170)}{title.length > 170 ? "…" : ""}</p>
+      <p className="tnum mt-4 border-t border-hairline pt-3 text-[12px] font-semibold text-ink">{fmtUsd(item.totalAmountUsd)} documented obligation / award total</p>
     </article>
   );
 }
@@ -27,14 +27,29 @@ function PrecedentCard({ item }: { item: UtahPrecedent }) {
 function NavigatorCard({ item }: { item: UtahNavigator }) {
   const email = item.publicContact?.email;
   return (
-    <article className="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">Utah navigator</p>
-      <h3 className="mt-1 text-sm font-semibold text-neutral-100">{item.name}</h3>
-      <p className="text-xs text-neutral-500">{[item.title, item.organization].filter(Boolean).join(" · ")}</p>
-      {item.summary && <p className="mt-2 text-xs text-neutral-300">{item.summary}</p>}
-      <div className="mt-2 flex gap-3 text-xs">
-        {email && <a className="text-sky-300 hover:text-sky-200" href={`mailto:${email}`}>Email ↗</a>}
-        {item.sourceUrl && <a className="text-sky-300 hover:text-sky-200" href={item.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a>}
+    <article className="card h-full p-5 transition-shadow hover:shadow-md">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-good">Utah navigator</p>
+      <h3 className="mt-1 font-display text-[17px] font-bold text-ink">{item.name}</h3>
+      <p className="mt-1 text-[12.5px] text-faint">{[item.title, item.organization].filter(Boolean).join(" · ")}</p>
+      {item.summary && <p className="mt-3 text-[13px] leading-relaxed text-muted">{item.summary}</p>}
+      <div className="mt-4 flex gap-4 border-t border-hairline pt-3 text-[12px] font-semibold">
+        {email && <a className="text-brand hover:text-brand-strong" href={`mailto:${email}`}>Email ↗</a>}
+        {item.sourceUrl && <a className="text-brand hover:text-brand-strong" href={item.sourceUrl} target="_blank" rel="noreferrer">Source ↗</a>}
+      </div>
+    </article>
+  );
+}
+
+function UtifSupportCard() {
+  return (
+    <article className="rounded-[1.25rem] border border-good/25 bg-good-soft p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-good">Utah SBIR first-timer support</p>
+      <h3 className="mt-1 font-display text-[19px] font-bold text-ink">UTIF microgrant: $3K–$5K toward your first Phase I proposal</h3>
+      <p className="mt-2 text-[13px] leading-relaxed text-muted">Eligible Utah small businesses can use UTIF funding for first-time SBIR/STTR Phase I proposal preparation. Nucleus Grow provides the verified Utah route for topic matching, proposal review and editing, registrations, budgeting, and final-submission support.</p>
+      <p className="mt-3 rounded-xl bg-card/70 px-3 py-2 text-[12.5px] leading-relaxed text-ink"><span className="font-semibold">Before applying:</span> choose a specific Phase I solicitation and contact Nucleus Grow for required pre-approval. The program says applications should be submitted at least four weeks before the related federal deadline.</p>
+      <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-[12px] font-semibold">
+        <a className="text-brand hover:text-brand-strong" href="mailto:grow@nucleusutah.org">Contact Nucleus Grow ↗</a>
+        <a className="text-brand hover:text-brand-strong" href="https://www.nucleusutah.org/utif" target="_blank" rel="noreferrer">UTIF details ↗</a>
       </div>
     </article>
   );
@@ -44,16 +59,23 @@ export default function UtahPathways({ context }: { context: UtahPathContext }) 
   const hasPrecedents = context.grantPrecedents.length + context.contractPrecedents.length > 0;
   if (!hasPrecedents && context.navigators.length === 0) return null;
   return (
-    <section className="space-y-3 rounded-lg border border-sky-500/30 bg-sky-500/5 p-4">
+    <section className="card space-y-6 p-6 sm:p-7">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-sky-300">Utah path connections</p>
-        <h2 className="mt-1 text-base font-bold text-neutral-100">People and precedents that help you understand the route</h2>
-        <p className="mt-1 text-xs text-neutral-400">These are documented local precedents and public program routes—not endorsements, funding promises, or guaranteed introductions.</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-brand">Utah funding connections</p>
+        <h2 className="mt-2 font-display text-[21px] font-bold tracking-tight text-ink">People and precedents that help you understand the route</h2>
+        <p className="mt-2 max-w-3xl text-[13.5px] leading-relaxed text-muted">These are documented Utah precedents and public program routes—not endorsements, funding promises, or guaranteed introductions.</p>
       </div>
-      {context.exactCompanyPaths.length > 0 && <p className="rounded bg-sky-950/40 p-2 text-xs text-sky-100">We found a direct local-company match with documented {context.exactCompanyPaths[0].pathKind} peers. The cards below show the underlying sources.</p>}
-      {context.grantPrecedents.length > 0 && <div className="space-y-2"><h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Comparable grant paths</h3><div className="grid gap-2 md:grid-cols-2">{context.grantPrecedents.map((item) => <PrecedentCard key={item.id} item={item} />)}</div></div>}
-      {context.contractPrecedents.length > 0 && <div className="space-y-2"><h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Comparable federal-contract paths</h3><div className="grid gap-2 md:grid-cols-2">{context.contractPrecedents.map((item) => <PrecedentCard key={item.id} item={item} />)}</div></div>}
-      {context.navigators.length > 0 && <div className="space-y-2"><h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-400">People and programs who can help</h3><div className="grid gap-2 md:grid-cols-2">{context.navigators.map((item) => <NavigatorCard key={item.id} item={item} />)}</div></div>}
+      {context.exactCompanyPaths.length > 0 && <p className="rounded-xl border border-brand/20 bg-soft px-4 py-3 text-[13px] leading-relaxed text-brand">We found a direct Utah-company match with documented {context.exactCompanyPaths[0].pathKind} peers. The cards below show the underlying sources.</p>}
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">People and programs who can help</h3>
+          <p className="mt-1 text-[13px] text-muted">Nucleus contacts are prioritized because Nucleus Grow is Utah&apos;s official SBIR/STTR resource partner.</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">{context.navigators.map((item) => <NavigatorCard key={item.id} item={item} />)}</div>
+        <UtifSupportCard />
+      </div>
+      {context.grantPrecedents.length > 0 && <div className="space-y-3"><h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">Comparable grant paths</h3><div className="grid gap-4 md:grid-cols-2">{context.grantPrecedents.map((item) => <PrecedentCard key={item.id} item={item} />)}</div></div>}
+      {context.contractPrecedents.length > 0 && <div className="space-y-3"><h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">Comparable federal-contract paths</h3><div className="grid gap-4 md:grid-cols-2">{context.contractPrecedents.map((item) => <PrecedentCard key={item.id} item={item} />)}</div></div>}
     </section>
   );
 }
