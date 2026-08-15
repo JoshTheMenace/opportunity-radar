@@ -155,7 +155,7 @@ The swap test: if another company from the same city or sector could be dropped 
 
 SBIR/STTR exception: SBIR (Small Business Innovation Research) and STTR (Small Business Technology Transfer) awards fund a specific R&D topic, not a class of company — the swap test does not make them generic — and they are where most federal money for small companies actually lives. When this company's R&D could credibly serve the solicitation's topic, score the fit generously: an imperfect SBIR/STTR topic match still beats a generic program.
 
-For each opportunity write 1-2 sentences each for whyFit, whatCouldDisqualify, whatToVerify, nextSteps — in plain founder language: expand any acronym or grant term of art on first use in a few words, e.g. "SBIR (federal R&D grants for small companies)".
+For each opportunity write whyFit, whatCouldDisqualify, whatToVerify, nextSteps as 1-2 SHORT sentences each — every sentence renders as its own bullet on screen, so keep each under about 12 words. Lead with the concrete fact; cut preamble, hedging, and clause chains ("giving...", "which means..."). Plain founder language: expand an acronym or grant term of art on first use in a few words, e.g. "SBIR (federal R&D grants for small companies)".
 Ground every claim in the data above. Anything unknown (a profile field, a number, a date) stays unknown: it belongs in whatToVerify, never asserted in whyFit. Do not attribute customers, partnerships, or capabilities the profile does not state.
 
 Return a JSON object {"matches": [...]}, one entry per opportunity, using each opportunity's exact "id" as opportunityId.`;
