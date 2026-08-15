@@ -20,6 +20,7 @@ import { evaluateGates } from "./gates";
 import { buildMeter, buildQuestions, formatUsdCompact } from "./meter";
 import { profileReadiness, sortQuestionsRequiredFirst } from "./readiness";
 import { rankOpportunities } from "./rank";
+import { injectUtif } from "./utif";
 import { getEvidence } from "./evidence";
 
 const EVIDENCE_TOP_N = 5;
@@ -138,7 +139,7 @@ export async function runAnalysis(
   // Stream partial reports as scoring batches land, so matches appear live.
   // The facade/UI keep only the latest report event; the final one wins.
   const rejected = pickRejected(gated);
-  const { matches, honestNo, honestNoExplanation } = await rankOpportunities(
+  const ranked = await rankOpportunities(
     profile,
     gated,
     (matchesSoFar, scoredCount, totalCount) => {
@@ -162,6 +163,10 @@ export async function runAnalysis(
       }
     },
   );
+  const { honestNo, honestNoExplanation } = ranked;
+  // UTIF special case: a qualified Utah first-timer's microgrant is
+  // deterministic money — inject it over the LLM's read of that row.
+  const matches = injectUtif(ranked.matches, profile, honestNo);
 
   // Historical-award evidence for the top matches: surfaced live as
   // activity lines AND attached to the report (MatchReport.evidence).
