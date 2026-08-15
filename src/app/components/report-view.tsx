@@ -164,7 +164,50 @@ export function ReportView({
           )}
         </div>
       )}
+      <FutureFitsSection report={report} />
     </section>
+  );
+}
+
+/** "Worth watching" — hard-fails whose only blocker is time-solvable. The
+ *  copy is explicit that these are NOT matches today; saving the profile is
+ *  what turns them into follow-ups (the watcher emails on grow-into). */
+function FutureFitsSection({ report }: { report: UiReport }) {
+  const fits = report.futureFits ?? [];
+  if (fits.length === 0) return null;
+  const REASON_LABEL: Record<string, string> = {
+    reopens: "Next cycle",
+    start_rnd: "If you start R&D",
+    amount_mismatch: "As needs change",
+  };
+  return (
+    <div className="mt-2">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <h3 className="font-display text-[18px] font-bold tracking-tight text-ink">
+          Worth watching
+        </h3>
+        <span className="text-[12.5px] text-faint">
+          not a fit today — blocked by something time can fix
+        </span>
+      </div>
+      <ul className="mt-2 space-y-2">
+        {fits.map((f) => (
+          <li key={f.opportunityId} className="rounded-xl bg-surface-low px-4 py-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <span className="min-w-0 text-[14px] font-medium text-ink">{f.title}</span>
+              <span className="shrink-0 rounded-full bg-surface-variant px-2.5 py-0.5 text-[11.5px] font-semibold text-muted">
+                {REASON_LABEL[f.reason] ?? f.reason}
+              </span>
+            </div>
+            <p className="mt-1 text-[13px] leading-relaxed text-muted">{f.detail}</p>
+            <p className="mt-0.5 text-[12px] text-faint">{f.agency}</p>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[12.5px] text-faint">
+        Save &amp; monitor below and we&apos;ll email you when one of these unlocks.
+      </p>
+    </div>
   );
 }
 
@@ -222,6 +265,7 @@ export function HonestNoPanel({
           ))}
         </div>
       )}
+      <FutureFitsSection report={report} />
     </section>
   );
 }

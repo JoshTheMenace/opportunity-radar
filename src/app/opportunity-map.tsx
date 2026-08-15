@@ -305,7 +305,16 @@ export default function OpportunityMap() {
         </div>
 
         <div className="min-w-0 space-y-6 lg:order-1 lg:col-span-3">
-          <ProfileCard profile={profileView} />
+          <ProfileCard
+            profile={profileView}
+            onSave={(p) => {
+              // Manual edits are authoritative: update the working profile,
+              // persist (keeps the stored future-fit snapshot), refresh view.
+              profileRef.current = p;
+              setProfileView(p);
+              persist(p);
+            }}
+          />
           <ActionPlan report={report} />
         </div>
 

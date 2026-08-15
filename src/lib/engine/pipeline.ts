@@ -15,7 +15,7 @@ import type {
   MatchReport,
 } from "../types";
 import { extractProfile, extractProfileFast } from "./profile";
-import { retrieveCandidates, countBySource } from "./retrieve";
+import { retrieveCandidates, countBySource, corpusRefreshedAt } from "./retrieve";
 import { evaluateGates } from "./gates";
 import { buildMeter, buildQuestions, formatUsdCompact } from "./meter";
 import { profileReadiness, sortQuestionsRequiredFirst } from "./readiness";
@@ -78,9 +78,10 @@ export async function runAnalysis(
   const perSource = Object.entries(counts)
     .map(([s, n]) => `${s} ${n}`)
     .join(", ");
+  const refreshed = corpusRefreshedAt();
   emit({
     type: "activity",
-    message: `Searching ${total.toLocaleString("en-US")} cached opportunities (${perSource || "empty database"})...`,
+    message: `Searching ${total.toLocaleString("en-US")} cached opportunities (${perSource || "empty database"})${refreshed ? ` — every source refreshed since ${refreshed.slice(0, 10)}` : ""}...`,
   });
 
   let candidates = retrieveCandidates(profile);

@@ -40,6 +40,54 @@ export interface WatchCycleResult {
 
 const NOTIFY_MIN_SCORE = 50; // verify_eligibility and up — same bar as honestNo
 
+/** "You grew into it": re-gate a company's saved future fits against its
+ *  CURRENT profile; any that now fully pass become notifications + emails.
+ *  Deterministic (gates only, no LLM) — the fit case was already made when
+ *  the future fit was recorded; only the blocker changed. */
+function checkFutureFitUnlocks(
+  company: CompanyRecord,
+  log: (m: string) => void,
+): WatchCycleResult["notifications"] {
+  if (company.futureFits.length === 0) return [];
+  const opps = getOpportunities(company.futureFits.map((f) => f.opportunityId));
+  const currentGated = new Map(
+    opps.map((o) => [o.id, evaluateGates(company.profile, o)] as const),
+  );
+  const unlocked = nowUnlocked(company.futureFits, currentGated);
+  const results: WatchCycleResult["notifications"] = [];
+  const byId = new Map(opps.map((o) => [o.id, o]));
+  for (const f of unlocked) {
+    const opp = byId.get(f.opportunityId);
+    if (!opp) continue;
+    const match = {
+      opportunityId: f.opportunityId,
+      tier: "verify_eligibility" as const,
+      score: NOTIFY_MIN_SCORE,
+      whyFit: `Previously blocked (${f.blockedBy}) — your updated profile now clears every eligibility gate for this program.`,
+      whatCouldDisqualify: "Re-check the current solicitation terms; they can change between cycles.",
+      whatToVerify: "Confirm the program is in an open cycle before investing application time.",
+      nextSteps: "Open the program page and re-run your analysis to get a fresh fit read.",
+    };
+    const email = company.email ? draftMatchEmail(company, opp, match) : null;
+    const inserted = recordNotification({
+      companyId: company.id,
+      opportunityId: opp.id,
+      score: match.score,
+      tier: match.tier,
+      whyFit: match.whyFit,
+      emailSubject: email?.subject ?? null,
+      emailBody: email?.body ?? null,
+      emailedAt: email ? new Date().toISOString() : null,
+    });
+    if (inserted) {
+      if (email) writeEmlToOutbox(company, opp, email);
+      log(`  ${company.name}: grew into ${opp.title}`);
+      results.push({ company: company.name, opportunity: opp.title, tier: match.tier, score: match.score });
+    }
+  }
+  return results;
+}
+
 function getOpportunities(ids: string[]): Opportunity[] {
   if (ids.length === 0) return [];
   const db = getDb();
@@ -134,6 +182,16 @@ export async function runWatchCycle(log: (m: string) => void = console.log): Pro
       } catch (e) {
         log(`  ERROR matching ${company.name}: ${e instanceof Error ? e.message : e}`);
       }
+    }
+  }
+
+  // Grow-into transitions run every cycle (cheap, gates-only, no LLM) —
+  // they fire on profile updates, not on new opportunities.
+  for (const company of active) {
+    try {
+      notifications.push(...checkFutureFitUnlocks(company, log));
+    } catch (e) {
+      log(`  ERROR future-fit check ${company.name}: ${e instanceof Error ? e.message : e}`);
     }
   }
 

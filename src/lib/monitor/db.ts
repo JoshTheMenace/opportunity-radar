@@ -72,6 +72,17 @@ function db() {
     } catch {
       // column already exists
     }
+    // Dream researcher findings: full provenance for every weekly run.
+    d.exec(`
+      CREATE TABLE IF NOT EXISTS dream_findings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL REFERENCES companies(id),
+        run_at TEXT NOT NULL DEFAULT (datetime('now')),
+        dry_run INTEGER NOT NULL DEFAULT 0,
+        identity_confident INTEGER NOT NULL,
+        result TEXT NOT NULL              -- DreamResult JSON (proposals, applied, sources)
+      );
+    `);
     ready = true;
   }
   return d;
@@ -163,6 +174,45 @@ export function markSeen(ids: string[]): void {
 
 export function seenCount(): number {
   return (db().prepare("SELECT COUNT(*) n FROM watch_seen").get() as { n: number }).n;
+}
+
+// ---------- dream findings ----------
+
+/** Persist one dream-research run (result is the DreamResult, stored verbatim). */
+export function recordDreamFinding(
+  companyId: number,
+  result: { identityConfident: boolean },
+  dryRun: boolean,
+): void {
+  db()
+    .prepare(
+      "INSERT INTO dream_findings (company_id, dry_run, identity_confident, result) VALUES (?, ?, ?, ?)",
+    )
+    .run(companyId, dryRun ? 1 : 0, result.identityConfident ? 1 : 0, JSON.stringify(result));
+}
+
+export function listDreamFindings(companyId?: number, limit = 20): Array<{
+  id: number;
+  companyId: number;
+  runAt: string;
+  dryRun: boolean;
+  identityConfident: boolean;
+  result: unknown;
+}> {
+  const rows = db()
+    .prepare(
+      `SELECT * FROM dream_findings ${companyId ? "WHERE company_id = @cid" : ""}
+       ORDER BY id DESC LIMIT @lim`,
+    )
+    .all({ cid: companyId, lim: limit } as Record<string, unknown>) as Record<string, unknown>[];
+  return rows.map((r) => ({
+    id: r.id as number,
+    companyId: r.company_id as number,
+    runAt: r.run_at as string,
+    dryRun: r.dry_run === 1,
+    identityConfident: r.identity_confident === 1,
+    result: JSON.parse(r.result as string),
+  }));
 }
 
 // ---------- notifications ----------
