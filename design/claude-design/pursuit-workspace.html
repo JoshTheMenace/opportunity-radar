@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Federal Catalyst - Pursuit Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@100..900&family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#07006c",
+                        "primary-fixed-dim": "#94ccff",
+                        "secondary-fixed-dim": "#7bd1fa",
+                        "error-container": "#ffdad6",
+                        "surface": "#f7f9fb",
+                        "on-background": "#191c1e",
+                        "background": "#f7f9fb",
+                        "on-primary-fixed": "#001d32",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "surface-bright": "#f7f9fb",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "surface-glass": "rgba(255, 255, 255, 0.7)",
+                        "on-surface": "#191c1e",
+                        "on-primary-container": "#cbe4ff",
+                        "surface-dim": "#d8dadc",
+                        "on-secondary-fixed": "#001e2b",
+                        "surface-container": "#eceef0",
+                        "outline": "#707881",
+                        "surface-container-low": "#f2f4f6",
+                        "on-tertiary": "#ffffff",
+                        "primary-container": "#0369a1",
+                        "inverse-surface": "#2d3133",
+                        "inverse-primary": "#94ccff",
+                        "border-ice": "rgba(3, 105, 161, 0.12)",
+                        "on-error-container": "#93000a",
+                        "text-deep": "#0f172a",
+                        "surface-variant": "#e0e3e5",
+                        "outline-variant": "#c0c7d1",
+                        "on-secondary": "#ffffff",
+                        "secondary": "#006686",
+                        "on-tertiary-container": "#e0dfff",
+                        "tertiary": "#3535c4",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed": "#c0e8ff",
+                        "surface-container-high": "#e6e8ea",
+                        "tertiary-fixed": "#e1e0ff",
+                        "primary-fixed": "#cde5ff",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-surface-variant": "#40474f",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-error": "#ffffff",
+                        "primary": "#00507d",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#005b78",
+                        "surface-tint": "#006399",
+                        "secondary-container": "#7ed4fd",
+                        "tertiary-container": "#4f51dc",
+                        "on-secondary-fixed-variant": "#004d66",
+                        "on-primary-fixed-variant": "#004b74"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "md": "24px",
+                        "margin-desktop": "64px",
+                        "lg": "48px",
+                        "base": "8px",
+                        "sm": "12px",
+                        "gutter": "24px",
+                        "xl": "80px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Hanken Grotesk"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-md": ["JetBrains Mono"],
+                        "label-sm": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "headline-display": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-md": ["14px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-sm": ["12px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-display": ["56px", {"lineHeight": "64px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col overflow-hidden">
+<!-- TopNavBar (Hidden on Mobile, Flex on Desktop) -->
+<header class="hidden md:flex justify-between items-center w-full px-margin-desktop h-20 bg-surface-glass dark:bg-inverse-surface/90 backdrop-blur-xl shadow-sm z-50 shrink-0">
+<div class="flex items-center gap-gutter">
+<h1 class="font-headline-md text-headline-md font-extrabold text-primary dark:text-primary-fixed tracking-tight">Federal Catalyst</h1>
+<nav class="flex gap-md ml-8">
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 active:scale-95 transition-transform px-3 py-2 rounded-md font-body-md text-body-md" href="#">Opportunity Map</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 active:scale-95 transition-transform px-3 py-2 rounded-md font-body-md text-body-md" href="#">Screening</a>
+<a class="text-on-surface-variant dark:text-surface-variant hover:text-primary hover:bg-surface-container-low transition-colors duration-200 active:scale-95 transition-transform px-3 py-2 rounded-md font-body-md text-body-md" href="#">Utah View</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex gap-sm">
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-full transition-colors active:scale-95"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-full transition-colors active:scale-95"><span class="material-symbols-outlined" data-icon="account_circle">account_circle</span></button>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2 rounded-full font-label-md text-label-md hover:bg-surface-tint transition-colors active:scale-95 shadow-sm">Apply Now</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden relative">
+<!-- SideNavBar (Hidden on Mobile, Block on Desktop) -->
+<aside class="hidden md:flex flex-col h-full w-64 bg-surface-container-lowest dark:bg-surface-dim border-r border-ice shrink-0 p-gutter pt-8 z-40 relative">
+<div class="mb-8 px-4">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-headline-md font-bold">AC</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-bold text-primary truncate">Agent Catalyst</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant truncate">Federal Funding Lead</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all active:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> Dashboard
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-bold transition-all active:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span> Active Grants
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all active:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span> Compliance
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all active:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span> Reports
+                </a>
+</nav>
+<div class="mt-auto space-y-2 pt-4 border-t border-ice">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all active:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span> Settings
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-all active:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span> Support
+                </a>
+<a class="flex items-center gap-3 px-4 py-3 text-error hover:bg-error-container/20 rounded-lg transition-all active:translate-x-1 font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span> Logout
+                </a>
+<button class="w-full mt-4 bg-primary text-on-primary px-4 py-2 rounded-full font-label-md text-label-md hover:bg-surface-tint transition-colors active:scale-95 shadow-sm">New Application</button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto bg-surface relative z-10 p-margin-mobile md:p-gutter flex flex-col gap-gutter">
+<!-- Breadcrumb & Workspace Header -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<a class="hover:text-primary transition-colors" href="#">Active Grants</a>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-text-deep font-medium">NSF SBIR Phase I</span>
+</div>
+<div class="flex justify-between items-end">
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-text-deep font-bold tracking-tight">NSF SBIR Phase I Workspace</h2>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 rounded-full border border-ice bg-surface-glass backdrop-blur-md text-primary font-label-md text-label-md hover:bg-surface-container-low transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="open_in_new">open_in_new</span> Review official notice
+                        </button>
+</div>
+</div>
+</div>
+<!-- Progress & Tracker Header Card -->
+<div class="bg-surface-glass backdrop-blur-xl border border-white/40 shadow-sm rounded-xl p-md flex flex-col md:flex-row gap-lg items-center relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container/5 to-transparent pointer-events-none"></div>
+<div class="flex-1 w-full">
+<div class="flex justify-between items-center mb-4">
+<span class="font-headline-md text-headline-md text-primary font-bold">42% ready</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-2 py-1 rounded">Target: Oct 16</span>
+</div>
+<!-- Multi-step Progress Bar -->
+<div class="relative flex justify-between">
+<div class="absolute top-1/2 left-0 w-full h-1 bg-surface-container-high -translate-y-1/2 z-0 rounded-full"></div>
+<div class="absolute top-1/2 left-0 w-[42%] h-1 bg-primary -translate-y-1/2 z-0 rounded-full"></div>
+<!-- Step 1 -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-sm" data-icon="check">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-text-deep">Eligibility</span>
+</div>
+<!-- Step 2 -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center shadow-sm border-2 border-primary">
+<span class="font-label-md text-label-md font-bold">2</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-bold">Narrative</span>
+</div>
+<!-- Step 3 -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-surface text-on-surface-variant flex items-center justify-center border border-outline-variant">
+<span class="font-label-md text-label-md">3</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Budget</span>
+</div>
+<!-- Step 4 -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-surface text-on-surface-variant flex items-center justify-center border border-outline-variant">
+<span class="font-label-md text-label-md">4</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Review</span>
+</div>
+<!-- Step 5 -->
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-surface text-on-surface-variant flex items-center justify-center border border-outline-variant">
+<span class="font-label-md text-label-md">5</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Submit</span>
+</div>
+</div>
+</div>
+<div class="flex flex-wrap gap-4 md:border-l border-ice md:pl-lg">
+<div class="flex items-center gap-2 bg-surface-container-lowest px-4 py-2 rounded-lg border border-ice">
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle">check_circle</span>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Fit Score</p>
+<p class="font-body-md text-body-md text-text-deep font-semibold">Strong (82)</p>
+</div>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-lowest px-4 py-2 rounded-lg border border-ice">
+<span class="material-symbols-outlined text-primary" data-icon="account_balance">account_balance</span>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Funding</p>
+<p class="font-body-md text-body-md text-text-deep font-semibold">Up to $314K</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Workspace Grid -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter items-start">
+<!-- Left/Center Column: Tasks & Editor (Span 8) -->
+<div class="xl:col-span-8 flex flex-col gap-gutter">
+<!-- Narrative Tasks -->
+<div class="bg-surface-glass backdrop-blur-xl border border-white/40 shadow-sm rounded-xl overflow-hidden flex flex-col">
+<div class="p-4 border-b border-ice bg-surface-container-lowest/50 flex justify-between items-center">
+<h3 class="font-headline-md text-body-md font-semibold text-text-deep">Narrative Tasks</h3>
+<button class="text-primary hover:text-surface-tint font-label-sm text-label-sm flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span> Add Task
+                            </button>
+</div>
+<div class="flex flex-col">
+<!-- Task 1 (Complete) -->
+<div class="flex items-center justify-between p-4 border-b border-ice hover:bg-surface-container-lowest/50 transition-colors group">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary mt-0.5" data-icon="check_circle">check_circle</span>
+<div>
+<p class="font-body-md text-body-md text-text-deep font-medium line-through opacity-70">Draft Specific Aims</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Create 1-2 page outline</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-sm text-label-sm text-error/80">SEP 02</span>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-dim text-on-surface-variant flex items-center justify-center font-label-sm text-[10px]">AK</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-on-surface-variant transition-opacity"><span class="material-symbols-outlined text-sm" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+<!-- Task 2 (In Progress) -->
+<div class="flex items-center justify-between p-4 border-b border-ice bg-primary-container/5 hover:bg-primary-container/10 transition-colors group border-l-4 border-l-primary">
+<div class="flex items-start gap-3">
+<div class="w-6 h-6 rounded-full border-2 border-primary flex items-center justify-center mt-0.5 relative">
+<div class="w-3 h-3 rounded-full bg-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+</div>
+<div>
+<p class="font-body-md text-body-md text-text-deep font-medium">Define pilot outcomes</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Measurable success criteria</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-sm text-label-sm text-error font-bold">SEP 05</span>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-sm text-[10px]">AK</div>
+</div>
+<button class="text-on-surface-variant"><span class="material-symbols-outlined text-sm" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+<!-- Task 3 (Not Started) -->
+<div class="flex items-center justify-between p-4 hover:bg-surface-container-lowest/50 transition-colors group">
+<div class="flex items-start gap-3">
+<div class="w-6 h-6 rounded-md border-2 border-outline-variant mt-0.5"></div>
+<div>
+<p class="font-body-md text-body-md text-text-deep font-medium">Write commercialization plan</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Path to market strategy</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-sm text-label-sm text-on-surface-variant">SEP 09</span>
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-surface-dim text-on-surface-variant flex items-center justify-center font-label-sm text-[10px]">AK</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 text-on-surface-variant transition-opacity"><span class="material-symbols-outlined text-sm" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Document Editor Workspace -->
+<div class="bg-surface-container-lowest border border-ice shadow-sm rounded-xl overflow-hidden flex flex-col flex-1 min-h-[500px]">
+<!-- Editor Header/Toolbar -->
+<div class="border-b border-ice bg-surface-glass backdrop-blur-md p-3 flex flex-wrap justify-between items-center gap-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+<span class="font-body-md text-body-md font-medium text-text-deep">Specific Aims — working draft</span>
+<span class="font-label-sm text-label-sm text-outline ml-2">Saved 2 min ago</span>
+</div>
+<div class="flex gap-2">
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-low rounded"><span class="material-symbols-outlined text-sm" data-icon="share">share</span></button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-low rounded"><span class="material-symbols-outlined text-sm" data-icon="history">history</span></button>
+<button class="p-1.5 text-on-surface-variant hover:bg-surface-container-low rounded"><span class="material-symbols-outlined text-sm" data-icon="open_in_full">open_in_full</span></button>
+</div>
+</div>
+<!-- Formatting Toolbar -->
+<div class="border-b border-ice bg-surface/50 p-2 flex flex-wrap gap-2 items-center">
+<select class="bg-transparent border-none text-body-sm font-body-sm text-text-deep focus:ring-0 py-1 pl-2 pr-8"><option>Normal</option></select>
+<div class="w-px h-4 bg-outline-variant"></div>
+<select class="bg-transparent border-none text-body-sm font-body-sm text-text-deep focus:ring-0 py-1 pl-2 pr-8"><option>Inter</option></select>
+<div class="w-px h-4 bg-outline-variant"></div>
+<button class="p-1 hover:bg-surface-container-low rounded text-text-deep font-bold">B</button>
+<button class="p-1 hover:bg-surface-container-low rounded text-text-deep italic">I</button>
+<button class="p-1 hover:bg-surface-container-low rounded text-text-deep underline">U</button>
+<div class="w-px h-4 bg-outline-variant"></div>
+<button class="p-1 hover:bg-surface-container-low rounded text-on-surface-variant"><span class="material-symbols-outlined text-sm" data-icon="format_list_bulleted">format_list_bulleted</span></button>
+<button class="p-1 hover:bg-surface-container-low rounded text-on-surface-variant"><span class="material-symbols-outlined text-sm" data-icon="format_list_numbered">format_list_numbered</span></button>
+</div>
+<!-- Editor Canvas & Inline AI -->
+<div class="flex-1 flex overflow-hidden relative">
+<!-- Text Area -->
+<div class="flex-1 p-6 overflow-y-auto font-body-md text-body-md text-text-deep leading-relaxed">
+<p class="font-bold mb-2">1. Aim 1: Develop and validate an AI-powered clinical decision support tool</p>
+<p class="mb-6">We will design, build, and validate an AI-powered decision support tool that analyzes EHR data to identify high-risk inpatients at risk of clinical deterioration. We will use retrospective data from <span class="bg-secondary-container/30 px-1 border-b border-secondary-container cursor-pointer group relative">~10,000 encounters<span class="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-1 w-48 p-2 bg-inverse-surface text-inverse-on-surface text-label-sm rounded shadow-lg z-20">AI Suggestion: Clarify exact sample size origin.</span></span> and validate performance prospectively.</p>
+<p class="font-bold mb-2">2. Aim 2: Conduct a hospital pilot to improve early intervention</p>
+<p class="mb-6">We will implement the tool in a real-world hospital setting and test whether it improves early detection and intervention. Success will be measured using <span class="bg-primary-container/20 px-1 border-b-2 border-primary cursor-pointer relative z-10">predefined clinical outcomes.</span></p>
+<p class="font-bold mb-2">3. Aim 3: Prepare for commercialization and broader implementation</p>
+<p>We will develop a commercialization plan, engage partners, and lay the groundwork for a future Phase II study and market adoption.</p>
+</div>
+<!-- Inline AI Suggestion Panel (Docked right within editor) -->
+<div class="w-72 border-l border-ice bg-surface/30 p-4 overflow-y-auto shrink-0 hidden lg:block relative z-20">
+<div class="flex items-center gap-2 mb-4 text-primary font-label-md text-label-md font-bold">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome">auto_awesome</span> AI Suggestions (3)
+                                </div>
+<div class="space-y-4">
+<!-- Suggestion Card -->
+<div class="bg-surface-container-lowest border border-primary/30 shadow-sm rounded-lg p-3 hover:border-primary transition-colors cursor-pointer relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<p class="font-label-sm text-label-sm font-bold text-text-deep mb-1">Strengthen measurable outcomes</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-2 line-clamp-3">Define specific, quantifiable pilot outcomes and targets. E.g., "Reduce 30-day unplanned readmissions by 15%".</p>
+<div class="flex justify-end">
+<button class="text-primary font-label-sm text-label-sm hover:underline">Insert</button>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant/30 shadow-sm rounded-lg p-3 hover:border-outline transition-colors cursor-pointer">
+<p class="font-label-sm text-label-sm font-bold text-text-deep mb-1">Clarify sample size source</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-2">Specify the specific hospital network or database providing the 10,000 encounters.</p>
+<div class="flex justify-end">
+<button class="text-primary font-label-sm text-label-sm hover:underline">Insert</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Rail (Span 4) -->
+<div class="xl:col-span-4 flex flex-col gap-gutter">
+<!-- SAM.gov Alert Card -->
+<div class="bg-error-container/20 border border-error/20 rounded-xl p-4 flex gap-3 shadow-sm relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-error/5 to-transparent pointer-events-none"></div>
+<span class="material-symbols-outlined text-error mt-0.5" data-icon="warning">warning</span>
+<div class="flex-1">
+<h4 class="font-label-md text-label-md font-bold text-on-error-container mb-1">SAM.gov status unconfirmed</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-2">Active registration is required at time of submission. Confirm or update before <strong class="text-error">Oct 02</strong>.</p>
+<button class="text-error font-label-sm text-label-sm font-bold hover:underline flex items-center gap-1">Verify now <span class="material-symbols-outlined text-xs" data-icon="arrow_forward">arrow_forward</span></button>
+</div>
+</div>
+<!-- Deadline Timeline Stepper -->
+<div class="bg-surface-glass backdrop-blur-xl border border-white/40 shadow-sm rounded-xl p-5">
+<h3 class="font-headline-md text-body-md font-semibold text-text-deep mb-5 border-b border-ice pb-2">Deadline Timeline</h3>
+<div class="relative pl-4 space-y-6">
+<!-- Vertical Line -->
+<div class="absolute left-[21px] top-2 bottom-2 w-px bg-outline-variant z-0"></div>
+<!-- Past Step -->
+<div class="relative z-10 flex gap-4">
+<div class="w-[14px] h-[14px] rounded-full bg-secondary border-2 border-surface mt-1 shrink-0 shadow-sm"></div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-secondary font-bold">AUG 14</span>
+<span class="font-body-sm text-body-sm text-text-deep">Pursuit created</span>
+</div>
+</div>
+</div>
+<!-- Past Step -->
+<div class="relative z-10 flex gap-4">
+<div class="w-[14px] h-[14px] rounded-full bg-secondary border-2 border-surface mt-1 shrink-0 shadow-sm"></div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-secondary font-bold">AUG 20</span>
+<span class="font-body-sm text-body-sm text-text-deep">Eligibility complete</span>
+</div>
+</div>
+</div>
+<!-- Current Step -->
+<div class="relative z-10 flex gap-4">
+<div class="w-[14px] h-[14px] rounded-full bg-primary border-2 border-surface mt-1 shrink-0 shadow-sm ring-2 ring-primary/30"></div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-label-sm text-label-sm text-primary font-bold">SEP 05</span>
+<span class="font-body-sm text-body-sm text-text-deep font-bold">Pilot outcomes due</span>
+<span class="bg-error-container text-on-error-container text-[10px] font-bold px-1.5 py-0.5 rounded">IN 3 DAYS</span>
+</div>
+</div>
+</div>
+<!-- Future Step -->
+<div class="relative z-10 flex gap-4">
+<div class="w-[14px] h-[14px] rounded-full bg-surface-dim border-2 border-outline mt-1 shrink-0"></div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">SEP 12</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">First full draft due</span>
+</div>
+</div>
+</div>
+<!-- Final Step -->
+<div class="relative z-10 flex gap-4">
+<div class="w-[14px] h-[14px] rounded-full bg-surface-dim border-2 border-outline mt-1 shrink-0"></div>
+<div>
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">OCT 16</span>
+<span class="font-body-sm text-body-sm text-text-deep font-medium">Submit application</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">by 5:00 PM ET</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
