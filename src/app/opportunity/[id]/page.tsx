@@ -37,29 +37,34 @@ export default async function OpportunityPage({ params }: Params) {
     <main className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
       {/* header */}
       <header id="opp-header" className="space-y-2">
-        <Link href="/" className="text-xs text-neutral-500 hover:text-neutral-300">
+        <Link
+          href="/"
+          className="font-mono text-xs text-faint transition-colors hover:text-paper"
+        >
           ← Back to your matches
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight">{o.title}</h1>
-        <p className="text-sm text-neutral-400">
+        <h1 className="font-display text-2xl font-semibold text-paper sm:text-3xl">
+          {o.title}
+        </h1>
+        <p className="font-mono text-xs text-muted">
           {o.agency}
           {o.agencyCode ? ` (${o.agencyCode})` : ""}
         </p>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full border border-neutral-700 px-2.5 py-0.5">
-            {o.kind.replace(/_/g, "/")}
-          </span>
-          <span className="rounded-full border border-neutral-700 px-2.5 py-0.5">
-            {o.source.replace(/_/g, ".")}
-          </span>
-          <span className="rounded-full border border-neutral-700 px-2.5 py-0.5">{o.status}</span>
+        <div className="flex flex-wrap gap-2">
+          <Chip>{o.kind.replace(/_/g, "/")}</Chip>
+          <Chip>{o.source.replace(/_/g, ".")}</Chip>
+          <Chip>{o.status}</Chip>
         </div>
       </header>
 
-      {/* key facts */}
-      <section id="opp-facts" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* key facts — instrument readout band */}
+      <section
+        id="opp-facts"
+        className="grid grid-cols-2 divide-hairline rounded-lg border border-hairline bg-panel sm:grid-cols-4 sm:divide-x"
+      >
         <Fact
           label="Award range"
+          money
           value={
             o.awardFloorUsd != null && o.awardCeilingUsd != null
               ? `${fmt(o.awardFloorUsd)}–${fmt(o.awardCeilingUsd)}`
@@ -91,26 +96,29 @@ export default async function OpportunityPage({ params }: Params) {
       <PursuitPanel opportunityId={o.id} />
 
       {/* about */}
-      <Section id="opp-about" title="About this program">
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">
+      <Section id="opp-about" title="ABOUT THIS PROGRAM">
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper/85">
           {o.description || "No description provided by the source."}
         </p>
       </Section>
 
       {o.eligibilityText && (
-        <Section id="opp-eligibility" title="Who's eligible (official text)">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-neutral-300">
+        <Section id="opp-eligibility" title="WHO'S ELIGIBLE (OFFICIAL TEXT)">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-paper/85">
             {o.eligibilityText}
           </p>
         </Section>
       )}
 
       {/* contact + source link */}
-      <Section id="opp-contact" title="Contact & official notice">
-        <div className="space-y-1 text-sm text-neutral-300">
+      <Section id="opp-contact" title="CONTACT & OFFICIAL NOTICE">
+        <div className="space-y-1 text-sm text-paper/85">
           {o.contactName && <p>{o.contactName}</p>}
           {o.contactEmail && (
-            <a href={`mailto:${o.contactEmail}`} className="text-blue-400 underline">
+            <a
+              href={`mailto:${o.contactEmail}`}
+              className="text-muted underline transition-colors hover:text-paper"
+            >
               {o.contactEmail}
             </a>
           )}
@@ -120,16 +128,16 @@ export default async function OpportunityPage({ params }: Params) {
                 href={o.url}
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-400 underline hover:text-blue-300"
+                className="text-muted underline transition-colors hover:text-paper"
               >
                 View the official notice ↗
               </a>
             </p>
           ) : (
-            <p className="text-neutral-500">No official URL on record — search the title on the source site.</p>
+            <p className="text-faint">No official URL on record — search the title on the source site.</p>
           )}
           {o.alnNumbers.length > 0 && (
-            <p className="text-xs text-neutral-500">ALN: {o.alnNumbers.join(", ")}</p>
+            <p className="font-mono text-xs text-faint">ALN: {o.alnNumbers.join(", ")}</p>
           )}
         </div>
       </Section>
@@ -137,19 +145,45 @@ export default async function OpportunityPage({ params }: Params) {
   );
 }
 
-function Fact({ label, value, alert }: { label: string; value: string; alert?: boolean }) {
+function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-3">
-      <p className={`text-sm font-bold ${alert ? "text-red-400" : ""}`}>{value}</p>
-      <p className="text-xs text-neutral-500">{label}</p>
+    <span className="rounded-full border border-hairline px-2.5 py-0.5 font-mono text-[11px] text-muted">
+      {children}
+    </span>
+  );
+}
+
+function Fact({
+  label,
+  value,
+  money = false,
+  alert = false,
+}: {
+  label: string;
+  value: string;
+  money?: boolean;
+  alert?: boolean;
+}) {
+  return (
+    <div className="p-3.5">
+      <p
+        className={`font-mono text-lg font-semibold ${
+          money ? "text-treasury" : alert ? "text-signal" : "text-paper"
+        }`}
+      >
+        {value}
+      </p>
+      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
+        {label}
+      </p>
     </div>
   );
 }
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
-    <section id={id} className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{title}</h2>
+    <section id={id} className="space-y-2 rounded-lg border border-hairline bg-panel p-4">
+      <h2 className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">{title}</h2>
       {children}
     </section>
   );

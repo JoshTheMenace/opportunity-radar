@@ -8,12 +8,18 @@ import type { GatedOpportunity, Opportunity } from "@/lib/types";
 import { profileReadiness } from "@/lib/engine/readiness";
 import { meterValueUsd } from "@/lib/engine/gates";
 import MatchCard from "./match-card";
-import { TIERS, daysUntil, fmtUsd, type UiReport } from "./shared";
+import { TIERS, daysUntil, fmtUsd, type Spotlight, type UiReport } from "./shared";
 
 /** Matches below this score are noise — hidden from the report entirely. */
 const MIN_SCORE = 50;
 
-export function ReportView({ report }: { report: UiReport }) {
+export function ReportView({
+  report,
+  spotlight,
+}: {
+  report: UiReport;
+  spotlight?: Spotlight | null;
+}) {
   const opps = report.opportunities ?? {};
   const visible = report.matches.filter((m) => m.score >= MIN_SCORE);
   const hidden = report.matches.length - visible.length;
@@ -108,13 +114,15 @@ export function ReportView({ report }: { report: UiReport }) {
               </span>
               <div className="h-px flex-1 bg-hairline" />
             </div>
-            {group.map((m) => (
+            {group.map((m, i) => (
               <MatchCard
                 key={m.opportunityId}
                 match={m}
                 opp={opps[m.opportunityId]}
                 evidence={report.evidence?.[m.opportunityId]}
                 profile={report.profile}
+                index={i}
+                spotlight={spotlight?.id === m.opportunityId ? spotlight.nonce : undefined}
               />
             ))}
           </div>
@@ -156,7 +164,13 @@ function Stat({
   );
 }
 
-export function HonestNoPanel({ report }: { report: UiReport }) {
+export function HonestNoPanel({
+  report,
+  spotlight,
+}: {
+  report: UiReport;
+  spotlight?: Spotlight | null;
+}) {
   const opps = report.opportunities ?? {};
   return (
     <section id="report" className="space-y-3 rounded-lg border border-signal/40 bg-signal/5 p-5">
@@ -174,13 +188,15 @@ export function HonestNoPanel({ report }: { report: UiReport }) {
           <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-muted">
             ADJACENT &amp; STATE OPTIONS WORTH A LOOK
           </p>
-          {report.matches.map((m) => (
+          {report.matches.map((m, i) => (
             <MatchCard
               key={m.opportunityId}
               match={m}
               opp={opps[m.opportunityId]}
               evidence={report.evidence?.[m.opportunityId]}
               profile={report.profile}
+              index={i}
+              spotlight={spotlight?.id === m.opportunityId ? spotlight.nonce : undefined}
             />
           ))}
         </div>

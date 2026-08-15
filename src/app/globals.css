@@ -83,6 +83,34 @@ pre {
   transform-origin: center;
   transform-box: fill-box;
 }
+/* Match cards materialize onto the canvas as scoring batches land. */
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.card-in {
+  animation: card-in 0.45s ease-out backwards;
+}
+
+/* The agent's pointing power: a brass attention ring that decays. */
+@keyframes card-spotlight {
+  0% {
+    box-shadow: 0 0 0 2px var(--color-brass), 0 0 28px rgba(217, 164, 65, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(217, 164, 65, 0), 0 0 0 rgba(217, 164, 65, 0);
+  }
+}
+.card-spotlight {
+  animation: card-spotlight 3.2s ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scope-sweep {
     animation: none;
@@ -93,5 +121,12 @@ pre {
   }
   .animate-pulse {
     animation: none;
+  }
+  .card-in {
+    animation: none;
+  }
+  .card-spotlight {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--color-brass);
   }
 }

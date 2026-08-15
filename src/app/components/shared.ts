@@ -8,6 +8,10 @@ export type UiReport = MatchReport & { opportunities?: Record<string, Opportunit
 
 export type QuickReply = { label: string; message: string };
 
+/** The agent's pointing power: which card to spotlight on the canvas.
+ *  nonce changes on every point so the same card can be pointed at twice. */
+export type Spotlight = { id: string; nonce: number };
+
 /** Null-guarded wrapper around the engine's shared USD formatter. */
 export function fmtUsd(n: number | null | undefined): string {
   return n == null ? "—" : formatUsdCompact(n);

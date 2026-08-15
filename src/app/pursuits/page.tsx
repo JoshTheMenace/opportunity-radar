@@ -23,12 +23,14 @@ interface PursuitRow {
   } | null;
 }
 
+// Status chips follow the accent rules: brass = attention (in flight),
+// treasury = money outcomes, faint = closed-out.
 const STATUS_BADGE: Record<string, string> = {
-  active: "border-blue-500/50 bg-blue-500/10 text-blue-300",
-  submitted: "border-yellow-500/50 bg-yellow-500/10 text-yellow-300",
-  won: "border-green-500/50 bg-green-500/10 text-green-400",
-  lost: "border-neutral-600 bg-neutral-800 text-neutral-400",
-  abandoned: "border-neutral-600 bg-neutral-800 text-neutral-400",
+  active: "border-brass/50 bg-brass/10 text-brass",
+  submitted: "border-treasury/50 bg-treasury/10 text-treasury",
+  won: "border-treasury bg-treasury/20 text-treasury",
+  lost: "border-hairline bg-panel-2 text-faint",
+  abandoned: "border-hairline bg-panel-2 text-faint",
 };
 
 function daysUntil(iso: string | null): number | null {
@@ -47,67 +49,84 @@ export default function PursuitsPage() {
   }, []);
 
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-6 px-4 py-8">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">Your pursuits</h1>
-        <p className="text-sm text-neutral-400">
+    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
+      <header className="space-y-1">
+        <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+          APPLICATIONS IN FLIGHT
+        </p>
+        <h1 className="font-display text-2xl font-semibold text-paper">Your pursuits</h1>
+        <p className="text-sm text-muted">
           Every application you&apos;re working toward — plan, progress, and what&apos;s next.
         </p>
       </header>
 
       {rows == null ? (
-        <p className="animate-pulse text-sm text-neutral-500">Loading…</p>
+        <p className="animate-pulse font-mono text-xs text-faint">Loading…</p>
       ) : rows.length === 0 ? (
-        <section className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-center">
-          <p className="text-sm text-neutral-300">No pursuits yet.</p>
-          <p className="text-xs text-neutral-500">
-            Run an analysis, open a match, and hit &ldquo;Build my submission plan&rdquo; to start
-            one.
+        <section className="space-y-3 rounded-lg border border-hairline bg-panel p-6 text-center">
+          <p className="text-sm text-paper/85">
+            No pursuits yet — pick a match and build a submission plan.
           </p>
-          <Link href="/" className="inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold hover:bg-blue-500">
+          <Link
+            href="/"
+            className="inline-block rounded-md bg-brass px-4 py-2 text-sm font-semibold text-ink transition-colors hover:bg-brass-bright"
+          >
             Find funding →
           </Link>
         </section>
       ) : (
         <div className="space-y-3">
-          {rows.map((p) => {
+          {rows.map((p, i) => {
             const pct = p.taskCount ? Math.round((p.doneCount / p.taskCount) * 100) : 0;
             const close = daysUntil(p.opportunity?.closeDate ?? null);
+            const nextDue = daysUntil(p.nextTask?.dueDate ?? null);
             return (
               <Link
                 key={p.id}
                 href={`/opportunity/${encodeURIComponent(p.opportunityId)}`}
-                className="block space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4 hover:border-neutral-600"
+                className="card-in block space-y-2 rounded-lg border border-hairline bg-panel p-4 transition-colors hover:border-brass/50"
+                style={{ animationDelay: `${Math.min(i * 70, 490)}ms` }}
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="font-semibold">{p.opportunity?.title ?? p.opportunityId}</h2>
+                  <h2 className="font-semibold text-paper">
+                    {p.opportunity?.title ?? p.opportunityId}
+                  </h2>
                   <span
-                    className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_BADGE[p.status] ?? STATUS_BADGE.active}`}
+                    className={`rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold ${STATUS_BADGE[p.status] ?? STATUS_BADGE.active}`}
                   >
                     {p.status}
                   </span>
                 </div>
-                <p className="text-xs text-neutral-400">
+                <p className="font-mono text-xs text-muted">
                   {p.opportunity?.agency}
                   {p.opportunity?.closeDate && (
-                    <span className={close != null && close <= 30 ? " text-red-400" : ""}>
+                    <span className={close != null && close <= 30 ? " text-signal" : ""}>
                       {" "}· closes {p.opportunity.closeDate}
                       {close != null && close >= 0 ? ` (${close}d)` : ""}
                     </span>
                   )}
                 </p>
                 <div className="flex items-center gap-3">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-neutral-800">
-                    <div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} />
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-panel-2">
+                    <div
+                      className="h-full rounded-full bg-treasury transition-[width] duration-700"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
-                  <span className="text-xs text-neutral-500">
+                  <span className="font-mono text-xs text-faint">
                     {p.doneCount}/{p.taskCount}
                   </span>
                 </div>
                 {p.nextTask && p.status === "active" && (
-                  <p className="text-xs text-neutral-400">
-                    <span className="font-semibold text-neutral-300">Next:</span> {p.nextTask.title}
-                    {p.nextTask.dueDate ? ` · due ${p.nextTask.dueDate}` : ""}
+                  <p className="text-xs text-muted">
+                    <span className="font-semibold text-paper/80">Next:</span> {p.nextTask.title}
+                    {p.nextTask.dueDate && (
+                      <span
+                        className={`font-mono ${nextDue != null && nextDue <= 3 ? "text-signal" : ""}`}
+                      >
+                        {" "}· due {p.nextTask.dueDate}
+                      </span>
+                    )}
                   </p>
                 )}
               </Link>

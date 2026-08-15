@@ -108,18 +108,18 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
 
   if (phase !== "ready") {
     return (
-      <section id="pursuit" className="space-y-2 rounded-lg border border-blue-500/40 bg-blue-500/5 p-4">
-        <h2 className="text-base font-bold">Go after this funding</h2>
-        <p className="text-sm text-neutral-400">
+      <section id="pursuit" className="space-y-2 rounded-lg border border-brass/40 bg-brass/5 p-4">
+        <h2 className="font-display text-lg font-semibold text-paper">Go after this funding</h2>
+        <p className="text-sm text-muted">
           We&apos;ll build you a submission plan for this specific program — registrations,
           eligibility checks, narrative sections, budget, and a timeline working back from the
           deadline. Then we help you finish every task.
         </p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-signal">{error}</p>}
         <button
           onClick={start}
           disabled={phase === "building"}
-          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold hover:bg-blue-500 disabled:opacity-60"
+          className="rounded-md bg-brass px-5 py-2 text-sm font-semibold text-ink transition-colors hover:bg-brass-bright disabled:opacity-60"
         >
           {phase === "building" ? "Building your plan… (~30s)" : "Build my submission plan"}
         </button>
@@ -131,17 +131,32 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
   const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
   const phases = [...new Set(tasks.map((t) => t.phase))];
   const today = new Date().toISOString().slice(0, 10);
+  const soon = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+
+  /** Phase tone for the stepper: all tasks done → treasury, some → brass, none → faint. */
+  function phaseTone(ph: string): string {
+    const ts = tasks.filter((t) => t.phase === ph);
+    const d = ts.filter((t) => t.done).length;
+    if (ts.length > 0 && d === ts.length) return "text-treasury";
+    if (d > 0) return "text-brass";
+    return "text-faint";
+  }
 
   return (
-    <section id="pursuit" className="space-y-4 rounded-lg border border-blue-500/40 bg-blue-500/5 p-4">
+    <section id="pursuit" className="space-y-4 rounded-lg border border-hairline bg-panel p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base font-bold">Your submission plan</h2>
-        <label className="flex items-center gap-2 text-xs text-neutral-400">
+        <div>
+          <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+            SUBMISSION PLAN
+          </p>
+          <h2 className="font-display text-lg font-semibold text-paper">Your submission plan</h2>
+        </div>
+        <label className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
           status
           <select
             value={pursuit?.status ?? "active"}
             onChange={(e) => void setStatus(e.target.value)}
-            className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="rounded-md border border-hairline bg-panel px-2 py-1 font-mono text-xs normal-case tracking-normal text-paper"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -152,16 +167,34 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
         </label>
       </div>
 
+      {/* phase stepper — lights up as each phase completes */}
+      <p
+        id="pursuit-phases"
+        className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.14em]"
+      >
+        {phases.map((ph, i) => (
+          <span key={ph} className="flex items-center gap-x-2">
+            {i > 0 && <span aria-hidden className="text-faint/60">→</span>}
+            <span className={phaseTone(ph)}>{ph}</span>
+          </span>
+        ))}
+      </p>
+
       {pursuit?.planSummary && (
-        <p className="text-sm leading-relaxed text-neutral-300">{pursuit.planSummary}</p>
+        <p className="border-l-2 border-hairline pl-3 font-display text-sm italic leading-relaxed text-paper/80">
+          {pursuit.planSummary}
+        </p>
       )}
 
       {/* progress */}
       <div id="pursuit-progress" className="space-y-1">
-        <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
-          <div className="h-full rounded-full bg-green-500 transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-1.5 overflow-hidden rounded-full bg-panel-2">
+          <div
+            className="h-full rounded-full bg-treasury transition-[width] duration-700"
+            style={{ width: `${pct}%` }}
+          />
         </div>
-        <p className="text-xs text-neutral-500">
+        <p className="font-mono text-xs text-faint">
           {done}/{tasks.length} tasks done · {pct}%
         </p>
       </div>
@@ -170,27 +203,34 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
       <div id="pursuit-tasks" className="space-y-3">
         {phases.map((ph) => (
           <div key={ph} className="space-y-1.5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{ph}</p>
+            <p className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-faint">
+              {ph}
+            </p>
             {tasks
               .filter((t) => t.phase === ph)
               .map((t) => {
                 const overdue = !t.done && t.dueDate != null && t.dueDate < today;
+                const urgent = !t.done && t.dueDate != null && t.dueDate <= soon;
                 return (
-                  <div key={t.id} className="rounded-lg border border-neutral-800 bg-neutral-950 p-3">
+                  <div key={t.id} className="rounded-md border border-hairline bg-panel-2 p-3">
                     <div className="flex items-start gap-3">
                       <input
                         type="checkbox"
                         checked={t.done}
                         onChange={() => void toggle(t)}
-                        className="mt-1 h-4 w-4 accent-green-500"
+                        className="mt-1 h-4 w-4 accent-treasury"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className={`text-sm ${t.done ? "text-neutral-500 line-through" : ""}`}>
+                        <p className={`text-sm ${t.done ? "text-faint line-through" : "text-paper"}`}>
                           {t.title}
                         </p>
-                        <p className="text-xs text-neutral-500">{t.detail}</p>
+                        <p className="text-xs text-muted">{t.detail}</p>
                         {t.dueDate && (
-                          <p className={`mt-0.5 text-xs ${overdue ? "text-red-400" : "text-neutral-600"}`}>
+                          <p
+                            className={`mt-0.5 font-mono text-xs ${
+                              overdue || urgent ? "text-signal" : "text-faint"
+                            }`}
+                          >
                             due {t.dueDate}
                             {overdue ? " · overdue" : ""}
                           </p>
@@ -199,14 +239,19 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
                       <button
                         onClick={() => void assist(t)}
                         disabled={assistBusy === t.id}
-                        className="shrink-0 rounded-md border border-blue-500/40 px-2.5 py-1 text-xs text-blue-300 hover:bg-blue-500/10 disabled:opacity-50"
+                        className="shrink-0 rounded-md border border-brass/50 px-2.5 py-1 text-xs font-semibold text-brass transition-colors hover:bg-brass/10 disabled:opacity-50"
                       >
                         {assistBusy === t.id ? "Thinking…" : t.assist ? "Help ▾" : "Help me"}
                       </button>
                     </div>
                     {t.assist && openAssist.has(t.id) && (
-                      <div className="mt-2 whitespace-pre-wrap rounded-md border border-neutral-800 bg-neutral-900 p-3 text-xs leading-relaxed text-neutral-300">
-                        {t.assist}
+                      <div className="mt-2 space-y-1 rounded-md border border-hairline bg-ink p-3">
+                        <p className="font-mono text-[10px] font-medium tracking-[0.18em] text-faint">
+                          HOW TO FINISH THIS
+                        </p>
+                        <div className="whitespace-pre-wrap text-xs leading-relaxed text-paper/85">
+                          {t.assist}
+                        </div>
                       </div>
                     )}
                   </div>

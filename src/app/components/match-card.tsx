@@ -5,7 +5,7 @@
 // timeline, program officer preview, and the outbound link.
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CompanyProfile, EvidenceSummary, Opportunity, RankedMatch } from "@/lib/types";
 import { buildTimeline, oddsLabel } from "@/lib/engine/timeline";
 import type { OfficerPreview } from "@/lib/engine/officer";
@@ -16,11 +16,17 @@ export default function MatchCard({
   opp,
   evidence,
   profile,
+  index = 0,
+  spotlight,
 }: {
   match: RankedMatch;
   opp?: Opportunity;
   evidence?: EvidenceSummary;
   profile?: CompanyProfile;
+  /** Position in its tier group — staggers the materialize-in animation. */
+  index?: number;
+  /** Spotlight nonce: set (and changed) each time the agent points here. */
+  spotlight?: number;
 }) {
   const close = daysUntil(opp?.closeDate ?? null);
   const odds = opp ? oddsLabel(opp.expectedAwards, opp.expectedApplications) : null;
@@ -30,6 +36,20 @@ export default function MatchCard({
   const [officer, setOfficer] = useState<OfficerPreview | null>(null);
   const [officerBusy, setOfficerBusy] = useState(false);
   const [officerErr, setOfficerErr] = useState<string | null>(null);
+  const cardRef = useRef<HTMLElement | null>(null);
+
+  // The agent pointed here: scroll into view and (re)fire the attention ring.
+  // Class juggling instead of state so the same card can be pointed at twice;
+  // the class is cleared when the agent points somewhere else.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    el.classList.remove("card-spotlight");
+    if (!spotlight) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    void el.offsetWidth; // reflow restarts the animation
+    el.classList.add("card-spotlight");
+  }, [spotlight]);
 
   /** Fetch the officer preview once; cached in state so re-clicks are free. */
   async function loadOfficer() {
@@ -53,7 +73,9 @@ export default function MatchCard({
 
   return (
     <article
-      className={`space-y-2.5 rounded-lg border border-hairline border-l-2 bg-panel p-4 ${tierRail(match.tier)}`}
+      ref={cardRef}
+      className={`card-in space-y-2.5 rounded-lg border border-hairline border-l-2 bg-panel p-4 ${tierRail(match.tier)}`}
+      style={{ animationDelay: `${Math.min(index * 70, 490)}ms` }}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-semibold text-paper">

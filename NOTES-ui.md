@@ -1,24 +1,43 @@
 # Notes from the UI/API module
 
-## Component structure (restructured 2026-08-15 for the styling pass)
+## Component structure (mission-control restructure, 2026-08-15 evening)
 
-`opportunity-map.tsx` is now only the stateful orchestrator (SSE stream,
-profile state, quick-reply fetch). All visual regions moved to
-`src/app/components/`, one file per region, behavior unchanged:
+`opportunity-map.tsx` stays the only stateful orchestrator (SSE stream,
+profile state, quick-reply fetch, spotlight). Visual regions live in
+`src/app/components/`, one file per region:
 
 - `intake-panel.tsx` (#intake — description box, analyze, sample chips)
-- `activity-feed.tsx` (#activity), `meter-panel.tsx` (#meter)
-- `interview-panel.tsx` (#interview — questions + quick-reply chips + chat;
-  owns its own input state)
+- `agent-dock.tsx` (#agent — ONE agent presence: RadarScope face, status
+  line, StatusStrip progress, narration log with pointing power; meter/
+  interview/voice render inside it as children). Replaces the old
+  `activity-feed.tsx`, which is DELETED — its scope+log behavior lives here.
+- `meter-panel.tsx` (#meter), `interview-panel.tsx` (#interview),
+  `status-strip.tsx`, `radar-scope.tsx` — unchanged internals, now composed
+  inside the dock.
 - `report-view.tsx` (#report — ReportView/HonestNoPanel/ReportSkeleton/HowItWorks)
-- `match-card.tsx` (match card + evidence strip)
-- `shared.ts` (UiReport type, fmtUsd, daysUntil, TIERS)
+- `match-card.tsx` (match card + evidence strip + spotlight + `card-in`
+  materialize animation, staggered by `index`)
+- `side-nav.tsx` (desktop sidebar nav links with active state)
+- `shared.ts` (UiReport, QuickReply, `Spotlight {id, nonce}`, fmtUsd, …)
 
-Layout: `layout.tsx` owns the app shell (sticky nav with /radar link, footer).
-The page is `#intake` + `#workspace` = `#results` main column + `#guidance`
-sticky right rail (voice, meter, interview). `save-monitor.tsx` is now mounted
-under the report (renders when a run finishes). Restyle by editing region
-files; don't move state back into components.
+Layout: `layout.tsx` is the mission-control shell — desktop gets a fixed left
+rail (brand, SideNav, live program count via `countBySource()`, sources);
+mobile keeps the slim top bar + footer. Pages render in the remaining column.
+The analyze page is `#intake` + `#workspace` = `#canvas` (report) +
+`#agent-rail` (sticky AgentDock; always mounted so voice is reachable
+pre-run). Restyle by editing region files; don't move state back into
+components.
+
+## Spotlight contract (the agent's pointing power)
+
+- `opportunity-map` owns `Spotlight {id, nonce}` state. Set by (a) clicking an
+  "Evidence: … for <title>" narration line in the dock (matched by title
+  suffix against `report.opportunities`), and (b) automatically on run
+  completion → top visible match.
+- `ReportView`/`HonestNoPanel` accept `spotlight` and forward
+  `spotlight={nonce}` to the one matching MatchCard; MatchCard scrolls itself
+  into view and (re)fires the `card-spotlight` ring, clearing it when the
+  agent points elsewhere. Nonce changes let the same card be pointed at twice.
 
 - Contract addition (contained in `src/app/api/engine-facade.ts`, no type edits
   needed): the SSE `report` event the API emits carries

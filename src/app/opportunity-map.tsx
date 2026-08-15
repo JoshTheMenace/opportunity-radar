@@ -1,15 +1,17 @@
 "use client";
 
 // Opportunity Map — the stateful orchestrator. Owns the SSE stream + profile
-// state and composes the page structure; all visual regions live in
+// state and composes the mission-control page; all visual regions live in
 // ./components/* so the styling pass can go file-by-file.
 //
-// Page structure (stable for the restyle):
-//   #intake                    — description box + analyze + sample chips
-//   #workspace                 — two-column grid below lg, stacked on mobile
-//     #results  (main column)  — activity feed, skeleton/partial note,
-//                                #report or honest-no, save-&-monitor
-//     #guidance (right rail)   — #meter, #interview, voice panel (sticky)
+// Page structure (mission control):
+//   #intake                — description box, analyze, sample chips
+//   #workspace             — two-column grid on lg, stacked on mobile
+//     #canvas  (main)      — skeleton/report/honest-no, save-&-monitor;
+//                            cards materialize + take the agent's spotlight
+//     #agent-rail (right)  — AgentDock: ONE agent presence (scope, status,
+//                            narration w/ pointing power) + meter/interview/
+//                            voice as its instruments
 
 import { useEffect, useRef, useState } from "react";
 import type { CompanyProfile, GateField } from "@/lib/types";
@@ -17,12 +19,11 @@ import { profileReadiness, readinessAsks } from "@/lib/engine/readiness";
 import VoicePanel from "./voice-panel";
 import SaveMonitor from "./save-monitor";
 import IntakePanel from "./components/intake-panel";
-import ActivityFeed from "./components/activity-feed";
-import StatusStrip from "./components/status-strip";
+import AgentDock from "./components/agent-dock";
 import MeterPanel from "./components/meter-panel";
 import InterviewPanel from "./components/interview-panel";
 import { HonestNoPanel, HowItWorks, ReportSkeleton, ReportView } from "./components/report-view";
-import type { QuickReply, UiReport } from "./components/shared";
+import type { QuickReply, Spotlight, UiReport } from "./components/shared";
 import type { EligibilityMeter, InterviewQuestion } from "@/lib/types";
 
 type Ev =
@@ -42,8 +43,10 @@ export default function OpportunityMap() {
   const [error, setError] = useState<string | null>(null);
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [restored, setRestored] = useState(false);
+  const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
   const profileRef = useRef<CompanyProfile | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevBusy = useRef(false);
 
   // Restore the most recently saved profile so a refresh doesn't lose
   // interview answers. Best-effort; failures leave a blank slate.
@@ -101,6 +104,21 @@ export default function OpportunityMap() {
     }
   }
 
+  /** The agent's pointing power: spotlight a card on the canvas. */
+  const focusMatch = (opportunityId: string) => {
+    setSpotlight({ id: opportunityId, nonce: Date.now() });
+  };
+
+  // When a run completes with matches, the agent presents its top pick:
+  // spotlight + scroll the strongest card the founder can actually see.
+  useEffect(() => {
+    if (prevBusy.current && !busy && report && !report.honestNo) {
+      const top = report.matches.find((m) => m.score >= 50);
+      if (top) setSpotlight({ id: top.opportunityId, nonce: Date.now() });
+    }
+    prevBusy.current = busy;
+  }, [busy, report]);
+
   async function stream(url: string, body: unknown) {
     setBusy(true);
     setError(null);
@@ -137,6 +155,7 @@ export default function OpportunityMap() {
     setReport(null);
     setMeter(null);
     setQuestions([]);
+    setSpotlight(null);
     // Carry durable interview answers (gate fields) into re-analysis — but
     // ONLY when the box still builds on this profile's own description
     // (appended follow-ups). A rewritten description is a different company;
@@ -238,46 +257,57 @@ export default function OpportunityMap() {
 
       {!started && <HowItWorks />}
 
-      {/* Workspace: results (main) + guidance rail. Rail sticks on desktop and
-          stacks above the report on mobile so questions stay reachable. */}
-      <div id="workspace" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        <aside id="guidance" className="min-w-0 space-y-4 lg:order-2 lg:sticky lg:top-20">
-          {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
-          <VoicePanel
-            getProfile={() => profileRef.current}
-            getReport={() => report}
-            onEngineEvent={handle}
-          />
-          {meter && (
-            <MeterPanel
-              meter={meter}
-              preliminary={report != null && report.matches.length === 0}
-            />
-          )}
-          <InterviewPanel
-            questions={interviewQuestions}
-            quickReplies={quickReplies}
-            busy={busy}
-            askCapitalNeed={asks?.needsCapitalNeed ?? false}
-            onAnswer={answer}
-            onSend={sendMessage}
-          />
-        </aside>
+      {/* Workspace: canvas (main) + the agent. Always mounted — the agent is
+          present ("standing by", voice reachable) before the first run too.
+          The dock sticks on desktop and stacks above the report on mobile. */}
+      <div
+        id="workspace"
+        className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start"
+      >
+          <aside
+            id="agent-rail"
+            className="min-w-0 lg:order-2 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto"
+          >
+            <AgentDock lines={activity} busy={busy} report={report} onFocusMatch={focusMatch}>
+              {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
+              <VoicePanel
+                getProfile={() => profileRef.current}
+                getReport={() => report}
+                onEngineEvent={handle}
+              />
+              {meter && (
+                <MeterPanel
+                  meter={meter}
+                  preliminary={report != null && report.matches.length === 0}
+                />
+              )}
+              <InterviewPanel
+                questions={interviewQuestions}
+                quickReplies={quickReplies}
+                busy={busy}
+                askCapitalNeed={asks?.needsCapitalNeed ?? false}
+                onAnswer={answer}
+                onSend={sendMessage}
+              />
+            </AgentDock>
+          </aside>
 
-        <div id="results" className="min-w-0 space-y-4 lg:order-1">
-          <StatusStrip lines={activity} busy={busy} />
-          <ActivityFeed lines={activity} busy={busy} report={report} />
-          {report && busy && (
-            <p className="animate-pulse font-mono text-xs text-faint">
-              Matches below update live as scoring finishes…
-            </p>
-          )}
-          {busy && !report && <ReportSkeleton />}
-          {report &&
-            (report.honestNo ? <HonestNoPanel report={report} /> : <ReportView report={report} />)}
-          {report && !busy && <SaveMonitor profile={report.profile} />}
+          <div id="canvas" className="min-w-0 space-y-4 lg:order-1">
+            {report && busy && (
+              <p className="animate-pulse font-mono text-xs text-faint">
+                Matches below update live as scoring finishes…
+              </p>
+            )}
+            {busy && !report && <ReportSkeleton />}
+            {report &&
+              (report.honestNo ? (
+                <HonestNoPanel report={report} spotlight={spotlight} />
+              ) : (
+                <ReportView report={report} spotlight={spotlight} />
+              ))}
+            {report && !busy && <SaveMonitor profile={report.profile} />}
+          </div>
         </div>
-      </div>
     </main>
   );
 }
