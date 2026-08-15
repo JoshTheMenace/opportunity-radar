@@ -10,6 +10,7 @@ const LINKS: { href: string; label: string }[] = [
   { href: "/", label: "Opportunity Map" },
   { href: "/pursuits", label: "Pursuit Workspace" },
   { href: "/radar", label: "Monitor" },
+  { href: "/people", label: "People & Paths" },
 ];
 
 export default function TopNav() {

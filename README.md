@@ -42,6 +42,8 @@ Two principles shape everything:
 ```bash
 pnpm install
 pnpm tsx scripts/ingest/grants-gov.ts            # fill data/radar.db (also: assistance-listings, utah)
+pnpm tsx scripts/ingest/dsip.ts                  # active, topic-level DoD SBIR/STTR solicitations
+pnpm tsx scripts/ingest/utah-intelligence.ts     # Utah public navigators and documented local precedents
 pnpm dev                                         # http://localhost:3000
 ```
 
