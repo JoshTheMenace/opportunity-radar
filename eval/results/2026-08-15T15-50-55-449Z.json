@@ -1,0 +1,89 @@
+{
+  "timestamp": "2026-08-15T15:50:55.449Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.8198888888888889,
+  "scores": [
+    {
+      "caseId": "ai-healthcare",
+      "coverage": 0.8,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.82,
+      "total": 0.894,
+      "notes": "missed themes: workforce | The explanations are highly tailored to the company’s nursing-workflow SaaS and provide concrete verification and pilot-design steps, but several assert unshown program specifics or overstate fit—such as exact award ranges, deadlines, reimbursement terms, and “strongest match” claims—without enough evidence in the supplied data."
+    },
+    {
+      "caseId": "aerospace",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.92,
+      "total": 0.8965000000000001,
+      "notes": "missed themes: DOE | The explanations are strongly grounded in the founder’s Utah aerospace-manufacturing profile, distinguish each program’s fit and uncertainty, and provide concrete verification and application steps, with only minor risk that a few precise program conditions or funding-range claims are asserted more confidently than the supplied context can independently support."
+    },
+    {
+      "caseId": "water",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.98,
+      "notes": "all mustSee themes covered | The explanations are strongly grounded in the company’s Utah location, municipal water-loss technology, funding need, and pilot goals, with opportunity-specific caveats and actionable verification steps, though repeated “strongest match” language and a few confident program assertions slightly weaken precision."
+    },
+    {
+      "caseId": "cyber",
+      "coverage": 0.75,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.84,
+      "total": 0.8805000000000001,
+      "notes": "missed themes: DHS | The explanations are opportunity-specific, connect the company’s cybersecurity R&D and federal-market goals to concrete next steps, and flag key eligibility checks, but several use contradictory superlatives and make detailed program claims that require source verification while only lightly incorporating the founder’s size, location, traction, and funding history."
+    },
+    {
+      "caseId": "youth-marketplace",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.86,
+      "total": 0.672,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations are strongly tailored to the founder’s Utah location, revenue stage, funding range, and metro-expansion goal with opportunity-specific verification and preparation steps, but credibility is slightly weakened by unsupported superlatives and internal contradictions such as calling one grant the “closest match” and SBA 7(a) the “only opportunity worth” discussing despite several stronger-tier options."
+    },
+    {
+      "caseId": "restaurant-group",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.97,
+      "total": 0.994,
+      "notes": "all mustSee themes covered | The report is consistently grounded in the restaurant group’s size, geography, funding need, and expansion plans, distinguishes advisory or partial-gap options from actual capital, flags jurisdiction and eligibility uncertainties, and provides concrete verification and preparation steps without obvious unsupported claims."
+    },
+    {
+      "caseId": "dating-app",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.95,
+      "total": 0.69,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations are strongly grounded in the startup’s location, stage, revenue, funding need, and user-acquisition goal, distinguish each program’s specific tradeoffs, and provide practical verification steps without materially inventing founder facts."
+    },
+    {
+      "caseId": "fitness-franchise",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.91,
+      "total": 0.682,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations are unusually specific, candid about funding-versus-advisory fit, and action-oriented, with only minor overreach in treating all 45 corporate employees as a Utah workforce and asserting some program details whose sourcing cannot be confirmed from the provided data."
+    },
+    {
+      "caseId": "wedding-platform",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.95,
+      "total": 0.69,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations are strongly tailored to the company’s Utah location, funding range, interstate expansion, and marketplace model, clearly distinguish capital from advisory support, and provide concrete verification and next steps, with only minor overstatement risk and a small wording typo in the loan-participation entry."
+    }
+  ]
+}

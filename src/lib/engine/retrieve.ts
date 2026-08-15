@@ -7,6 +7,28 @@
 import { getDb, rowToOpportunity } from "../db";
 import type { CompanyProfile, Opportunity } from "../types";
 
+/** Sentinel-value hygiene at the read boundary. Sources encode "not
+ *  specified" as $0 (there is no such thing as a $0 award ceiling), and some
+ *  "ceilings" are program-wide totals or data errors (this DB has $108T).
+ *  A null renders downstream as "not published"; an absurd figure renders as
+ *  data. Everything the engine reads passes through here. */
+const PLAUSIBLE_AWARD_MAX_USD = 100_000_000;
+
+export function sanitizeOpportunity(o: Opportunity): Opportunity {
+  const clean = (n: number | null) =>
+    n == null || n <= 0 || n > PLAUSIBLE_AWARD_MAX_USD ? null : n;
+  const ceiling = clean(o.awardCeilingUsd);
+  let floor = clean(o.awardFloorUsd);
+  if (floor != null && ceiling != null && floor > ceiling) floor = null; // inconsistent source data
+  if (ceiling === o.awardCeilingUsd && floor === o.awardFloorUsd) return o;
+  return { ...o, awardCeilingUsd: ceiling, awardFloorUsd: floor };
+}
+
+/** rowToOpportunity + sentinel hygiene — the only mapper this module uses. */
+function toOpportunity(row: Record<string, unknown>): Opportunity {
+  return sanitizeOpportunity(rowToOpportunity(row));
+}
+
 const DEFAULT_LIMIT = 120;
 const TERMS_PER_QUERY = 8; // keep each MATCH expression small
 const PER_QUERY_LIMIT = 60; // rows pulled per MATCH before merging
@@ -134,12 +156,12 @@ export function retrieveCandidates(
   const results = [...best.values()]
     .sort((a, b) => a.rank - b.rank)
     .slice(0, limit)
-    .map((e) => rowToOpportunity(e.row));
+    .map((e) => toOpportunity(e.row));
   const seen = new Set(results.map((o) => o.id));
 
   const union = (sql: string, param: string) => {
     for (const r of db.prepare(sql).all(param) as Record<string, unknown>[]) {
-      const o = rowToOpportunity(r);
+      const o = toOpportunity(r);
       if (!seen.has(o.id)) {
         seen.add(o.id);
         results.push(o);
@@ -184,7 +206,7 @@ export function retrieveCandidates(
     for (const e of [...bestAgency.values()]
       .sort((a, b) => a.rank - b.rank)
       .slice(0, PER_AGENCY_SEATS)) {
-      const o = rowToOpportunity(e.row);
+      const o = toOpportunity(e.row);
       if (!seen.has(o.id)) {
         seen.add(o.id);
         results.push(o);
@@ -199,7 +221,20 @@ export function getOpportunityById(id: string): Opportunity | null {
   const row = getDb()
     .prepare(`SELECT * FROM opportunities WHERE id = ?`)
     .get(id) as Record<string, unknown> | undefined;
-  return row ? rowToOpportunity(row) : null;
+  return row ? toOpportunity(row) : null;
+}
+
+/** Oldest source refresh (ISO date) — the honest "data current as of" stamp:
+ *  every source has been refreshed since this moment. Null if no meta yet. */
+export function corpusRefreshedAt(): string | null {
+  try {
+    const row = getDb().prepare(`SELECT MIN(last_run) AS t FROM ingest_meta`).get() as
+      | { t: string | null }
+      | undefined;
+    return row?.t ?? null;
+  } catch {
+    return null; // table absent on fresh checkouts — freshness is optional
+  }
 }
 
 /** Row counts per source, e.g. { grants_gov: 900, utah: 12 }. */

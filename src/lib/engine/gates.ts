@@ -92,10 +92,20 @@ export function evaluateGates(profile: CompanyProfile, opp: Opportunity): GatedO
         ),
       );
     } else if (codes.some((c) => BUSINESS_FRIENDLY.has(c))) {
-      gates.push(gate("eligibility:for_profit", "pass", "Applicant codes admit businesses"));
+      gates.push(
+        gate(
+          "eligibility:for_profit",
+          "pass",
+          `Applicant codes [${codes.filter((c) => BUSINESS_FRIENDLY.has(c)).join(", ")}] admit businesses`,
+        ),
+      );
     } else if (profile.isForProfit === true) {
       gates.push(
-        gate("eligibility:for_profit", "fail", "Applicant codes exclude for-profit companies"),
+        gate(
+          "eligibility:for_profit",
+          "fail",
+          `Applicant codes [${codes.join(", ")}] exclude for-profit companies`,
+        ),
       );
     } else if (profile.isForProfit === null) {
       gates.push(
@@ -173,22 +183,71 @@ export function evaluateGates(profile: CompanyProfile, opp: Opportunity): GatedO
     }
   }
 
-  // ---- amount_overlap (never "unknown"; missing data passes softly) ----
+  // ---- amount_overlap (never "unknown"; missing data passes softly).
+  // Asymmetric on purpose: an award far smaller than the need can still be
+  // real, stackable money (soft 25% rule), but a program whose FLOOR dwarfs
+  // the need funds different-scale work — the founder is not the intended
+  // applicant. ----
   const needMin = profile.capitalNeedUsd.min;
-  if (needMin != null && opp.awardCeilingUsd != null) {
-    if (opp.awardCeilingUsd < 0.25 * needMin) {
-      gates.push(
-        gate(
-          "amount_overlap",
-          "fail",
-          `Max award $${opp.awardCeilingUsd.toLocaleString()} is under 25% of your $${needMin.toLocaleString()} minimum need`,
-        ),
-      );
-    } else {
-      gates.push(gate("amount_overlap", "pass", "Award size overlaps your capital need"));
-    }
+  const needMax = profile.capitalNeedUsd.max;
+  if (needMin != null && opp.awardCeilingUsd != null && opp.awardCeilingUsd < 0.25 * needMin) {
+    gates.push(
+      gate(
+        "amount_overlap",
+        "fail",
+        `Max award $${opp.awardCeilingUsd.toLocaleString()} is under 25% of your $${needMin.toLocaleString()} minimum need`,
+      ),
+    );
+  } else if (needMax != null && opp.awardFloorUsd != null && opp.awardFloorUsd > 2 * needMax) {
+    gates.push(
+      gate(
+        "amount_overlap",
+        "fail",
+        `Minimum award $${opp.awardFloorUsd.toLocaleString()} is more than double your $${needMax.toLocaleString()} maximum need — this program funds larger-scale work`,
+      ),
+    );
+  } else if (needMin != null && (opp.awardCeilingUsd != null || opp.awardFloorUsd != null)) {
+    gates.push(
+      gate(
+        "amount_overlap",
+        "pass",
+        `Award range ${opp.awardFloorUsd != null ? `$${opp.awardFloorUsd.toLocaleString()}` : "?"}–${opp.awardCeilingUsd != null ? `$${opp.awardCeilingUsd.toLocaleString()}` : "?"} overlaps your $${needMin.toLocaleString()}${needMax != null ? `–$${needMax.toLocaleString()}` : "+"} need`,
+      ),
+    );
   } else {
-    gates.push(gate("amount_overlap", "pass", "award size unverified"));
+    gates.push(gate("amount_overlap", "pass", "award size not published — not held against it"));
+  }
+
+  // ---- sam:lead_time (federal deadlines vs. registration reality).
+  // SAM.gov registration takes 10-15 business days; crossing that with the
+  // actual days remaining turns "are you registered?" into feasibility. ----
+  const SAM_LEAD_DAYS = 30;
+  if (opp.source !== "utah" && opp.closeDate && opp.closeDate >= todayIso) {
+    const daysLeft = Math.round(
+      (Date.parse(opp.closeDate) - Date.parse(todayIso)) / 86_400_000,
+    );
+    if (daysLeft < SAM_LEAD_DAYS) {
+      if (profile.samRegistered === true) {
+        gates.push(gate("sam:lead_time", "pass", "SAM.gov registration active"));
+      } else if (profile.samRegistered === false) {
+        gates.push(
+          gate(
+            "sam:lead_time",
+            "fail",
+            `Closes in ${daysLeft} days but SAM.gov registration takes 10-15 business days — unlikely to complete in time`,
+          ),
+        );
+      } else {
+        gates.push(
+          gate(
+            "sam:lead_time",
+            "unknown",
+            `Closes in ${daysLeft} days — federal applications need an active SAM.gov registration (10-15 business days to obtain)`,
+            "samRegistered",
+          ),
+        );
+      }
+    }
   }
 
   // ---- geo:utah ----

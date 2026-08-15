@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-08-15T16:00:29.577Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.7625,
+  "scores": [
+    {
+      "caseId": "restaurant-group",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.992,
+      "notes": "all mustSee themes covered | The explanations consistently use the founder’s actual size, location, funding range, and project uses, clearly distinguish advice or post-performance support from capital, provide opportunity-specific verification steps, and avoid material unsupported claims, with only minor potentially overconfident program-detail phrasing."
+    },
+    {
+      "caseId": "dating-app",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.94,
+      "total": 0.688,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations consistently tie each opportunity to the startup’s Utah location, revenue, size, funding range, and user-acquisition goal, distinguish debt or incentives from direct growth capital, acknowledge shortfalls, and provide opportunity-specific verification and preparation steps without obvious unsupported founder claims."
+    },
+    {
+      "caseId": "fitness-franchise",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.89,
+      "total": 0.678,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations are strongly tailored to the founder’s Utah location, workforce, growth stage, funding target, franchise model, and academy plans, with opportunity-specific verification and actionable steps, though one SSBCI sentence is garbled and a few program descriptions make detailed eligibility or funding claims that should be source-verified."
+    },
+    {
+      "caseId": "wedding-platform",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.96,
+      "total": 0.692,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations consistently connect the company’s Utah location, software marketplace, funding range, prior raise, and Texas/Arizona expansion plan to opportunity-specific constraints, while clearly distinguishing capital from advisory support and providing concrete verification and next steps without asserting unsupported founder facts."
+    }
+  ]
+}

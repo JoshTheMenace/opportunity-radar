@@ -16,6 +16,7 @@
 import fs from "fs";
 import path from "path";
 import { EVAL_CASES, getCase } from "./cases";
+import { HELDOUT_CASES, getHeldoutCase } from "./cases-heldout";
 import { INTERVIEW_ANSWERS, followUpMessage } from "./interview-answers";
 import { judgeReport } from "./judge";
 import type { CompanyProfile, EvalCase, EvalScore, GateField, MatchReport } from "../src/lib/types";
@@ -96,14 +97,18 @@ async function loadDriver(
   };
 }
 
+type Suite = "brief" | "heldout" | "all";
+
 function parseArgs(argv: string[]): {
   caseId: string | null;
   json: boolean;
   provider: Provider;
+  suite: Suite;
 } {
   let caseId: string | null = null;
   let json = false;
   let provider: Provider = "codex";
+  let suite: Suite = "brief";
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--case") caseId = argv[++i] ?? null;
     else if (argv[i] === "--json") json = true;
@@ -114,9 +119,16 @@ function parseArgs(argv: string[]): {
         process.exit(1);
       }
       provider = p;
+    } else if (argv[i] === "--suite") {
+      const s = argv[++i];
+      if (s !== "brief" && s !== "heldout" && s !== "all") {
+        console.error(`--suite must be "brief", "heldout", or "all", got "${s}"`);
+        process.exit(1);
+      }
+      suite = s;
     }
   }
-  return { caseId, json, provider };
+  return { caseId, json, provider, suite };
 }
 
 function fmt(n: number): string {
@@ -144,11 +156,15 @@ function printTable(scores: EvalScore[], mock: boolean) {
 }
 
 async function main() {
-  const { caseId, json, provider } = parseArgs(process.argv.slice(2));
-  const cases = caseId ? [getCase(caseId)].filter((c) => c != null) : EVAL_CASES;
+  const { caseId, json, provider, suite } = parseArgs(process.argv.slice(2));
+  const suiteCases: readonly EvalCase[] =
+    suite === "heldout" ? HELDOUT_CASES : suite === "all" ? [...EVAL_CASES, ...HELDOUT_CASES] : EVAL_CASES;
+  const cases = caseId
+    ? [getCase(caseId) ?? getHeldoutCase(caseId)].filter((c) => c != null)
+    : suiteCases;
   if (caseId && cases.length === 0) {
     console.error(
-      `Unknown case "${caseId}". Valid ids: ${EVAL_CASES.map((c) => c.id).join(", ")}`,
+      `Unknown case "${caseId}". Valid ids: ${[...EVAL_CASES, ...HELDOUT_CASES].map((c) => c.id).join(", ")}`,
     );
     process.exit(1);
   }
@@ -161,7 +177,14 @@ async function main() {
     try {
       const { report, spoken } = await run(c);
       if (spoken != null) transcripts[c.id] = spoken;
-      scores.push(await judgeReport(c, report, { spokenTranscript: spoken }));
+      const s = await judgeReport(c, report, { spokenTranscript: spoken });
+      // Spread invariant: a report where EVERY match sits in the top band is
+      // itself a calibration failure — overconfidence renders as confidence.
+      // Note-only (does not move the score), so the bar doesn't shift mid-event.
+      if (report.matches.length >= 5 && report.matches.every((m) => m.tier === "likely_fit")) {
+        s.notes += " | SPREAD VIOLATION: every match is likely_fit — calibration suspect";
+      }
+      scores.push(s);
     } catch (err) {
       scores.push({
         caseId: c.id,

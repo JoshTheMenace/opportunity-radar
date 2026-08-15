@@ -2,12 +2,13 @@
 // compact match table (score, tier, kind, title) + honestNo. Usage:
 //   pnpm tsx scripts/smoke/dump-case.ts youth-marketplace
 import { getCase } from "../../eval/cases";
+import { getHeldoutCase } from "../../eval/cases-heldout";
 import { runAnalysis } from "../../src/lib/engine/pipeline";
 import { getOpportunityById } from "../../src/lib/engine/retrieve";
 
 async function main() {
   const id = process.argv[2] ?? "youth-marketplace";
-  const c = getCase(id);
+  const c = getCase(id) ?? getHeldoutCase(id);
   if (!c) throw new Error(`unknown case ${id}`);
   const report = await runAnalysis(c.founderInput);
   console.log(`honestNo=${report.honestNo} matches=${report.matches.length}`);

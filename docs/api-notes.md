@@ -140,3 +140,16 @@ Everything below was verified by direct calls. Follow exactly; don't guess.
   incl. UTIF, SSBCI, STEP, Manufacturing Modernization, APEX, Custom Fit) IS
   the Utah integration — richer than anything scrapable, and the ingest
   validates every row against the Opportunity contract.
+
+## Resend (email delivery — RESEND_API_KEY in .env.local)
+
+- `POST https://api.resend.com/emails` — headers `Authorization: Bearer <key>`,
+  JSON body `{from, to: [..], subject, text}`. Success = 200 + `{id}` (verified
+  live 2026-08-15). Errors return `{statusCode, message}` — surface `message`.
+- Sandbox rule: until a domain is verified in the Resend dashboard, `from`
+  MUST be `onboarding@resend.dev` and delivery only works to the account
+  owner's address. Override sender with `RESEND_FROM` once a domain exists.
+- Integration lives in `src/lib/monitor/deliver.ts` (plain fetch, no SDK);
+  watcher sends real email per notification when the key is set, and always
+  writes the .eml to data/outbox/ regardless.
+- Smoke test: `set -a; source .env.local; set +a; pnpm tsx scripts/smoke/resend.smoke.ts`

@@ -25,6 +25,8 @@ export async function researchComplete(prompt: string): Promise<WebResearchResul
         tools: [{ google_search: {} }],
         generationConfig: { temperature: 0.2 },
       }),
+      // An autonomous weekly agent must never hang on one slow call.
+      signal: AbortSignal.timeout(120_000),
     },
   );
   if (!res.ok) throw new Error(`gemini research ${res.status}: ${(await res.text()).slice(0, 200)}`);

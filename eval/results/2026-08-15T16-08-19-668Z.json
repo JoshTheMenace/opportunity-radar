@@ -1,0 +1,44 @@
+{
+  "timestamp": "2026-08-15T16:08:19.668Z",
+  "backend": "codex",
+  "provider": "codex",
+  "averageTotal": 0.909,
+  "scores": [
+    {
+      "caseId": "restaurant-group",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.93,
+      "total": 0.986,
+      "notes": "all mustSee themes covered | The report is strongly grounded in the restaurant group’s size, location, funding range, and uses of funds, distinguishes financing and advisory help from grants, and gives opportunity-specific verification steps, with only minor risk that a few asserted program features or eligibility framings are more specific than the supplied evidence supports."
+    },
+    {
+      "caseId": "dating-app",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.98,
+      "notes": "all mustSee themes covered | The report is candid, founder-specific, opportunity-specific, and actionable, though a few claims about Utah program capital ranges, covered industries, and financing uses appear insufficiently substantiated by the supplied data and some not-a-fit explanations read mildly contradictory."
+    },
+    {
+      "caseId": "fitness-franchise",
+      "coverage": 1,
+      "honesty": 0,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.9,
+      "total": 0.68,
+      "notes": "all mustSee themes covered | honesty wrong: expected honestNo=true, got false | The explanations consistently use the founder’s location, workforce, revenue context, capital target, and academy goal, distinguish assistance from direct funding, and provide opportunity-specific verification steps, with minor speculative framing around apprenticeship suitability, community benefits, and certain program details."
+    },
+    {
+      "caseId": "wedding-platform",
+      "coverage": 1,
+      "honesty": 1,
+      "noDeadOpportunities": 1,
+      "explanationQuality": 0.95,
+      "total": 0.99,
+      "notes": "all mustSee themes covered | The explanations consistently tie each opportunity to the company’s Utah location, revenue stage, funding target, expansion plan, and 11-person team, clearly distinguish advising or cost relief from actual capital, and provide specific verification and preparation steps without obvious unsupported claims."
+    }
+  ]
+}

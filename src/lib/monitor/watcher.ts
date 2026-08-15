@@ -28,7 +28,8 @@ import {
   unseenOpportunityIds,
   type CompanyRecord,
 } from "./db";
-import { draftMatchEmail, writeEmlToOutbox } from "./email";
+import { draftMatchEmail, writeEmlToOutbox, type DraftedEmail } from "./email";
+import { resendEnabled, sendViaResend } from "./deliver";
 
 export interface WatchCycleResult {
   seeded: boolean;
@@ -40,14 +41,32 @@ export interface WatchCycleResult {
 
 const NOTIFY_MIN_SCORE = 50; // verify_eligibility and up — same bar as honestNo
 
+/** Outbox .eml always (demo artifact); real Resend send when the key is set.
+ *  Delivery failure is logged, never fatal — the notification already exists. */
+async function deliverEmail(
+  company: CompanyRecord,
+  opp: Opportunity,
+  email: DraftedEmail,
+  log: (m: string) => void,
+): Promise<void> {
+  writeEmlToOutbox(company, opp, email);
+  if (!resendEnabled() || !company.email) return;
+  try {
+    const id = await sendViaResend(company.email, email);
+    log(`  emailed ${company.email} (resend ${id})`);
+  } catch (e) {
+    log(`  RESEND FAILED for ${company.email}: ${e instanceof Error ? e.message : e}`);
+  }
+}
+
 /** "You grew into it": re-gate a company's saved future fits against its
  *  CURRENT profile; any that now fully pass become notifications + emails.
  *  Deterministic (gates only, no LLM) — the fit case was already made when
  *  the future fit was recorded; only the blocker changed. */
-function checkFutureFitUnlocks(
+async function checkFutureFitUnlocks(
   company: CompanyRecord,
   log: (m: string) => void,
-): WatchCycleResult["notifications"] {
+): Promise<WatchCycleResult["notifications"]> {
   if (company.futureFits.length === 0) return [];
   const opps = getOpportunities(company.futureFits.map((f) => f.opportunityId));
   const currentGated = new Map(
@@ -80,7 +99,7 @@ function checkFutureFitUnlocks(
       emailedAt: email ? new Date().toISOString() : null,
     });
     if (inserted) {
-      if (email) writeEmlToOutbox(company, opp, email);
+      if (email) await deliverEmail(company, opp, email, log);
       log(`  ${company.name}: grew into ${opp.title}`);
       results.push({ company: company.name, opportunity: opp.title, tier: match.tier, score: match.score });
     }
@@ -133,7 +152,7 @@ async function matchCompany(
       emailedAt,
     });
     if (inserted) {
-      if (email) writeEmlToOutbox(company, opp, email);
+      if (email) await deliverEmail(company, opp, email, log);
       results.push({ company: company.name, opportunity: opp.title, tier: m.tier, score: m.score });
     }
   }
@@ -189,7 +208,7 @@ export async function runWatchCycle(log: (m: string) => void = console.log): Pro
   // they fire on profile updates, not on new opportunities.
   for (const company of active) {
     try {
-      notifications.push(...checkFutureFitUnlocks(company, log));
+      notifications.push(...(await checkFutureFitUnlocks(company, log)));
     } catch (e) {
       log(`  ERROR future-fit check ${company.name}: ${e instanceof Error ? e.message : e}`);
     }

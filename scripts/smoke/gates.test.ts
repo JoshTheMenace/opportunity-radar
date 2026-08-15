@@ -5,6 +5,8 @@ import type { CompanyProfile, Opportunity } from "../../src/lib/types";
 import { evaluateGates, meterValueUsd } from "../../src/lib/engine/gates";
 import { buildMeter, buildQuestions, formatUsdCompact } from "../../src/lib/engine/meter";
 import { deriveFields } from "../../src/lib/engine/profile";
+import { sanitizeOpportunity } from "../../src/lib/engine/retrieve";
+import { sanitizeProse } from "../../src/lib/engine/rank";
 
 let failures = 0;
 function assert(name: string, cond: boolean, extra?: unknown) {
@@ -160,8 +162,9 @@ const noAmt = evaluateGates(bigNeed, makeOpp({ awardCeilingUsd: null }));
 assert("ceiling < 25% of min need => fail", tiny.verdict === "fail");
 assert("ceiling >= 25% of min need => pass", okAmt.verdict === "pass");
 assert(
-  "missing amounts => pass with 'award size unverified'",
-  noAmt.gates.find((g) => g.gate === "amount_overlap")?.detail === "award size unverified",
+  "missing amounts => soft pass, phrased as 'not published' (never a fake figure)",
+  noAmt.gates.find((g) => g.gate === "amount_overlap")?.detail ===
+    "award size not published — not held against it",
 );
 
 // 8. geo:utah — case-insensitive state match; null location => unknown.
@@ -250,6 +253,70 @@ assert(
   "questions: skips fields already answered in profile",
   !answeredQs.some((q) => q.field === "isSmallBusiness"),
   answeredQs.map((q) => q.field),
+);
+
+// 11b. Rival-scan borrows: sentinel hygiene, amount asymmetry, SAM lead time, prose sanitizer.
+const soon = new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10);
+assert(
+  "sanitize: $0 ceiling => null (API sentinel for 'not specified')",
+  sanitizeOpportunity(makeOpp({ awardCeilingUsd: 0 })).awardCeilingUsd === null,
+);
+assert(
+  "sanitize: $108T program-total ceiling => null",
+  sanitizeOpportunity(makeOpp({ awardCeilingUsd: 108_300_000_000_000 })).awardCeilingUsd === null,
+);
+assert(
+  "sanitize: floor above ceiling => floor null (inconsistent source)",
+  sanitizeOpportunity(makeOpp({ awardFloorUsd: 900_000, awardCeilingUsd: 500_000 })).awardFloorUsd ===
+    null,
+);
+assert(
+  "sanitize: plausible values untouched",
+  sanitizeOpportunity(makeOpp({ awardFloorUsd: 50_000, awardCeilingUsd: 750_000 })).awardCeilingUsd ===
+    750_000,
+);
+const bigFloor = evaluateGates(
+  makeProfile({ capitalNeedUsd: { min: 250_000, max: 1_000_000 } }),
+  makeOpp({ awardFloorUsd: 2_500_000, awardCeilingUsd: 10_000_000 }),
+);
+assert(
+  "amount: floor more than 2x max need => fail (funds larger-scale work)",
+  bigFloor.gates.find((g) => g.gate === "amount_overlap")?.verdict === "fail",
+  bigFloor.gates.find((g) => g.gate === "amount_overlap"),
+);
+assert(
+  "sam lead time: unregistered + closing in 10 days => fail",
+  evaluateGates(makeProfile({ samRegistered: false }), makeOpp({ closeDate: soon }))
+    .gates.find((g) => g.gate === "sam:lead_time")?.verdict === "fail",
+);
+assert(
+  "sam lead time: unknown registration + near deadline => unknown(samRegistered)",
+  evaluateGates(makeProfile(), makeOpp({ closeDate: soon }))
+    .gates.find((g) => g.gate === "sam:lead_time")?.missingField === "samRegistered",
+);
+assert(
+  "sam lead time: no gate when deadline is far or state program",
+  evaluateGates(makeProfile(), makeOpp({ closeDate: "2099-12-31" })).gates.every(
+    (g) => g.gate !== "sam:lead_time",
+  ) &&
+    evaluateGates(makeProfile({ samRegistered: false }), makeOpp({ source: "utah", closeDate: soon }))
+      .gates.every((g) => g.gate !== "sam:lead_time"),
+);
+const allowed = [314_363, 2_000_000];
+assert(
+  "prose sanitizer: unknown dollar figure replaced",
+  sanitizeProse("Awards up to $5 million are typical.", allowed) ===
+    "Awards up to the listed amount are typical.",
+);
+assert(
+  "prose sanitizer: figures from the data kept (5% rounding tolerance)",
+  sanitizeProse("The $314K ceiling fits your $2M ask.", allowed) ===
+    "The $314K ceiling fits your $2M ask.",
+);
+assert(
+  "prose sanitizer: non-currency numbers untouched",
+  sanitizeProse("Phase II awards 25% more over 24 months.", allowed) ===
+    "Phase II awards 25% more over 24 months.",
 );
 
 // 12. deriveFields: derive instead of ask.

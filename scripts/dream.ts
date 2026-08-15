@@ -30,9 +30,17 @@ async function main() {
 
   console.log(`Dreaming about ${companies.length} compan${companies.length === 1 ? "y" : "ies"}${dryRun ? " (dry run)" : ""}...`);
   let updated = 0;
+  // Per-company ceiling: research (<=2min) + reconcile can queue behind other
+  // LLM work, but a weekly agent must move on rather than hang the cycle.
+  const PER_COMPANY_MS = 8 * 60_000;
   for (const c of companies) {
     try {
-      const r = await dreamCompany(c, { dryRun });
+      const r = await Promise.race([
+        dreamCompany(c, { dryRun }),
+        new Promise<never>((_, rej) =>
+          setTimeout(() => rej(new Error(`timed out after ${PER_COMPANY_MS / 60000}min — skipped`)), PER_COMPANY_MS),
+        ),
+      ]);
       const tag = r.identityConfident ? "identity OK" : "IDENTITY UNCERTAIN — no changes";
       console.log(`\n■ ${c.name} — ${tag}`);
       console.log(`  ${r.identityEvidence.slice(0, 160)}`);
