@@ -202,6 +202,9 @@ export function applyAnswer(
   switch (field) {
     case "employees":
       p.employees = toNum(answer);
+      // A corrected headcount >=500 invalidates a previously derived
+      // small-business flag (SBA rule) — re-derive instead of going stale.
+      if (p.employees !== null && p.employees >= 500) p.isSmallBusiness = false;
       break;
     case "annualRevenueUsd":
       p.annualRevenueUsd = toNum(answer);

@@ -74,9 +74,13 @@ export function refineReport(prior: MatchReport, profile: CompanyProfile): Match
     }
   }
 
-  const honestNo = !matches.some(
-    (m) => m.tier === "likely_fit" || m.tier === "verify_eligibility",
-  );
+  // honestNo is a verdict about RANKED results. A readiness-hold report has
+  // empty matches without ranking ever running — refining it must not morph
+  // "not ranked yet" into "no match".
+  const priorWasRanked = prior.matches.length > 0 || prior.honestNo;
+  const honestNo =
+    priorWasRanked &&
+    !matches.some((m) => m.tier === "likely_fit" || m.tier === "verify_eligibility");
   const evidence = prior.evidence
     ? Object.fromEntries(
         Object.entries(prior.evidence).filter(([id]) =>

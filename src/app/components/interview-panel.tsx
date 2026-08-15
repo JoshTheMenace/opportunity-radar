@@ -13,23 +13,27 @@ export default function InterviewPanel({
   questions,
   quickReplies,
   busy,
+  askCapitalNeed = false,
   onAnswer,
   onSend,
 }: {
   questions: InterviewQuestion[];
   quickReplies: QuickReply[];
   busy: boolean;
+  /** Show the dedicated funding-amount card (readiness hold; not a GateField). */
+  askCapitalNeed?: boolean;
   onAnswer: (field: GateField, value: unknown) => void;
   onSend: (message: string) => void;
 }) {
   const [chat, setChat] = useState("");
-  if (questions.length === 0) return null;
+  if (questions.length === 0 && !askCapitalNeed) return null;
 
   return (
     <section id="interview" className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
         Answer to unlock more
       </p>
+      {askCapitalNeed && <CapitalNeedCard disabled={busy} onSend={onSend} />}
       {questions.map((q) => (
         <QuestionCard key={q.field} q={q} disabled={busy} onAnswer={onAnswer} />
       ))}
@@ -73,6 +77,51 @@ export default function InterviewPanel({
         </button>
       </form>
     </section>
+  );
+}
+
+/** Funding amount isn't a GateField — this card routes through the freeform
+ *  parser, which knows how to settle capitalNeedUsd. */
+function CapitalNeedCard({
+  disabled,
+  onSend,
+}: {
+  disabled: boolean;
+  onSend: (message: string) => void;
+}) {
+  const [val, setVal] = useState("");
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-950 p-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm">
+          Roughly how much funding are you looking for?
+          <span className="ml-2 rounded-full border border-blue-500/50 bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-300 align-middle">
+            needed for ranking
+          </span>
+        </p>
+        <p className="text-xs text-neutral-500">Needed before we can rank accurately</p>
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (val.trim()) onSend(`We're looking for about ${val.trim()} in funding.`);
+        }}
+        className="flex gap-2"
+      >
+        <input
+          value={val}
+          onChange={(e) => setVal(e.target.value)}
+          placeholder="$500K"
+          className="w-28 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm focus:border-neutral-500 focus:outline-none"
+        />
+        <button
+          disabled={disabled || !val.trim()}
+          className="rounded-md border border-neutral-700 px-3 py-1 text-sm hover:bg-neutral-800 disabled:opacity-40"
+        >
+          Answer
+        </button>
+      </form>
+    </div>
   );
 }
 

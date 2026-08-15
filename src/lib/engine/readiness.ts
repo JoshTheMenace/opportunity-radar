@@ -103,3 +103,56 @@ export function sortQuestionsRequiredFirst<T extends { field: GateField }>(qs: T
     (a, b) => Number(isRequiredField(b.field)) - Number(isRequiredField(a.field)),
   );
 }
+
+// ---------- synthetic interview cards for the hold state ----------
+//
+// Meter questions only exist for fields some GATE is missing — but a profile
+// can be unready on fields no retrieved gate asks about (e.g. hasActiveRnD
+// already false → SBIR excluded → nothing ever asks majorityUsOwned), and
+// capitalNeed has no GateField at all. During a hold the UI must still show
+// answerable cards for every missing basic, so we synthesize them.
+
+const SYNTHETIC_QUESTIONS: Record<
+  string,
+  { field: GateField; answerType: "boolean" | "number" | "text" } | null
+> = {
+  location: { field: "location", answerType: "text" },
+  size: { field: "employees", answerType: "number" },
+  hasActiveRnD: { field: "hasActiveRnD", answerType: "boolean" },
+  majorityUsOwned: { field: "majorityUsOwned", answerType: "boolean" },
+  capitalNeed: null, // no GateField — handled by a dedicated freeform card
+};
+
+export interface ReadinessAsks {
+  /** Renderable as normal interview QuestionCards (GateField-backed). */
+  gateQuestions: {
+    field: GateField;
+    question: string;
+    whyAsking: string;
+    answerType: "boolean" | "number" | "text" | "choice";
+    choices: string[] | null;
+  }[];
+  /** True when the funding amount still needs a dedicated (freeform) card. */
+  needsCapitalNeed: boolean;
+}
+
+export function readinessAsks(p: CompanyProfile): ReadinessAsks {
+  const missing = READINESS_REQUIREMENTS.filter((r) => !r.known(p));
+  const gateQuestions = [];
+  let needsCapitalNeed = false;
+  for (const m of missing) {
+    const syn = SYNTHETIC_QUESTIONS[m.key];
+    if (syn === null) {
+      needsCapitalNeed = true;
+    } else if (syn) {
+      gateQuestions.push({
+        field: syn.field,
+        question: m.question,
+        whyAsking: "Needed before we can rank accurately",
+        answerType: syn.answerType,
+        choices: null,
+      });
+    }
+  }
+  return { gateQuestions, needsCapitalNeed };
+}

@@ -114,6 +114,7 @@ export function ReportView({ report }: { report: UiReport }) {
                 match={m}
                 opp={opps[m.opportunityId]}
                 evidence={report.evidence?.[m.opportunityId]}
+                profile={report.profile}
               />
             ))}
           </div>
@@ -156,6 +157,7 @@ export function HonestNoPanel({ report }: { report: UiReport }) {
               match={m}
               opp={opps[m.opportunityId]}
               evidence={report.evidence?.[m.opportunityId]}
+              profile={report.profile}
             />
           ))}
         </div>

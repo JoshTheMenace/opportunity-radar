@@ -110,7 +110,11 @@ export function oddsLabel(
     const apps = expectedApplications;
     const ratio = awards / apps;
     const oneIn = Math.max(1, Math.round(apps / awards));
-    const nums = `roughly 1-in-${oneIn} (${awards} awards / ~${apps} applicants)`;
+    // A "1-in-1" ratio is noise, not information — show raw counts instead.
+    const nums =
+      oneIn >= 2
+        ? `roughly 1-in-${oneIn} (${awards} awards / ~${apps} applicants)`
+        : `${awards} awards / ~${apps} applicants`;
     if (ratio >= 0.5) return `strong odds — ${nums}`;
     if (ratio >= 0.2) return `competitive — good target, ${nums}`;
     if (ratio >= 0.08) return `competitive — ${nums}`;

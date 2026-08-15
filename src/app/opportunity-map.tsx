@@ -13,6 +13,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { CompanyProfile, GateField } from "@/lib/types";
+import { profileReadiness, readinessAsks } from "@/lib/engine/readiness";
 import VoicePanel from "./voice-panel";
 import SaveMonitor from "./save-monitor";
 import IntakePanel from "./components/intake-panel";
@@ -201,6 +202,20 @@ export default function OpportunityMap() {
 
   const started = busy || report != null || activity.length > 0;
 
+  // Readiness hold: matches were intentionally not ranked. Meter questions
+  // only cover fields some retrieved gate misses, so synthesize cards for the
+  // remaining required basics (incl. the freeform-backed funding amount) —
+  // otherwise the hold panel points at questions that don't exist.
+  const holding =
+    report != null && report.matches.length === 0 && !profileReadiness(report.profile).ready;
+  const asks = holding ? readinessAsks(report.profile) : null;
+  const interviewQuestions = asks
+    ? [
+        ...asks.gateQuestions.filter((s) => !questions.some((q) => q.field === s.field)),
+        ...questions,
+      ]
+    : questions;
+
   return (
     <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8">
       <IntakePanel
@@ -239,9 +254,10 @@ export default function OpportunityMap() {
             />
           )}
           <InterviewPanel
-            questions={questions}
+            questions={interviewQuestions}
             quickReplies={quickReplies}
             busy={busy}
+            askCapitalNeed={asks?.needsCapitalNeed ?? false}
             onAnswer={answer}
             onSend={sendMessage}
           />
