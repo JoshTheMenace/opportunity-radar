@@ -449,7 +449,7 @@ export default function ScreeningClient({
       {loaded && !report ? (
         /* ------------------------- empty state ------------------------- */
         <div className="mk-grid">
-          <div className="mk-c6" style={{ gridColumn: "4 / span 6" }}>
+          <div className="mk-c6 mk-c6--centered">
             <div className="or-card" style={{ textAlign: "center", padding: 40 }}>
               <Icon name="filter_alt" size={40} color="var(--color-primary)" />
               <h3 style={{ ...h4, fontSize: 22, lineHeight: "30px", margin: "12px 0 8px" }}>
