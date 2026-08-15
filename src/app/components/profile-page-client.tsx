@@ -619,6 +619,7 @@ export default function ProfilePageClient() {
               </p>
             </div>
           )}
+          <ResetCard />
         </div>
       </div>
     </main>
@@ -768,4 +769,68 @@ function EditorInputs({ kind, draft, setDraft }: { kind: FieldDef["kind"]; draft
         </>
       );
   }
+}
+
+/* ---------- reset card (danger zone) ---------- */
+
+/** Wipes ALL founder state — saved companies, notifications, pursuits,
+ *  dream findings — plus this browser's cached report/edits, then lands on
+ *  a clean Opportunity Map. The corpus is untouched. Two-step confirm so a
+ *  stray click mid-demo can't nuke the stage. */
+function ResetCard() {
+  const [arming, setArming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function reset() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch("/api/reset", { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      try {
+        sessionStorage.clear();
+        localStorage.removeItem(EDITS_KEY);
+      } catch {}
+      window.location.href = "/"; // full load, so no in-memory state survives
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+      setArming(false);
+    }
+  }
+
+  return (
+    <div className="or-card" style={{ marginTop: 16 }}>
+      <div className="mk-row" style={{ gap: 8 }}>
+        <Icon name="restart_alt" color="var(--color-risk-strong)" />
+        <span style={{ font: "600 15px/22px var(--font-body)", color: "var(--color-text-deep)" }}>
+          Start over
+        </span>
+      </div>
+      <p style={{ font: "400 13px/19px var(--font-body)", color: "var(--color-text-muted)", margin: "8px 0 12px" }}>
+        Erases this profile and all demo state — saved companies, alerts, pursuits, and research
+        history. The opportunity database is kept.
+      </p>
+      {!arming ? (
+        <Button variant="outline" block onClick={() => setArming(true)}>
+          Reset profile &amp; demo
+        </Button>
+      ) : (
+        <div className="mk-row" style={{ gap: 8 }}>
+          <Button variant="filled" block disabled={busy} onClick={() => void reset()}>
+            {busy ? "Resetting…" : "Yes, erase everything"}
+          </Button>
+          <Button variant="text" disabled={busy} onClick={() => setArming(false)}>
+            Cancel
+          </Button>
+        </div>
+      )}
+      {err && (
+        <p style={{ font: "400 12.5px/18px var(--font-body)", color: "var(--color-risk-strong)", marginTop: 8 }}>
+          Reset failed ({err}) — you can still run pnpm tsx scripts/demo-reset.ts
+        </p>
+      )}
+    </div>
+  );
 }
