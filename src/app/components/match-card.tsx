@@ -3,6 +3,7 @@
 // One opportunity match card: title row, meta row, odds, evidence strip,
 // why-fit/disqualify/verify/next-steps, and the outbound link.
 
+import Link from "next/link";
 import type { EvidenceSummary, Opportunity, RankedMatch } from "@/lib/types";
 import { daysUntil, fmtUsd } from "./shared";
 
@@ -27,7 +28,14 @@ export default function MatchCard({
   return (
     <article className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="font-semibold">{opp?.title ?? match.opportunityId}</h3>
+        <h3 className="font-semibold">
+          <Link
+            href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
+            className="hover:text-blue-300 hover:underline"
+          >
+            {opp?.title ?? match.opportunityId}
+          </Link>
+        </h3>
         <span className="text-xs text-neutral-500">score {match.score}</span>
       </div>
       <p className="text-xs text-neutral-400">
@@ -58,16 +66,24 @@ export default function MatchCard({
         <CardRow label="Verify" text={match.whatToVerify} tone="text-yellow-400" />
         <CardRow label="Next steps" text={match.nextSteps} tone="text-blue-400" />
       </dl>
-      {opp?.url && (
-        <a
-          href={opp.url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-block text-xs text-blue-400 underline hover:text-blue-300"
+      <div className="flex flex-wrap items-center gap-3 pt-1">
+        <Link
+          href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
+          className="rounded-md border border-blue-500/50 px-3 py-1 text-xs font-semibold text-blue-300 hover:bg-blue-500/10"
         >
-          View opportunity ↗
-        </a>
-      )}
+          Details & submission plan →
+        </Link>
+        {opp?.url && (
+          <a
+            href={opp.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-blue-400 underline hover:text-blue-300"
+          >
+            Official notice ↗
+          </a>
+        )}
+      </div>
     </article>
   );
 }

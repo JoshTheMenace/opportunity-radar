@@ -8,9 +8,14 @@ import type { GatedOpportunity, Opportunity } from "@/lib/types";
 import MatchCard from "./match-card";
 import { TIERS, daysUntil, fmtUsd, type UiReport } from "./shared";
 
+/** Matches below this score are noise — hidden from the report entirely. */
+const MIN_SCORE = 50;
+
 export function ReportView({ report }: { report: UiReport }) {
   const opps = report.opportunities ?? {};
-  const resolved = report.matches
+  const visible = report.matches.filter((m) => m.score >= MIN_SCORE);
+  const hidden = report.matches.length - visible.length;
+  const resolved = visible
     .map((m) => opps[m.opportunityId])
     .filter((o): o is Opportunity => o != null);
   const agencies = new Set(resolved.map((o) => o.agency)).size;
@@ -19,11 +24,26 @@ export function ReportView({ report }: { report: UiReport }) {
     return d != null && d >= 0 && d <= 30;
   }).length;
 
+  // Everything scored below the bar: honest empty state, not forced matches.
+  if (visible.length === 0) {
+    return (
+      <section id="report" className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-900 p-6 text-center">
+        <h2 className="text-lg font-bold">No strong matches yet</h2>
+        <p className="mx-auto max-w-md text-sm text-neutral-400">
+          Nothing scored high enough to be worth your time
+          {hidden > 0 ? ` (${hidden} weak ${hidden === 1 ? "match" : "matches"} hidden)` : ""}.
+          Answering the eligibility questions usually sharpens the picture — each answer can
+          unlock programs we couldn&apos;t confirm yet.
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section id="report" className="space-y-4">
       {/* summary stat band */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Matches" value={String(report.matches.length)} />
+        <Stat label="Matches" value={String(visible.length)} />
         <Stat label="Total potential" value={fmtUsd(report.meter.potentialUsd)} />
         <Stat label="Agencies" value={String(agencies)} />
         <Stat label="Closing ≤30d" value={String(closingSoon)} />
@@ -31,7 +51,7 @@ export function ReportView({ report }: { report: UiReport }) {
 
       {/* tier groups */}
       {TIERS.map(({ tier, label, badge }) => {
-        const group = report.matches.filter((m) => m.tier === tier);
+        const group = visible.filter((m) => m.tier === tier);
         if (group.length === 0) return null;
         return (
           <div key={tier} className="space-y-2">
@@ -51,6 +71,11 @@ export function ReportView({ report }: { report: UiReport }) {
           </div>
         );
       })}
+      {hidden > 0 && (
+        <p className="text-xs text-neutral-600">
+          {hidden} weaker {hidden === 1 ? "match" : "matches"} (score &lt; {MIN_SCORE}) hidden.
+        </p>
+      )}
     </section>
   );
 }

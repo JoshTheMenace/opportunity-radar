@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Opportunity Radar
 
-## Getting Started
+AI system matching startups to US government funding (Startup State hackathon).
+A founder describes their company in a sentence; the app extracts a profile,
+screens ~4,600 cached opportunities through deterministic eligibility gates,
+LLM-ranks the survivors with a skeptical rubric, and renders an Opportunity Map
+with real historical-award evidence — then keeps watching for new money.
 
-First, run the development server:
+Two principles shape everything:
+
+- **Honesty over hype.** If nothing genuinely fits, the report says so
+  (`honestNo`) and shows near-misses with the reason they fail. One eval case
+  exists purely to enforce this.
+- **The LLM never invents numbers.** Dollar amounts, dates, and IDs come from
+  the database; the LLM only writes judgment and prose around them.
+
+## Capabilities
+
+- **Analysis pipeline** — profile extraction → FTS retrieval → deterministic
+  gates → eligibility meter → parallel LLM ranking → USAspending evidence.
+  Matches stream into the UI live as each scoring batch lands (SSE).
+- **Eligibility meter + interview** — "answer X to unlock $Y." Questions are
+  ranked by *simulated unlock* (how much money an answer actually moves),
+  derivable facts are never asked, and per-opportunity dollar values are capped
+  at $5M (`METER_CAP_USD`) to keep totals believable.
+- **Three ways to answer** — one-tap Yes/No buttons (no LLM); freeform chat
+  where one message can settle several fields at once; and quick-reply chips
+  suggested by a cheap/fast model (GPT 5.6 Luna) that only offers taps that can
+  truly settle a question (thresholds yes, exact values no).
+- **Voice mode** — Gemini Live conversation whose tool calls drive the same
+  engine (run analysis, apply answers, read back matches).
+- **Proactive monitoring ("the radar")** — saved company profiles are scanned
+  each watch cycle against newly ingested opportunities; strong matches become
+  notifications with drafted outreach emails (`data/outbox/`); dashboard at
+  `/radar`.
+- **Eval harness** — five judged founder scenarios (`pnpm tsx eval/run.ts`)
+  scoring coverage, honesty, dead-opportunity avoidance, and explanation
+  quality.
+
+## Quickstart
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm tsx scripts/ingest/grants-gov.ts            # fill data/radar.db (also: assistance-listings, utah)
+pnpm dev                                         # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Useful commands:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm tsx scripts/smoke/gates.test.ts             # fast deterministic engine tests
+pnpm tsx eval/run.ts --json                      # full judged eval
+pnpm tsx scripts/watch.ts --loop 15              # radar daemon (watch cycle every 15 min)
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Environment (`.env.local`): `LLM_BACKEND` (codex | anthropic | mock),
+`CODEX_MODEL` (default gpt-5.6-sol), `SUGGEST_MODEL` (default gpt-5.6-luna),
+`ANTHROPIC_API_KEY` (fallback backend), `GEMINI_API_KEY` (voice mode).
 
-## Learn More
+## Where things live
 
-To learn more about Next.js, take a look at the following resources:
+| Area | Path |
+| --- | --- |
+| Engine (profile, gates, meter, rank, evidence, suggest) | `src/lib/engine/` |
+| LLM switchboard (the only door to any model) | `src/lib/llm.ts` + `llm-*.ts` |
+| API routes (analyze/answer SSE, suggest, companies, voice, notifications) | `src/app/api/` |
+| UI (one file per visual region; `opportunity-map.tsx` orchestrates) | `src/app/components/` |
+| Voice tool bridge | `src/lib/voice/` |
+| Monitoring (watch cycle, notifications, emails) | `src/lib/monitor/`, `scripts/watch.ts` |
+| Ingest + data | `scripts/ingest/`, `data/radar.db` |
+| Eval + smoke tests | `eval/`, `scripts/smoke/` |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Conventions and agent rules: [CLAUDE.md](CLAUDE.md). Verified external API
+quirks: [docs/api-notes.md](docs/api-notes.md). Cross-module contract notes:
+`NOTES-*.md` in the repo root.

@@ -13,11 +13,26 @@ eligibility meter ("answer X to unlock +$Y") and interview questions.
 - `src/lib/llm.ts` — the ONLY way to call an LLM (`complete`/`completeJSON`).
   Backends: llm-codex.ts (primary, Codex app server / GPT 5.6 Sol),
   llm-anthropic.ts (fallback), llm-mock.ts (tests). Never import a provider
-  SDK outside `src/lib/llm-*.ts`.
+  SDK outside `src/lib/llm-*.ts`. `CompleteOptions.model` overrides the model
+  per call — use `gpt-5.6-luna` for cheap/fast low-stakes calls (NOT
+  `gpt-luna`; see NOTES-quick-replies.md).
 - `scripts/ingest/*` — one script per source, run with `pnpm tsx scripts/ingest/<x>.ts`.
-- `src/lib/engine/*` — profile, gates, retrieve, rank, meter, interview, evidence.
-- `src/app/api/*` — Next.js route handlers (App Router). /api/analyze streams SSE.
+- `src/lib/engine/*` — profile (extraction + derivation + freeform answer
+  parsing), gates (incl. $5M `METER_CAP_USD`), retrieve, rank (streams partial
+  results via `onProgress`), meter (simulated-unlock question ranking),
+  suggest (Luna quick-reply chips), evidence, pipeline.
+- `src/lib/voice/*` — Gemini Live tool bridge onto the same engine (voice mode).
+- `src/lib/monitor/*` + `scripts/watch.ts` — proactive watch cycle over saved
+  companies: new opportunities → gates + rank → notifications + drafted emails.
+- `src/app/api/*` — route handlers. /api/analyze and /api/answer stream SSE
+  (interim `report` events while scoring; /api/answer also takes freeform
+  `{profile, message}`); /api/suggest (quick replies); /api/companies (saved
+  profiles); /api/voice/*; /api/notifications.
+- `src/app/components/*` — one file per visual region; `opportunity-map.tsx`
+  is the stateful orchestrator (see NOTES-ui.md before restructuring).
 - `eval/*` — the 5 standard test cases + judge + runner (`pnpm tsx eval/run.ts`).
+- `scripts/smoke/*` — fast engine tests (`gates.test.ts` is deterministic; the
+  `*.smoke.ts` files hit the live LLM backend).
 
 ## Rules for agents working in this repo
 
