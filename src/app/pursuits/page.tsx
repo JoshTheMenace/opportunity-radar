@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Badge, Card, Icon, type BadgeTone } from "../components/ui";
 import PursuitPanel from "../opportunity/[id]/pursuit-panel";
 
 interface PursuitRow {
@@ -25,14 +26,14 @@ interface PursuitRow {
   } | null;
 }
 
-// Status chips follow the status rules: soft/brand = in flight,
-// good = money outcomes, faint = closed-out.
-const STATUS_BADGE: Record<string, string> = {
-  active: "bg-soft text-brand",
-  submitted: "bg-good-soft text-good",
-  won: "bg-good-soft text-good",
-  lost: "bg-bg text-faint",
-  abandoned: "bg-bg text-faint",
+// Status tones follow the kit's status rules: primary = in flight,
+// fit (green) = money outcomes, neutral = closed-out.
+const STATUS_TONE: Record<string, BadgeTone> = {
+  active: "primary",
+  submitted: "fit",
+  won: "fit",
+  lost: "neutral",
+  abandoned: "neutral",
 };
 
 export default function PursuitsPage() {
@@ -59,87 +60,80 @@ export default function PursuitsPage() {
   const sel = rows?.find((p) => p.id === selectedId) ?? null;
 
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-4 py-6">
+    <main className="mk-page" style={{ paddingTop: 32, paddingBottom: 48 }}>
       {rows == null ? (
-        <div className="shimmer h-28 rounded-2xl bg-surface-low" />
+        <div className="or-card shimmer" style={{ height: 112 }} />
       ) : rows.length === 0 ? (
-        <section className="card mx-auto max-w-xl space-y-3 p-8 text-center">
-          <h1 className="font-display text-[26px] font-bold tracking-tight text-ink">
-            Pursuit Workspace
-          </h1>
-          <p className="text-sm text-muted">
+        <Card
+          style={{
+            maxWidth: 560,
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            gap: 12,
+          }}
+        >
+          <h1 className="mk-h3">Pursuit Workspace</h1>
+          <p style={{ margin: 0, font: "400 14px/20px var(--font-body)", color: "var(--color-on-surface-variant)" }}>
             No pursuits yet — pick a match and build a submission plan.
           </p>
-          <Link
-            href="/"
-            className="inline-block rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong"
-          >
-            Find funding →
+          <Link href="/" className="or-btn or-btn--filled">
+            Find funding
+            <Icon name="arrow_forward" size={18} />
           </Link>
-        </section>
+        </Card>
       ) : (
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           {/* left rail: Active Grants */}
-          <aside className="card w-full shrink-0 p-3 lg:w-64">
-            <p className="px-2 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
-              Active Grants
-            </p>
-            <nav className="space-y-1">
+          <Card flush className="w-full shrink-0 lg:w-64">
+            <div className="mk-cardhead">Active Grants</div>
+            <nav style={{ padding: 8, display: "flex", flexDirection: "column", gap: 4 }}>
               {rows.map((p) => {
                 const active = p.id === selectedId;
                 return (
                   <button
                     key={p.id}
                     onClick={() => select(p.id)}
-                    className={`block w-full rounded-xl px-4 py-3 text-left transition-colors ${
-                      active ? "bg-soft" : "hover:bg-surface-low"
-                    }`}
+                    className={`or-side__row${active ? " or-side__row--active" : ""}`}
+                    style={{ flexDirection: "column", alignItems: "flex-start", gap: 6, width: "100%" }}
                   >
-                    <span className="flex items-start gap-2">
-                      <span
-                        aria-hidden
-                        className={`mt-0.5 text-[12px] ${active ? "text-brand" : "text-faint"}`}
-                      >
-                        ▸
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className={`block truncate text-[14px] ${
-                            active ? "font-semibold text-brand" : "font-medium text-ink"
-                          }`}
-                        >
-                          {p.opportunity?.title ?? p.opportunityId}
-                        </span>
-                        <span className="mt-1.5 flex items-center gap-2">
-                          <span
-                            className={`rounded-full px-3 py-1 text-[12px] font-semibold ${
-                              STATUS_BADGE[p.status] ?? STATUS_BADGE.active
-                            }`}
-                          >
-                            {p.status}
-                          </span>
-                          <span className="font-mono text-[12px] text-faint">
-                            {p.doneCount}/{p.taskCount}
-                          </span>
-                        </span>
+                    <span
+                      style={{
+                        font: `${active ? 600 : 500} 14px/20px var(--font-body)`,
+                        letterSpacing: "normal",
+                        width: "100%",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        textAlign: "left",
+                      }}
+                    >
+                      {p.opportunity?.title ?? p.opportunityId}
+                    </span>
+                    <span className="mk-row" style={{ gap: 8 }}>
+                      <Badge tone={STATUS_TONE[p.status] ?? "primary"}>{p.status}</Badge>
+                      <span className="mk-num" style={{ fontSize: 12, color: active ? "inherit" : undefined }}>
+                        {p.doneCount}/{p.taskCount}
                       </span>
                     </span>
                   </button>
                 );
               })}
             </nav>
-          </aside>
+          </Card>
 
           {/* right: the selected pursuit's workspace */}
           <div className="min-w-0 flex-1 space-y-3">
             {sel && (
               <>
-                <p className="text-[13px] text-muted">
-                  <span className="text-faint">Active Grants</span>
-                  <span className="text-faint"> / </span>
+                <p className="or-crumbs" style={{ margin: 0 }}>
+                  <span>Active Grants</span>
+                  <span>/</span>
                   <Link
                     href={`/opportunity/${encodeURIComponent(sel.opportunityId)}`}
-                    className="text-ink transition-colors hover:text-brand"
+                    className="or-crumbs__current"
                   >
                     {sel.opportunity?.title ?? sel.opportunityId}
                   </Link>

@@ -1,57 +1,67 @@
 "use client";
 
-// Region: results — the kit's "Top Matches" column. Header line with live
-// counts, one score-ordered list of Federal Catalyst match cards, the
-// "Held — Missing Data" dashed card for the readiness hold, the honest-no
-// determination, plus loading/empty states.
+// Region: results — the mock's "Top Matches" center column. One filtered,
+// sorted list of collapsible match cards (the pagehead owns the filter/sort/
+// collapse controls), the "Held — missing data" dashed card for the readiness
+// hold, the honest-no determination, plus loading/empty states.
 
 import { useState } from "react";
-import type { GatedOpportunity, Opportunity } from "@/lib/types";
+import type { GatedOpportunity } from "@/lib/types";
 import { profileReadiness } from "@/lib/engine/readiness";
-import { meterValueUsd } from "@/lib/engine/gates";
 import MatchCard from "./match-card";
-import { fmtUsd, type Spotlight, type UiReport } from "./shared";
-
-/** Matches below this score are noise — hidden from the report entirely. */
-const MIN_SCORE = 50;
+import { Badge } from "./ui";
+import {
+  MIN_SCORE,
+  visibleMatches,
+  type BulkToggle,
+  type SortMode,
+  type Spotlight,
+  type UiReport,
+} from "./shared";
+import type { FitTier } from "@/lib/types";
 
 export function ReportView({
   report,
   spotlight,
   busy = false,
+  filters,
+  sort = "score",
+  bulk,
 }: {
   report: UiReport;
   spotlight?: Spotlight | null;
   busy?: boolean;
+  /** Tier filter from the pagehead; undefined = show every tier. */
+  filters?: ReadonlySet<FitTier>;
+  sort?: SortMode;
+  bulk?: BulkToggle | null;
 }) {
   const [showWeak, setShowWeak] = useState(false);
   const opps = report.opportunities ?? {};
-  const visible = [...report.matches]
-    .filter((m) => m.score >= MIN_SCORE)
-    .sort((a, b) => b.score - a.score);
-  const hidden = report.matches.length - visible.length;
-  const resolved = visible
-    .map((m) => opps[m.opportunityId])
-    .filter((o): o is Opportunity => o != null);
-  // Headline money comes from the MATCHES the reader is looking at (each
-  // valued with the engine's capped realism logic) — the whole gate-passed
-  // pool total stays framed as ceilings in the Unlock panel.
-  const matchedUsd = resolved.reduce((sum, o) => sum + meterValueUsd(o), 0);
+  const strong = report.matches.filter((m) => m.score >= MIN_SCORE);
+  const tierSet = filters ?? new Set(strong.map((m) => m.tier));
+  const visible = visibleMatches(report, tierSet, sort);
+  const weak = report.matches.length - strong.length;
+  // The top-scored visible card opens on first paint; the rest stay folded.
+  const topScoredId = visible.reduce<{ id: string; score: number } | null>(
+    (best, m) => (best && best.score >= m.score ? best : { id: m.opportunityId, score: m.score }),
+    null,
+  )?.id;
 
   // Ranking hasn't run yet: the required basics aren't known. Rendered as the
-  // kit's "Held — Missing Data" dashed card; Resolve points at the Unlock rail.
+  // kit's "Held — missing data" dashed card; Resolve points at the Unlock rail.
   const readiness = profileReadiness(report.profile);
   // While a run is LIVE the hold card would contradict the working rail —
   // the scoring state below covers it instead.
   if (report.matches.length === 0 && !readiness.ready && !busy) {
     return (
       <section id="report">
-        <article className="rounded-[1.25rem] border-2 border-dashed border-line bg-surface-low/70 p-6">
+        <article className="or-card or-card--dashed">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <span className="rounded-full bg-surface-variant px-3 py-1 text-[12px] font-semibold text-muted">
+              <Badge tone="neutral" pill>
                 Held — missing data
-              </span>
+              </Badge>
               <h4 className="mt-2.5 font-display text-[19px] font-bold tracking-tight text-ink">
                 Your matches are ready to rank
               </h4>
@@ -68,10 +78,7 @@ export function ReportView({
                 ))}
               </ul>
             </div>
-            <a
-              href="#unlock"
-              className="shrink-0 rounded-xl bg-brand px-4 py-2 text-[13.5px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong"
-            >
+            <a href="#unlock" className="or-btn or-btn--filled shrink-0">
               Resolve
             </a>
           </div>
@@ -86,13 +93,12 @@ export function ReportView({
   // Everything scored below the bar so far. Interim stream events never carry
   // `evidence` (the final report always does), so its absence means scoring is
   // still running — don't declare "nothing for you" at 15/177 scored.
-  if (visible.length === 0) {
-    const scoring = report.evidence == null;
+  if (strong.length === 0) {
+    // While a run is live, NEVER show failure copy — a judge mid-demo reads
+    // "no strong matches" as the verdict, not as a loading state.
+    const scoring = report.evidence == null || busy;
     return (
-      <section
-        id="report"
-        className="card space-y-2 p-8 text-center"
-      >
+      <section id="report" className="or-card space-y-2 p-8 text-center">
         <h2 className="font-display text-[21px] font-bold tracking-tight text-ink">
           {scoring ? "Scoring your candidates…" : "No strong matches yet"}
         </h2>
@@ -102,7 +108,7 @@ export function ReportView({
             them in the later batches.</>
           ) : (
             <>Nothing scored high enough to be worth your time
-            {hidden > 0 ? ` (${hidden} weak ${hidden === 1 ? "match" : "matches"} hidden)` : ""}.
+            {weak > 0 ? ` (${weak} weak ${weak === 1 ? "match" : "matches"} hidden)` : ""}.
             Answering the eligibility questions usually sharpens the picture — each answer can
             unlock programs we couldn&apos;t confirm yet.</>
           )}
@@ -113,16 +119,13 @@ export function ReportView({
 
   return (
     <section id="report" className="space-y-4">
-      {/* kit header line: Top Matches + live counts */}
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <h3 className="font-display text-[22px] font-bold tracking-tight text-ink">
-          Top Matches
-        </h3>
-        <span className="tnum text-[13px] text-faint">
-          {report.meter.unlockedCount} eligible · {visible.length} ranked
-          {matchedUsd > 0 ? ` · up to ${fmtUsd(matchedUsd)}` : ""}
-        </span>
-      </div>
+      {/* the pagehead filter can empty the list — say so rather than go blank */}
+      {visible.length === 0 && (
+        <div className="or-card p-6 text-center text-sm text-muted">
+          All {strong.length} matches are hidden by the current filter — re-check a tier above
+          to see them.
+        </div>
+      )}
 
       {visible.map((m, i) => (
         <MatchCard
@@ -133,16 +136,18 @@ export function ReportView({
           profile={report.profile}
           index={i}
           spotlight={spotlight?.id === m.opportunityId ? spotlight.nonce : undefined}
+          defaultExpanded={m.opportunityId === topScoredId}
+          bulk={bulk}
         />
       ))}
-      {hidden > 0 && (
+      {weak > 0 && (
         <div>
           <button
             type="button"
             onClick={() => setShowWeak((v) => !v)}
             className="text-[13px] font-medium text-muted transition-colors hover:text-ink"
           >
-            {showWeak ? "Hide" : "Show"} {hidden} weaker {hidden === 1 ? "match" : "matches"}
+            {showWeak ? "Hide" : "Show"} {weak} weaker {weak === 1 ? "match" : "matches"}
             {showWeak ? "" : " ▸"}
           </button>
           {showWeak && (
@@ -195,9 +200,9 @@ function FutureFitsSection({ report }: { report: UiReport }) {
           <li key={f.opportunityId} className="rounded-xl bg-surface-low px-4 py-3">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <span className="min-w-0 text-[14px] font-medium text-ink">{f.title}</span>
-              <span className="shrink-0 rounded-full bg-surface-variant px-2.5 py-0.5 text-[11.5px] font-semibold text-muted">
+              <Badge tone="neutral" pill className="shrink-0">
                 {REASON_LABEL[f.reason] ?? f.reason}
-              </span>
+              </Badge>
             </div>
             <p className="mt-1 text-[13px] leading-relaxed text-muted">{f.detail}</p>
             <p className="mt-0.5 text-[12px] text-faint">{f.agency}</p>
@@ -214,20 +219,19 @@ function FutureFitsSection({ report }: { report: UiReport }) {
 export function HonestNoPanel({
   report,
   spotlight,
+  bulk,
 }: {
   report: UiReport;
   spotlight?: Spotlight | null;
+  bulk?: BulkToggle | null;
 }) {
   const opps = report.opportunities ?? {};
   return (
-    <section
-      id="report"
-      className="card space-y-3 p-6 sm:p-7"
-    >
+    <section id="report" className="or-card space-y-3">
       {/* the one small risk accent this panel gets */}
-      <span className="inline-block rounded-full bg-risk-soft px-3 py-1 text-[12px] font-semibold text-risk">
+      <Badge tone="danger" pill>
         Determination
-      </span>
+      </Badge>
       <h2 className="font-display text-[21px] font-bold tracking-tight text-ink">
         No strong federal match — here&apos;s the honest read
       </h2>
@@ -236,8 +240,8 @@ export function HonestNoPanel({
       )}
       {report.matches.length > 0 && (
         <div className="space-y-2.5 pt-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
-            ADJACENT &amp; STATE OPTIONS WORTH A LOOK
+          <p className="mk-label" style={{ textTransform: "uppercase" }}>
+            Adjacent &amp; state options worth a look
           </p>
           {report.matches.map((m, i) => (
             <MatchCard
@@ -248,14 +252,16 @@ export function HonestNoPanel({
               profile={report.profile}
               index={i}
               spotlight={spotlight?.id === m.opportunityId ? spotlight.nonce : undefined}
+              defaultExpanded={i === 0}
+              bulk={bulk}
             />
           ))}
         </div>
       )}
       {report.rejected.length > 0 && (
         <div className="space-y-1 border-t border-hairline pt-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
-            NEAR-MISSES (AND WHY THEY FAIL)
+          <p className="mk-label" style={{ textTransform: "uppercase" }}>
+            Near-misses (and why they fail)
           </p>
           {report.rejected.map((g: GatedOpportunity) => (
             <p key={g.opportunity.id} className="text-sm text-muted">
@@ -275,10 +281,7 @@ export function ReportSkeleton() {
   return (
     <div className="space-y-3" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          className="shimmer card space-y-3 p-6"
-        >
+        <div key={i} className="shimmer or-card space-y-3">
           <div className="h-4 w-2/3 rounded bg-soft" />
           <div className="h-3 w-1/2 rounded bg-hairline" />
           <div className="h-3 w-5/6 rounded bg-soft" />
@@ -308,12 +311,23 @@ export function HowItWorks() {
     },
   ];
   return (
-    <section id="how-it-works" className="grid gap-3 sm:grid-cols-3">
+    <section id="how-it-works" className="grid gap-3 text-left sm:grid-cols-3">
       {steps.map((s) => (
-        <div key={s.n} className="card p-6">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-soft font-display text-[14px] font-bold text-brand">
+        <div key={s.n} className="or-card">
+          <span
+            style={{
+              display: "grid",
+              placeItems: "center",
+              width: 36,
+              height: 36,
+              borderRadius: 9999,
+              background: "var(--color-primary-fixed)",
+              color: "var(--color-primary)",
+              font: "700 15px/1 var(--font-headline)",
+            }}
+          >
             {s.n}
-          </div>
+          </span>
           <p className="mt-3 font-display text-[16px] font-bold tracking-tight text-ink">
             {s.title}
           </p>

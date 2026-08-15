@@ -62,14 +62,19 @@ export default function StatusStrip({ lines, busy }: { lines: string[]; busy: bo
   }, [lines]);
 
   // Real progress during ranking, from "Scored X/Y" lines.
-  const rankFrac = useMemo(() => {
+  const rank = useMemo(() => {
     for (let i = lines.length - 1; i >= 0; i--) {
       const m = lines[i].match(/^Scored (\d+)\/(\d+)/);
-      if (m) return Math.min(1, Number(m[1]) / Math.max(1, Number(m[2])));
-      if (lines[i].startsWith("Ranking ")) return 0;
+      if (m) {
+        const scored = Number(m[1]);
+        const total = Math.max(1, Number(m[2]));
+        return { frac: Math.min(1, scored / total), scored, total };
+      }
+      if (lines[i].startsWith("Ranking ")) return { frac: 0, scored: 0, total: 0 };
     }
-    return 0;
+    return { frac: 0, scored: 0, total: 0 };
   }, [lines]);
+  const rankFrac = rank.frac;
 
   // Time-based fill for single-call phases: restart the clock on phase change.
   const phaseStartRef = useRef(Date.now());
@@ -90,11 +95,10 @@ export default function StatusStrip({ lines, busy }: { lines: string[]; busy: bo
   let eta: string;
   if (phase.key === "ranking") {
     frac = rankFrac * RANK_WEIGHT;
-    // Measured: first scores ~25s in, the rest drain fast. Estimate from
-    // observed pace once moving; before that, quote the typical total.
-    const remaining =
-      rankFrac > 0.05 ? Math.max(3, Math.round((elapsed / rankFrac) * (1 - rankFrac))) : 55;
-    eta = rankFrac > 0 ? `~${remaining}s left` : "usually ~1 min";
+    // Batches run in parallel and the first carries all the LLM latency, so
+    // pace extrapolation lies badly (once quoted ~10x reality). The scored
+    // count is the honest number we actually have — show that.
+    eta = rank.scored > 0 ? `${rank.scored}/${rank.total} scored` : "first scores land in ~30s";
   } else if (phase.key === "evidence") {
     frac = RANK_WEIGHT + Math.min(0.9, elapsed / (phase.estSec ?? 6)) * (1 - RANK_WEIGHT);
     eta = "almost done";
@@ -107,22 +111,24 @@ export default function StatusStrip({ lines, busy }: { lines: string[]; busy: bo
   }
 
   return (
-    <section
-      id="run-status"
-      className="space-y-2 rounded-2xl border border-hairline bg-card px-4 py-3 shadow-card"
-      aria-live="polite"
-    >
+    <section id="run-status" className="space-y-2" aria-live="polite">
       <div className="flex items-baseline justify-between gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+        <p className="mk-label uppercase">
           <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-accent align-middle" />
           {phase.label}…
         </p>
-        <p className="tnum text-[12px] text-faint">{eta}</p>
+        <p className="mk-num text-[12px]" style={{ color: "var(--color-outline)" }}>
+          {eta}
+        </p>
       </div>
-      <div className="h-[3px] overflow-hidden rounded-full bg-hairline">
+      <div className="or-progress or-progress--rounded">
         <div
-          className="h-full rounded-full bg-brand transition-[width] duration-500 ease-out"
-          style={{ width: `${Math.round(frac * 100)}%` }}
+          className="or-progress__fill"
+          style={{
+            width: `${Math.round(frac * 100)}%`,
+            borderRadius: 9999,
+            transition: "width 500ms ease-out",
+          }}
         />
       </div>
     </section>

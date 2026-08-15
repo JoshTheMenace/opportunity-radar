@@ -1,21 +1,22 @@
 "use client";
 
-// Region: the company dossier — Federal Catalyst "founder profile" card.
-// Initials avatar, name + location, confidence chip, then ledger rows.
-// Unknown critical rows get a quiet hollow-dot marker so the founder can
-// see what answering is still worth. "Edit" flips the ledger into a
-// compact form — the founder's manual corrections always win over both
-// extraction and the weekly dream research. Lives in the left column.
+// Region: the company dossier — the mock's centered founder-profile card.
+// 80px initials avatar, name + location, confidence chip, or-kv ledger rows
+// (missing critical facts pulse red), then the mk-meter completeness bar fed
+// by profileReadiness, naming the fact that's still blocking ranking.
+// "Edit" flips the ledger into a compact form — the founder's manual
+// corrections always win over both extraction and the weekly dream research.
 
 import { useState } from "react";
 import type { CompanyProfile } from "@/lib/types";
 import { profileReadiness } from "@/lib/engine/readiness";
+import { Avatar, Badge, Button, KeyValueRow } from "./ui";
 import { fmtUsd } from "./shared";
 
 interface Row {
   label: string;
   value: string | null;
-  /** Unknowns on required-for-ranking fields get a hollow-dot marker. */
+  /** Unknowns on required-for-ranking fields get the red pulsing marker. */
   critical?: boolean;
 }
 
@@ -76,29 +77,33 @@ export default function ProfileCard({
   const rs = rows(profile);
   const readiness = profileReadiness(profile);
   const confidence = readiness.ready ? "High" : readiness.knownCount >= 3 ? "Medium" : "Low";
+  const pct = Math.round((readiness.knownCount / readiness.requiredCount) * 100);
   const loc = profile.location?.state ? `${profile.location.state}, USA` : "Location unknown";
 
   return (
     <section
       id="dossier"
-      className="card relative flex flex-col items-center overflow-hidden p-6 text-center"
+      className="or-card"
+      style={{ overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}
     >
-      <div className="mb-2 mt-1 flex h-16 w-16 items-center justify-center rounded-full border-2 border-soft bg-soft font-display text-xl font-bold text-brand">
-        {initials(profile.name)}
-      </div>
-      <h3 className="font-display text-[18px] font-bold tracking-tight text-ink">
+      <Avatar
+        initials={initials(profile.name)}
+        size="lg"
+        style={{ marginTop: 4, marginBottom: 12 }}
+      />
+      <h3 style={{ margin: "0 0 4px", font: "600 24px/32px var(--font-headline)", color: "var(--color-text-deep)" }}>
         {profile.name ?? "Your company"}
       </h3>
-      <span className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+      <span className="mk-label" style={{ textTransform: "uppercase", marginBottom: 12 }}>
         {loc}
       </span>
-      <div
-        className={`mb-4 rounded-full px-3 py-1 text-[12px] font-semibold ${
-          confidence === "High" ? "bg-good-soft text-good" : "bg-warn-soft text-warn"
-        }`}
+      <Badge
+        tone={confidence === "High" ? "fit" : "caution"}
+        icon={confidence === "High" ? "check_circle" : "info"}
+        style={{ width: "100%", justifyContent: "center", marginBottom: 24 }}
       >
         Confidence: {confidence}
-      </div>
+      </Badge>
 
       {editing && onSave ? (
         <ProfileEditForm
@@ -111,37 +116,63 @@ export default function ProfileCard({
         />
       ) : (
         <>
-          <dl className="w-full space-y-2 text-left">
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8, textAlign: "left" }}>
             {rs.map((r) => {
               const missing = r.value == null;
               return (
-                <div key={r.label} className="flex items-baseline justify-between gap-3 border-b border-hairline pb-1 last:border-0">
-                  <dt className="flex items-center gap-1.5 text-[12.5px] text-faint">
-                    {missing && r.critical && (
-                      <span className="h-2 w-2 rounded-full border border-line" />
-                    )}
-                    {r.label}
-                  </dt>
-                  {r.value != null ? (
-                    // key on the value so a fresh fact re-triggers the entrance animation
-                    <dd key={r.value} className="card-in tnum text-[13.5px] font-semibold text-ink">
-                      {r.value}
-                    </dd>
-                  ) : (
-                    <dd className="text-[13.5px] font-medium italic text-faint">Unknown</dd>
-                  )}
-                </div>
+                <KeyValueRow
+                  key={r.label}
+                  label={r.label}
+                  tone={missing && r.critical ? "danger" : "default"}
+                  pulse={missing && r.critical}
+                  value={
+                    r.value != null ? (
+                      // key on the value so a fresh fact re-triggers the entrance animation
+                      <span key={r.value} className="card-in tnum">
+                        {r.value}
+                      </span>
+                    ) : r.critical ? (
+                      "Unknown"
+                    ) : (
+                      <span className="italic text-faint">Unknown</span>
+                    )
+                  }
+                />
               );
             })}
-          </dl>
+          </div>
+          <div className="mk-meter">
+            <div className="mk-meter__head">
+              <span className="mk-label">PROFILE COMPLETE</span>
+              <span className="mk-meter__value">{pct}%</span>
+            </div>
+            <div
+              className="mk-meter__track"
+              role="progressbar"
+              aria-valuenow={pct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Profile complete"
+            >
+              <div className="mk-meter__fill" style={{ width: `${pct}%` }} />
+            </div>
+            <p className="mk-meter__note">
+              {readiness.knownCount} of {readiness.requiredCount} key facts answered.
+              {readiness.missing.length > 0 &&
+                ` Still blocking ranking: ${readiness.missing[0].label}.`}
+            </p>
+          </div>
           {onSave && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
+              block
+              icon="edit"
+              style={{ marginTop: 16 }}
               onClick={() => setEditing(true)}
-              className="mt-4 w-full rounded-xl border border-line px-3 py-1.5 text-[13px] font-semibold text-muted transition-colors hover:bg-surface-low hover:text-ink"
             >
               Edit profile
-            </button>
+            </Button>
           )}
         </>
       )}
@@ -227,42 +258,42 @@ function ProfileEditForm({
     });
   }
 
-  const input =
-    "w-full rounded-lg border border-line bg-surface-low px-2.5 py-1.5 text-[13px] text-ink focus:border-brand focus:outline-none";
-  const label = "block text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-faint";
+  const input = "or-field";
+  const inputPad = { padding: "6px 10px" } as const;
+  const label = "mk-label block text-left uppercase";
 
   return (
     <div className="w-full space-y-2.5 text-left">
       <div>
         <span className={label}>Company name</span>
-        <input className={input} value={f.name} onChange={(e) => set("name", e.target.value)} />
+        <input className={input} style={inputPad} value={f.name} onChange={(e) => set("name", e.target.value)} />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <span className={label}>City</span>
-          <input className={input} value={f.city} onChange={(e) => set("city", e.target.value)} />
+          <input className={input} style={inputPad} value={f.city} onChange={(e) => set("city", e.target.value)} />
         </div>
         <div>
           <span className={label}>State</span>
-          <input className={input} value={f.state} maxLength={2} placeholder="UT" onChange={(e) => set("state", e.target.value)} />
+          <input className={input} style={inputPad} value={f.state} maxLength={2} placeholder="UT" onChange={(e) => set("state", e.target.value)} />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
           <span className={label}>Team size</span>
-          <input className={input} inputMode="numeric" value={f.employees} onChange={(e) => set("employees", e.target.value)} />
+          <input className={input} style={inputPad} inputMode="numeric" value={f.employees} onChange={(e) => set("employees", e.target.value)} />
         </div>
         <div>
           <span className={label}>Revenue / yr</span>
-          <input className={input} placeholder="$500K" value={f.revenue} onChange={(e) => set("revenue", e.target.value)} />
+          <input className={input} style={inputPad} placeholder="$500K" value={f.revenue} onChange={(e) => set("revenue", e.target.value)} />
         </div>
         <div>
           <span className={label}>Raised</span>
-          <input className={input} placeholder="$1.5M" value={f.raised} onChange={(e) => set("raised", e.target.value)} />
+          <input className={input} style={inputPad} placeholder="$1.5M" value={f.raised} onChange={(e) => set("raised", e.target.value)} />
         </div>
         <div>
           <span className={label}>Stage</span>
-          <select className={input} value={f.maturity} onChange={(e) => set("maturity", e.target.value)}>
+          <select className={input} style={inputPad} value={f.maturity} onChange={(e) => set("maturity", e.target.value)}>
             <option value="">unknown</option>
             {MATURITY.map((m) => (
               <option key={m} value={m}>{m}</option>
@@ -271,11 +302,11 @@ function ProfileEditForm({
         </div>
         <div>
           <span className={label}>Seeking (min)</span>
-          <input className={input} placeholder="$500K" value={f.needMin} onChange={(e) => set("needMin", e.target.value)} />
+          <input className={input} style={inputPad} placeholder="$500K" value={f.needMin} onChange={(e) => set("needMin", e.target.value)} />
         </div>
         <div>
           <span className={label}>Seeking (max)</span>
-          <input className={input} placeholder="$3M" value={f.needMax} onChange={(e) => set("needMax", e.target.value)} />
+          <input className={input} style={inputPad} placeholder="$3M" value={f.needMax} onChange={(e) => set("needMax", e.target.value)} />
         </div>
       </div>
       {(
@@ -288,7 +319,8 @@ function ProfileEditForm({
         <div key={key} className="flex items-center justify-between gap-2">
           <span className={label}>{lab}</span>
           <select
-            className="rounded-lg border border-line bg-surface-low px-2 py-1 text-[13px] text-ink focus:border-brand focus:outline-none"
+            className="or-field w-auto"
+            style={inputPad}
             value={f[key] == null ? "" : f[key] ? "yes" : "no"}
             onChange={(e) => set(key, e.target.value === "" ? null : e.target.value === "yes")}
           >
@@ -300,20 +332,12 @@ function ProfileEditForm({
       ))}
       {err && <p className="text-[12.5px] text-risk">{err}</p>}
       <div className="flex gap-2 pt-1">
-        <button
-          type="button"
-          onClick={save}
-          className="flex-1 rounded-xl bg-brand px-3 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-brand-strong"
-        >
+        <Button variant="filled" size="sm" className="flex-1" onClick={save}>
           Save changes
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-xl border border-line px-3 py-1.5 text-[13px] font-semibold text-muted transition-colors hover:bg-surface-low"
-        >
+        </Button>
+        <Button variant="outline" size="sm" onClick={onCancel}>
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

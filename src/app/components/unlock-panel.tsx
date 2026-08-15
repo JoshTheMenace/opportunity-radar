@@ -1,6 +1,6 @@
 "use client";
 
-// Region: Unlock Results — the kit's locked right-rail panel, powered by the
+// Region: Unlock Results — the mock's tinted mk-ask card, powered by the
 // real eligibility meter. One active question at a time with its rich answer
 // widget (tap a state, tap an amount); the rest queue below with their
 // dollar-unlock chips. Freeform chat stays as the escape hatch — one typed
@@ -10,6 +10,7 @@ import { useState } from "react";
 import type { EligibilityMeter, GateField, InterviewQuestion } from "@/lib/types";
 import { isRequiredField } from "@/lib/engine/readiness";
 import FieldWidget, { type WidgetAnswer } from "./field-widgets";
+import { Badge, Icon } from "./ui";
 import { fmtUsd, type QuickReply } from "./shared";
 
 /** Synthetic card for the funding amount (not a GateField; freeform-backed). */
@@ -66,21 +67,28 @@ export default function UnlockPanel({
   }
 
   return (
-    <section
-      id="unlock"
-      className="card relative overflow-hidden p-6"
-    >
-      <h4 className="mb-1 font-display text-[18px] font-bold tracking-tight text-ink">Unlock Results</h4>
-      <p className="mb-4 text-[14px] leading-relaxed text-muted">
+    <section id="unlock" className="or-card mk-ask">
+      <h4
+        style={{
+          margin: "0 0 8px",
+          font: "600 20px/28px var(--font-headline)",
+          color: "var(--color-text-deep)",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <Icon name="key" color="var(--color-primary)" aria-hidden />
+        Unlock Results
+      </h4>
+      <p style={{ margin: "0 0 16px", font: "400 14px/20px var(--font-body)", color: "var(--color-on-surface-variant)" }}>
         {remaining > 0 ? (
           <>
-            Answer below to reveal{" "}
-            <span className="font-mono font-semibold text-brand">{fmtUsd(remaining)}</span>
+            Answer below to reveal <span className="mk-num">{fmtUsd(remaining)}</span>
             {hiddenCount > 0 && (
               <>
                 {" "}
-                across <span className="font-mono font-semibold text-brand">{hiddenCount}</span>{" "}
-                more programs
+                across <span className="mk-num">{hiddenCount}</span> more programs
               </>
             )}{" "}
             and firm up your eligibility.
@@ -91,13 +99,13 @@ export default function UnlockPanel({
       </p>
 
       {/* active question + its widget */}
-      <div className="rounded-2xl border border-accent/30 bg-soft/70 p-4">
+      <div className="or-card" style={{ padding: 16 }}>
         <p className="text-[14px] font-semibold text-ink">
           {active.question}
           {isRequiredField(active.field) && (
-            <span className="ml-2 rounded-full bg-warn-soft px-2.5 py-0.5 align-middle text-[12px] font-semibold text-warn">
+            <Badge tone="caution" pill className="ml-2 align-middle">
               needed for ranking
-            </span>
+            </Badge>
           )}
         </p>
         <p className="mb-3 mt-1 text-[12.5px] text-faint">{active.whyAsking}</p>
@@ -106,7 +114,7 @@ export default function UnlockPanel({
 
       {/* queued questions with their unlock chips */}
       {rest.length > 0 && (
-        <div className="mt-3 space-y-1.5">
+        <div className="mt-3 flex flex-col gap-1.5">
           {rest.map((q) => {
             const u = unlockFor(String(q.field));
             return (
@@ -115,11 +123,11 @@ export default function UnlockPanel({
                 type="button"
                 disabled={busy}
                 onClick={() => setActiveField(String(q.field))}
-                className="flex w-full items-baseline justify-between gap-2 rounded-xl bg-surface-low px-4 py-2.5 text-left transition-colors hover:bg-surface disabled:opacity-50"
+                className="flex w-full items-baseline justify-between gap-2 rounded-lg bg-card px-4 py-2.5 text-left transition-colors hover:bg-surface-low disabled:opacity-50"
               >
                 <span className="min-w-0 truncate text-[13px] text-muted">{q.question}</span>
                 {u && (
-                  <span className="shrink-0 font-mono text-[12px] font-semibold text-good">
+                  <span className="mk-num shrink-0 text-[12px]" style={{ color: "var(--color-fit-strong)" }}>
                     +{fmtUsd(u.unlockUsd)}
                   </span>
                 )}
@@ -135,10 +143,11 @@ export default function UnlockPanel({
           {quickReplies.map((r) => (
             <button
               key={r.label}
+              type="button"
               disabled={busy}
               onClick={() => onSend(r.message)}
               title={r.message}
-              className="rounded-full bg-soft px-3 py-1 text-[12px] font-semibold text-brand transition-colors hover:bg-brand-fixed disabled:opacity-40"
+              className="or-btn or-btn--glass or-btn--sm"
             >
               {r.label}
             </button>
@@ -161,12 +170,10 @@ export default function UnlockPanel({
           value={chat}
           onChange={(e) => setChat(e.target.value)}
           placeholder="Or answer in your own words…"
-          className="min-w-0 flex-1 rounded-xl border border-line bg-card px-4 py-2.5 text-[14px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
+          className="or-field min-w-0 flex-1"
+          style={{ padding: "8px 12px" }}
         />
-        <button
-          disabled={busy || !chat.trim()}
-          className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
-        >
+        <button className="or-btn or-btn--filled" disabled={busy || !chat.trim()}>
           Send
         </button>
       </form>

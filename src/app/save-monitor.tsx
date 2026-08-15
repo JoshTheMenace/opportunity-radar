@@ -1,16 +1,15 @@
 "use client";
 
-// Drop-in "Save & monitor" card. Mount anywhere the final report is
-// available (e.g. under ReportView in opportunity-map.tsx):
-//
-//   <SaveMonitor profile={report.profile} />
+// Drop-in "Save & monitor" card (kit dress). Mounted under the report in
+// opportunity-map.tsx; match cards' "Save for Later" buttons scroll here
+// (the section id is the affordance target).
 //
 // Saving is the opt-in: the company is enrolled in the Radar watch
-// cycle (see /radar). Kept as its own file so it can be wired into
-// opportunity-map.tsx with a 2-line change whenever that file is free.
+// cycle (see /radar).
 
 import { useState } from "react";
 import type { CompanyProfile } from "@/lib/types";
+import { Button } from "./components/ui";
 
 export default function SaveMonitor({ profile }: { profile: CompanyProfile }) {
   const [name, setName] = useState(profile.name ?? "");
@@ -42,8 +41,8 @@ export default function SaveMonitor({ profile }: { profile: CompanyProfile }) {
   }
 
   return (
-    <div className="card mt-6 p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+    <div id="save-monitor" className="or-card mt-6">
+      <p className="mk-label" style={{ textTransform: "uppercase" }}>
         Standing watch
       </p>
       <div className="mt-1 font-display text-[17px] font-bold tracking-tight text-ink">
@@ -56,24 +55,22 @@ export default function SaveMonitor({ profile }: { profile: CompanyProfile }) {
       {state !== "done" ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <input
-            className="rounded-xl border border-line bg-card px-4 py-2.5 text-[14px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
+            className="or-field w-auto"
+            style={{ padding: "8px 12px" }}
             placeholder="Company name"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
           <input
-            className="rounded-xl border border-line bg-card px-4 py-2.5 text-[14px] text-ink placeholder:text-faint focus:border-accent focus:outline-none"
+            className="or-field w-auto"
+            style={{ padding: "8px 12px" }}
             placeholder="Email for alerts (optional)"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <button
-            className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong disabled:opacity-50"
-            disabled={!name.trim() || state === "saving"}
-            onClick={save}
-          >
-            {state === "saving" ? "Saving..." : "Save & monitor"}
-          </button>
+          <Button variant="filled" disabled={!name.trim() || state === "saving"} onClick={save}>
+            {state === "saving" ? "Saving…" : "Save & monitor"}
+          </Button>
         </div>
       ) : null}
       {message && (

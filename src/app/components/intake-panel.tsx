@@ -1,8 +1,11 @@
 "use client";
 
-// Region: intake — the founder's description box + analyze action.
-// Catalyst light theme: the "Company intake" card from the reference mock.
+// Region: intake — the founder's description box + analyze action, in kit
+// dress. `hero` renders the centered onboarding version (big headline);
+// otherwise it's the compact re-scan card at the top of the center column.
 // Sample chips give first-time users (and the demo) a one-tap start.
+
+import { Button, TextArea } from "./ui";
 
 const SAMPLES: { label: string; text: string }[] = [
   {
@@ -23,59 +26,66 @@ export default function IntakePanel({
   text,
   busy,
   restored,
+  hero = false,
   onText,
   onAnalyze,
 }: {
   text: string;
   busy: boolean;
   restored: boolean;
+  /** Onboarding presentation: centered, big headline. */
+  hero?: boolean;
   onText: (v: string) => void;
   onAnalyze: () => void;
 }) {
   return (
-    <section id="intake" className="card space-y-4 p-6 sm:p-7">
-      <div className="space-y-1.5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
-          Company intake
-        </p>
-        <h1 className="font-display text-[27px] font-bold leading-tight tracking-tight text-ink sm:text-[31px]">
-          Find the government funding your startup qualifies for
-        </h1>
-        <p className="text-[14.5px] text-muted">
-          Describe your company. We map it to US government funding — honestly.
-        </p>
-      </div>
+    <section id="intake" className="or-card" style={hero ? { padding: 40, textAlign: "center" } : undefined}>
+      <p className="mk-label" style={{ textTransform: "uppercase" }}>
+        Company intake
+      </p>
+      {hero && (
+        <>
+          <h1
+            style={{
+              margin: "12px 0 8px",
+              font: "700 36px/44px var(--font-headline)",
+              letterSpacing: "-0.01em",
+              color: "var(--color-text-deep)",
+            }}
+          >
+            Find the government funding your startup qualifies for
+          </h1>
+          <p style={{ margin: "0 0 20px", font: "400 16px/24px var(--font-body)", color: "var(--color-on-surface-variant)" }}>
+            Describe your company. We map it to US government funding — honestly.
+          </p>
+        </>
+      )}
       {restored && (
-        <p className="text-[12.5px] text-faint">
+        <p className="text-[12.5px] text-faint" style={{ margin: hero ? "0 0 8px" : "8px 0 0" }}>
           Restored your saved profile — interview answers carry over.
         </p>
       )}
-      <textarea
+      <TextArea
         value={text}
         onChange={(e) => onText(e.target.value)}
         placeholder="Tell us about your company — what you build, who it's for, your stage, where you're based…"
-        rows={5}
-        className="w-full resize-y rounded-2xl border border-line bg-surface-low/60 p-4 text-[15px] leading-relaxed text-ink placeholder:text-faint focus:border-accent focus:bg-card focus:outline-none"
+        rows={hero ? 5 : 4}
+        style={{ marginTop: hero ? 0 : 12, textAlign: "left" }}
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          onClick={onAnalyze}
-          disabled={busy || !text.trim()}
-          className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {busy ? "Scanning…" : "Scan programs →"}
-        </button>
+      <div
+        className="mk-row"
+        style={{ marginTop: 16, justifyContent: hero ? "center" : undefined, gap: 8 }}
+      >
+        <Button variant="filled" iconAfter="arrow_forward" onClick={onAnalyze} disabled={busy || !text.trim()}>
+          {busy ? "Scanning…" : "Scan programs"}
+        </Button>
         {!text.trim() && (
           <>
-            <span className="text-[12.5px] text-faint">or try:</span>
+            <span className="mk-label">or try:</span>
             {SAMPLES.map((s) => (
-              <button
-                key={s.label}
-                onClick={() => onText(s.text)}
-                className="rounded-full bg-soft px-3.5 py-1.5 text-[12.5px] font-semibold text-brand transition-colors hover:bg-brand-fixed"
-              >
+              <Button key={s.label} variant="tonal" size="sm" pill onClick={() => onText(s.text)}>
                 {s.label}
-              </button>
+              </Button>
             ))}
           </>
         )}

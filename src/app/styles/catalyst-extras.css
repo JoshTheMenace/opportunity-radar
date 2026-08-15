@@ -76,6 +76,18 @@
 .or-nav__link { white-space: nowrap; }
 .mk-navright { flex: none; }
 
+/* App nav (3 children: brand / links / actions). Desktop keeps the mock's
+   left-cluster look; small screens wrap the tabs onto their own scrollable
+   second row instead of clipping them off the edge. */
+.mk-appnav .mk-navlinks { margin-right: auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.mk-appnav .mk-navlinks::-webkit-scrollbar { display: none; }
+@media (max-width: 860px) {
+  .mk-appnav { flex-wrap: wrap; height: auto; padding: 10px 12px 6px; row-gap: 2px; }
+  .mk-appnav .mk-navlinks { order: 3; width: 100%; margin: 2px 0 0; }
+  .mk-appnav .mk-navright { order: 2; margin-left: auto; }
+  .mk-appnav .or-nav__link { padding: 8px 10px; }
+}
+
 /* Completeness meter — foot of the dossier card, number stated. */
 .mk-meter { width: 100%; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--color-border-ice); }
 .mk-meter__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }

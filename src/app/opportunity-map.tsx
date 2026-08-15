@@ -1,21 +1,22 @@
 "use client";
 
 // Opportunity Map — the stateful orchestrator. Owns the SSE stream + profile
-// state and composes the mission-control page; all visual regions live in
+// state and composes the Federal Catalyst page; all visual regions live in
 // ./components/* so the styling pass can go file-by-file.
 //
-// Page structure (mission control):
-//   #intake                — description box, analyze, sample chips
-//   #workspace             — two-column grid on lg, stacked on mobile
-//     #canvas  (main)      — skeleton/report/honest-no, save-&-monitor;
-//                            cards materialize + take the agent's spotlight
-//     #agent-rail (right)  — AgentDock: ONE agent presence (scope, status,
-//                            narration w/ pointing power) + meter/interview/
-//                            voice as its instruments
+// Page structure (mock's 3/6/3 grid):
+//   mk-pagehead        — "Top Matches" + live counts + filter/sort/collapse
+//   mk-c3 (left)       — ProfileCard dossier + ActionPlan checklist
+//   mk-c6 (center)     — AgentDock (live runs) + intake + report/honest-no,
+//                        save-&-monitor; cards take the agent's spotlight
+//   mk-c3 (right)      — UnlockPanel + Deadlines timeline
+// Before anything exists (no profile, no report, not busy) the grid gives
+// way to a single centered onboarding hero: intake + voice + how-it-works.
 
 import { useEffect, useRef, useState } from "react";
-import type { CompanyProfile, GateField } from "@/lib/types";
+import type { CompanyProfile, FitTier, GateField } from "@/lib/types";
 import { profileReadiness, readinessAsks } from "@/lib/engine/readiness";
+import { meterValueUsd } from "@/lib/engine/gates";
 import VoicePanel from "./voice-panel";
 import SaveMonitor from "./save-monitor";
 import IntakePanel from "./components/intake-panel";
@@ -23,9 +24,21 @@ import AgentDock from "./components/agent-dock";
 import ProfileCard from "./components/profile-card";
 import ActionPlan from "./components/action-plan";
 import UnlockPanel from "./components/unlock-panel";
+import MapControls from "./components/map-controls";
+import MapDeadlines from "./components/map-deadlines";
 import { HonestNoPanel, HowItWorks, ReportSkeleton, ReportView } from "./components/report-view";
-import UtahPathways from "./components/utah-pathways";
-import type { QuickReply, Spotlight, UiReport } from "./components/shared";
+import { usePageAssistantContext } from "./components/assistant/context";
+import {
+  FILTERABLE_TIERS,
+  MIN_SCORE,
+  fmtUsd,
+  visibleMatches,
+  type BulkToggle,
+  type QuickReply,
+  type SortMode,
+  type Spotlight,
+  type UiReport,
+} from "./components/shared";
 import type { EligibilityMeter, InterviewQuestion } from "@/lib/types";
 
 type Ev =
@@ -46,6 +59,10 @@ export default function OpportunityMap() {
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [restored, setRestored] = useState(false);
   const [spotlight, setSpotlight] = useState<Spotlight | null>(null);
+  // Pagehead view controls — pure client-side; never touch the engine state.
+  const [filters, setFilters] = useState<Set<FitTier>>(new Set(FILTERABLE_TIERS));
+  const [sort, setSort] = useState<SortMode>("score");
+  const [bulk, setBulk] = useState<BulkToggle | null>(null);
   // Render mirror of profileRef so the dossier re-paints as facts land.
   const [profileView, setProfileView] = useState<CompanyProfile | null>(null);
   const profileRef = useRef<CompanyProfile | null>(null);
@@ -139,7 +156,13 @@ export default function OpportunityMap() {
   // spotlight + scroll the strongest card the founder can actually see.
   useEffect(() => {
     if (prevBusy.current && !busy && report && !report.honestNo) {
-      const top = report.matches.find((m) => m.score >= 50);
+      // highest score wins, matching the card the list opens by default
+      const top = report.matches
+        .filter((m) => m.score >= MIN_SCORE)
+        .reduce<(typeof report.matches)[number] | null>(
+          (a, b) => (a && a.score >= b.score ? a : b),
+          null,
+        );
       if (top) setSpotlight({ id: top.opportunityId, nonce: Date.now() });
     }
     prevBusy.current = busy;
@@ -249,7 +272,27 @@ export default function OpportunityMap() {
     return () => ac.abort();
   }, [busy, questions]);
 
-  const started = busy || report != null || activity.length > 0;
+  // Register what this page shows with the app-wide assistant drawer.
+  usePageAssistantContext({
+    page: "map",
+    title: "Opportunity Map",
+    data: report
+      ? {
+          topMatches: report.matches.slice(0, 5).map((m) => {
+            const o = report.opportunities?.[m.opportunityId];
+            return {
+              title: o?.title ?? m.opportunityId,
+              tier: m.tier,
+              score: m.score,
+              closeDate: o?.closeDate ?? null,
+              awardCeilingUsd: o?.awardCeilingUsd ?? null,
+            };
+          }),
+          meterRemainingUsd: Math.max(0, report.meter.potentialUsd - report.meter.unlockedUsd),
+          honestNo: report.honestNo,
+        }
+      : null,
+  });
 
   // Readiness hold: matches were intentionally not ranked. Meter questions
   // only cover fields some retrieved gate misses, so synthesize cards for the
@@ -265,82 +308,168 @@ export default function OpportunityMap() {
       ]
     : questions;
 
+  // Nothing exists yet → the centered onboarding hero replaces the grid.
+  // (activity counts as started so voice-driven runs flip to the dashboard.)
+  const onboarding = !profileView && !report && !busy && activity.length === 0;
+
+  // The one visible list everything on the page agrees on (cards, counts,
+  // deadlines). Honest-no reports keep their own full adjacent list.
+  const visible = report && !report.honestNo ? visibleMatches(report, filters, sort) : [];
+  const tierCounts = Object.fromEntries(FILTERABLE_TIERS.map((t) => [t, 0])) as Record<
+    FitTier,
+    number
+  >;
+  for (const m of report?.matches ?? []) {
+    if (m.score >= MIN_SCORE && m.tier in tierCounts) tierCounts[m.tier] += 1;
+  }
+  const matchedUsd = visible.reduce((sum, m) => {
+    const o = report?.opportunities?.[m.opportunityId];
+    return o ? sum + meterValueUsd(o) : sum;
+  }, 0);
+  const headLabel = report
+    ? report.honestNo
+      ? "no strong federal match"
+      : `${report.meter.unlockedCount} eligible · ${visible.length} ranked${
+          matchedUsd > 0 ? ` · up to ${fmtUsd(matchedUsd)}` : ""
+        }`
+    : busy
+      ? "scan in progress…"
+      : "awaiting scan";
+  const collapsed = bulk?.mode === "collapse";
+  const dockLive = busy || activity.length > 0;
+
   return (
-    <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-10">
+    <main className="mk-page">
       {error && (
-        <div
-          id="error"
-          className="mb-4 rounded-xl border border-[#F2C4BC] bg-risk-soft p-3 text-[13px] text-risk"
-        >
-          {error}
+        <div id="error" className="or-alert or-alert--danger" style={{ marginBottom: 16 }}>
+          <p className="or-alert__body" style={{ margin: 0 }}>
+            {error}
+          </p>
         </div>
       )}
 
-      {/* Federal Catalyst 12-col map: dossier+plan | intake+matches | unlock+agent.
-          DOM order puts the center first so mobile stacks intake → rail → dossier. */}
-      <div id="workspace" className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <div id="canvas" className="min-w-0 space-y-4 lg:order-2 lg:col-span-6">
+      {!onboarding && (
+        <div className="mk-pagehead">
+          <h2 className="mk-h3">Top Matches</h2>
+          <div className="mk-row" style={{ gap: 16 }}>
+            <span className="mk-label">{headLabel}</span>
+            <MapControls
+              counts={tierCounts}
+              filters={filters}
+              onFilters={setFilters}
+              sort={sort}
+              onSort={setSort}
+              collapsed={collapsed}
+              onToggleCollapsed={() =>
+                setBulk({ mode: collapsed ? "expand" : "collapse", nonce: Date.now() })
+              }
+            />
+          </div>
+        </div>
+      )}
+
+      <div className={onboarding ? "mx-auto w-full max-w-2xl" : "mk-grid"}>
+        {/* span 3 — dossier + action plan */}
+        {!onboarding && (
+          <div className="mk-c3">
+            <ProfileCard
+              profile={profileView}
+              onSave={(p) => {
+                // Manual edits are authoritative: update the working profile,
+                // persist (keeps the stored future-fit snapshot), refresh view.
+                profileRef.current = p;
+                setProfileView(p);
+                persist(p);
+              }}
+            />
+            <ActionPlan report={report} />
+          </div>
+        )}
+
+        {/* span 6 (or the onboarding hero column). Slot order is stable so
+            VoicePanel keeps its live session across the onboarding→dashboard
+            flip — a remount would kill the WebSocket mid-conversation. */}
+        <div id="canvas" className={onboarding ? "flex min-w-0 flex-col gap-6" : "mk-c6 min-w-0"}>
+          {!onboarding && dockLive && (
+            <AgentDock lines={activity} busy={busy} report={report} onFocusMatch={focusMatch} />
+          )}
           <IntakePanel
             text={text}
             busy={busy}
             restored={restored}
+            hero={onboarding}
             onText={setText}
             onAnalyze={analyze}
           />
-          {!started && !profileView && <HowItWorks />}
-          {report && busy && (
-            <p className="animate-pulse font-mono text-[11px] text-faint">
-              Matches below update live as scoring finishes…
-            </p>
+          {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
+          <VoicePanel
+            getProfile={() => profileRef.current}
+            getReport={() => report}
+            onEngineEvent={handle}
+          />
+          {onboarding && <HowItWorks />}
+          {!onboarding && (
+            <>
+              {report && busy && (
+                <p className="mk-label animate-pulse">
+                  Matches below update live as scoring finishes…
+                </p>
+              )}
+              {busy && !report && <ReportSkeleton />}
+              {report &&
+                (report.honestNo ? (
+                  <HonestNoPanel report={report} spotlight={spotlight} bulk={bulk} />
+                ) : (
+                  <ReportView
+                    report={report}
+                    spotlight={spotlight}
+                    busy={busy}
+                    filters={filters}
+                    sort={sort}
+                    bulk={bulk}
+                  />
+                ))}
+              {/* The full Utah intelligence lives on /utah now — the map keeps
+                  a doorway, not a second copy of the page. */}
+              {report?.utahContext && !busy && (
+                <a
+                  href="/utah"
+                  className="or-card flex items-center justify-between gap-4 transition-shadow hover:shadow-md"
+                >
+                  <div>
+                    <p className="mk-label" style={{ marginBottom: 4 }}>UTAH CONNECTIONS</p>
+                    <p className="text-[15px] font-medium text-ink">
+                      Who in Utah won this money before you — and who can help you apply
+                    </p>
+                  </div>
+                  <span className="material-symbols-outlined" style={{ color: "var(--color-primary)" }} aria-hidden>
+                    arrow_forward
+                  </span>
+                </a>
+              )}
+              {report && !busy && <SaveMonitor profile={report.profile} />}
+            </>
           )}
-          {busy && !report && <ReportSkeleton />}
-          {report &&
-            (report.honestNo ? (
-              <HonestNoPanel report={report} spotlight={spotlight} />
-            ) : (
-              <ReportView report={report} spotlight={spotlight} busy={busy} />
-            ))}
-          {report?.utahContext && !busy && <UtahPathways context={report.utahContext} />}
-          {report && !busy && <SaveMonitor profile={report.profile} />}
         </div>
 
-        <div className="min-w-0 space-y-6 lg:order-1 lg:col-span-3">
-          <ProfileCard
-            profile={profileView}
-            onSave={(p) => {
-              // Manual edits are authoritative: update the working profile,
-              // persist (keeps the stored future-fit snapshot), refresh view.
-              profileRef.current = p;
-              setProfileView(p);
-              persist(p);
-            }}
-          />
-          <ActionPlan report={report} />
-        </div>
-
-        <aside
-          id="agent-rail"
-          className="min-w-0 space-y-6 lg:sticky lg:top-20 lg:order-3 lg:col-span-3 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto"
-        >
-          <UnlockPanel
-            meter={meter}
-            questions={interviewQuestions}
-            quickReplies={quickReplies}
-            busy={busy}
-            askCapitalNeed={asks?.needsCapitalNeed ?? false}
-            preliminary={report != null && report.matches.length === 0}
-            onAnswer={answer}
-            onSend={sendMessage}
-          />
-          <AgentDock lines={activity} busy={busy} report={report} onFocusMatch={focusMatch}>
-            {/* Voice mode (renders nothing unless GEMINI_API_KEY is set) */}
-            <VoicePanel
-              getProfile={() => profileRef.current}
-              getReport={() => report}
-              onEngineEvent={handle}
+        {/* span 3 — the asking rail: unlock + deadlines */}
+        {!onboarding && (
+          <div className="mk-c3">
+            <UnlockPanel
+              meter={meter}
+              questions={interviewQuestions}
+              quickReplies={quickReplies}
+              busy={busy}
+              askCapitalNeed={asks?.needsCapitalNeed ?? false}
+              preliminary={report != null && report.matches.length === 0}
+              onAnswer={answer}
+              onSend={sendMessage}
             />
-          </AgentDock>
-        </aside>
+            {report && !report.honestNo && visible.length > 0 && (
+              <MapDeadlines report={report} matches={visible} />
+            )}
+          </div>
+        )}
       </div>
     </main>
   );

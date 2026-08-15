@@ -2,13 +2,15 @@
 
 // The pursuit workspace: turn interest into an actual submission. One click
 // builds an AI + rules submission plan; after that this renders the full
-// Federal Catalyst workspace — header + progress card, phased task
-// cards, a document-style strategy/assist panel, SAM.gov warning, and a
-// deadline timeline rail.
+// Federal Catalyst workspace — header + progress card, phased task cards with
+// one-line rows that expand on click, a SAM.gov alert, and a deadline
+// timeline rail. "Help me" routes task guidance through the Assistant drawer.
 
 import { useEffect, useState } from "react";
 import type { PursuitRecord, PursuitTask } from "@/lib/pursuit/db";
 import type { Opportunity } from "@/lib/types";
+import { AlertCard, Badge, Button, Card, Icon, StatTile, Timeline, type TimelineItem } from "@/app/components/ui";
+import { useAssistant, usePageAssistantContext } from "@/app/components/assistant/context";
 
 type Phase = "loading" | "none" | "building" | "ready" | "error";
 
@@ -33,11 +35,27 @@ function fmtUsd(n: number): string {
   return `$${n}`;
 }
 
-const LABEL = "text-[11px] font-semibold uppercase tracking-[0.08em] text-faint";
-
 /** ALL-CAPS words longer than 3 chars → Capitalized; short/mixed words unchanged. */
 function humanize(s: string): string {
   return s.replace(/\b[A-Z]{4,}\b/g, (w) => w[0] + w.slice(1).toLowerCase());
+}
+
+const BODY_SM: React.CSSProperties = {
+  margin: 0,
+  font: "400 14px/20px var(--font-body)",
+  color: "var(--color-on-surface-variant)",
+};
+
+/** Rotating chevron; open = pointing down. */
+function Chevron({ open, size = 18 }: { open: boolean; size?: number }) {
+  return (
+    <Icon
+      name="expand_more"
+      size={size}
+      className="mk-opp__chev"
+      style={{ transform: open ? undefined : "rotate(-90deg)" }}
+    />
+  );
 }
 
 export default function PursuitPanel({ opportunityId }: { opportunityId: string }) {
@@ -46,8 +64,11 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
   const [tasks, setTasks] = useState<PursuitTask[]>([]);
   const [opp, setOpp] = useState<Opportunity | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [assistBusy, setAssistBusy] = useState<number | null>(null);
-  const [openAssistId, setOpenAssistId] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [doneOpen, setDoneOpen] = useState<Set<string>>(new Set());
+  const [strategyOpen, setStrategyOpen] = useState(false);
+  const [helpBusy, setHelpBusy] = useState<number | null>(null);
+  const { runTask } = useAssistant();
 
   useEffect(() => {
     void fetch(`/api/pursuits?opportunityId=${encodeURIComponent(opportunityId)}`)
@@ -63,6 +84,62 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
       })
       .catch(() => setPhase("none"));
   }, [opportunityId]);
+
+  // ---------- derived (before hooks/returns so hook order stays stable) ----------
+
+  const done = tasks.filter((t) => t.done).length;
+  const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+  const phases = [...new Set(tasks.map((t) => t.phase))];
+  const today = new Date().toISOString().slice(0, 10);
+  const firstOpenId = tasks.find((t) => !t.done)?.id;
+
+  const match = pursuit?.match ?? null;
+  const submitTask = tasks.find((t) => t.kind === "submission") ?? null;
+  const target = opp?.closeDate ?? submitTask?.dueDate ?? null;
+  const funding =
+    opp == null
+      ? null
+      : opp.awardFloorUsd != null && opp.awardCeilingUsd != null
+        ? `${fmtUsd(opp.awardFloorUsd)}–${fmtUsd(opp.awardCeilingUsd)}`
+        : opp.awardCeilingUsd != null
+          ? `Up to ${fmtUsd(opp.awardCeilingUsd)}`
+          : "Unlisted";
+
+  // SAM.gov banner: purely from existing task data — an open task mentioning SAM.gov.
+  const samTask =
+    tasks.find((t) => !t.done && /sam\.gov/i.test(`${t.title} ${t.detail}`)) ?? null;
+
+  // Deadline timeline: every dated task in due order (submission lands last by date).
+  const timeline = tasks
+    .filter((t): t is PursuitTask & { dueDate: string } => t.dueDate != null)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  const nextTimelineId = timeline.find((t) => !t.done)?.id;
+
+  // Tell the sidebar assistant what this workspace is showing — real state only.
+  usePageAssistantContext(
+    phase === "ready" && pursuit
+      ? {
+          page: "pursuits",
+          title: `Pursuit — ${opp?.title ? humanize(opp.title) : pursuit.opportunityId}`,
+          data: {
+            status: pursuit.status,
+            pct,
+            target,
+            phases: phases.map((ph) => {
+              const pt = tasks.filter((t) => t.phase === ph);
+              return { name: ph, done: pt.filter((t) => t.done).length, total: pt.length };
+            }),
+            nextOpenTasks: tasks
+              .filter((t) => !t.done)
+              .slice(0, 3)
+              .map((t) => ({ title: t.title, dueDate: t.dueDate })),
+            samUnconfirmed: samTask != null,
+          },
+        }
+      : null,
+  );
+
+  // ---------- actions ----------
 
   async function start() {
     setPhase("building");
@@ -109,112 +186,188 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
     }).catch(() => {});
   }
 
-  async function assist(task: PursuitTask) {
-    if (!pursuit) return;
-    if (task.assist) {
-      // Already generated — just toggle which task the document panel shows.
-      setOpenAssistId((id) => (id === task.id ? null : task.id));
-      return;
-    }
-    setAssistBusy(task.id);
-    try {
-      const res = await fetch(`/api/pursuits/${pursuit.id}/assist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId: task.id }),
-      });
-      const d = await res.json();
-      if (res.ok && d.assist) {
+  /** "Help me" → the Assistant drawer. Cached guidance answers instantly;
+   *  otherwise generate it once via the assist route and keep it on the task. */
+  function helpMe(task: PursuitTask) {
+    if (!pursuit || helpBusy != null) return;
+    setHelpBusy(task.id);
+    runTask(`Help me with: ${task.title}`, async () => {
+      try {
+        if (task.assist) return task.assist;
+        const res = await fetch(`/api/pursuits/${pursuit.id}/assist`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId: task.id }),
+        });
+        const d = await res.json();
+        if (!res.ok || !d.assist) throw new Error(d.error ?? `HTTP ${res.status}`);
         setTasks((ts) => ts.map((t) => (t.id === task.id ? { ...t, assist: d.assist } : t)));
-        setOpenAssistId(task.id);
+        return d.assist as string;
+      } finally {
+        setHelpBusy(null);
       }
-    } finally {
-      setAssistBusy(null);
-    }
+    });
+  }
+
+  function toggleExpand(id: number) {
+    setExpanded((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleDone(ph: string) {
+    setDoneOpen((s) => {
+      const next = new Set(s);
+      if (next.has(ph)) next.delete(ph);
+      else next.add(ph);
+      return next;
+    });
   }
 
   // ---------- render ----------
 
-  if (phase === "loading") return null;
-
-  if (phase !== "ready") {
+  if (phase === "loading") {
     return (
-      <section id="pursuit" className="card space-y-2.5 p-6">
-        <h2 className="font-display text-[18px] font-bold tracking-tight text-ink">
-          Go after this funding
-        </h2>
-        <p className="text-sm leading-relaxed text-muted">
-          We&apos;ll build you a submission plan for this specific program — registrations,
-          eligibility checks, narrative sections, budget, and a timeline working back from the
-          deadline. Then we help you finish every task.
-        </p>
-        {error && <p className="text-sm text-risk">{error}</p>}
-        <button
-          onClick={start}
-          disabled={phase === "building"}
-          className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong disabled:opacity-60"
-        >
-          {phase === "building" ? "Building your plan… (~30s)" : "Start Pre-flight →"}
-        </button>
+      <section id="pursuit">
+        <div className="or-card shimmer" style={{ height: 96 }} />
       </section>
     );
   }
 
-  const done = tasks.filter((t) => t.done).length;
-  const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
-  const phases = [...new Set(tasks.map((t) => t.phase))];
-  const today = new Date().toISOString().slice(0, 10);
-  const soon = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
-  const firstOpenId = tasks.find((t) => !t.done)?.id;
+  if (phase !== "ready") {
+    return (
+      <section id="pursuit">
+        <Card style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 12 }}>
+          <h2 className="mk-h4" style={{ margin: 0 }}>
+            Go after this funding
+          </h2>
+          <p style={BODY_SM}>
+            We&apos;ll build you a submission plan for this specific program — registrations,
+            eligibility checks, narrative sections, budget, and a timeline working back from the
+            deadline. Then we help you finish every task.
+          </p>
+          {error && <p style={{ ...BODY_SM, color: "var(--color-error)" }}>{error}</p>}
+          <Button iconAfter="arrow_forward" onClick={() => void start()} disabled={phase === "building"}>
+            {phase === "building" ? "Building your plan… (~30s)" : "Start Pre-flight"}
+          </Button>
+        </Card>
+      </section>
+    );
+  }
 
-  const match = pursuit?.match ?? null;
-  const submitTask = tasks.find((t) => t.kind === "submission") ?? null;
-  const target = opp?.closeDate ?? submitTask?.dueDate ?? null;
-  const funding =
-    opp == null
-      ? null
-      : opp.awardFloorUsd != null && opp.awardCeilingUsd != null
-        ? `${fmtUsd(opp.awardFloorUsd)}–${fmtUsd(opp.awardCeilingUsd)}`
-        : opp.awardCeilingUsd != null
-          ? `Up to ${fmtUsd(opp.awardCeilingUsd)}`
-          : "Unlisted";
+  const renderTask = (t: PursuitTask) => {
+    const overdue = !t.done && t.dueDate != null && t.dueDate < today;
+    const urgent = overdue || (!t.done && t.dueDate != null && daysUntil(t.dueDate) <= 3);
+    const isOpen = expanded.has(t.id);
+    return (
+      <div
+        key={t.id}
+        id={`task-${t.id}`}
+        className={`or-task${t.id === firstOpenId ? " or-task--current" : ""}`}
+        style={{ cursor: "pointer" }}
+        onClick={(e) => {
+          // The row expands; real controls inside keep their own jobs.
+          if ((e.target as HTMLElement).closest("button, a")) return;
+          toggleExpand(t.id);
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, flex: 1, minWidth: 0 }}>
+          <button
+            className="mk-check"
+            role="checkbox"
+            aria-checked={t.done}
+            aria-label={`Mark "${t.title}" ${t.done ? "incomplete" : "complete"}`}
+            onClick={() => void toggle(t)}
+          >
+            <Icon name="check" size={14} />
+          </button>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p className={`or-task__title${t.done ? " or-task__title--done" : ""}`}>{t.title}</p>
+            {isOpen && (
+              <div id={`task-detail-${t.id}`} style={{ marginTop: 6 }}>
+                <p className="or-task__detail">{t.detail}</p>
+                <Button
+                  variant="tonal"
+                  size="sm"
+                  icon="support_agent"
+                  style={{ marginTop: 10 }}
+                  disabled={helpBusy != null}
+                  onClick={() => helpMe(t)}
+                >
+                  {helpBusy === t.id ? "Thinking…" : "Help me"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flex: "none" }}>
+          {t.dueDate && (
+            <span
+              className={`or-task__due${urgent ? " or-task__due--urgent" : ""}`}
+              title={`due ${t.dueDate}${overdue ? " · overdue" : ""}`}
+            >
+              {monthDay(t.dueDate)}
+            </span>
+          )}
+          <button
+            className="or-iconbtn or-iconbtn--sm"
+            aria-expanded={isOpen}
+            aria-controls={`task-detail-${t.id}`}
+            aria-label={`${isOpen ? "Hide" : "Show"} details for "${t.title}"`}
+            onClick={() => toggleExpand(t.id)}
+          >
+            <Chevron open={isOpen} />
+          </button>
+        </div>
+      </div>
+    );
+  };
 
-  // SAM.gov banner: purely from existing task data — an open task mentioning SAM.gov.
-  const samTask =
-    tasks.find((t) => !t.done && /sam\.gov/i.test(`${t.title} ${t.detail}`)) ?? null;
-
-  // Deadline timeline: every dated task in due order (submission lands last by date).
-  const timeline = tasks
-    .filter((t): t is PursuitTask & { dueDate: string } => t.dueDate != null)
-    .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-  const nextTimelineId = timeline.find((t) => !t.done)?.id;
-
-  const openTask = openAssistId != null ? tasks.find((t) => t.id === openAssistId) : undefined;
+  const timelineItems: TimelineItem[] = [
+    ...(pursuit
+      ? [{ date: monthDay(pursuit.createdAt.slice(0, 10)), title: "Pursuit created", state: "done" as const }]
+      : []),
+    ...timeline.map((t) => {
+      const du = daysUntil(t.dueDate);
+      return {
+        date: monthDay(t.dueDate),
+        title: t.title,
+        state: t.done ? ("done" as const) : t.id === nextTimelineId ? ("current" as const) : ("todo" as const),
+        badge:
+          !t.done && du >= 0 && du <= 3
+            ? du === 0
+              ? "DUE TODAY"
+              : `IN ${du} DAY${du === 1 ? "" : "S"}`
+            : undefined,
+      };
+    }),
+    ...(submitTask && submitTask.dueDate == null
+      ? [{ date: "TBD", title: submitTask.title, state: submitTask.done ? ("done" as const) : ("todo" as const) }]
+      : []),
+  ];
 
   return (
-    <section id="pursuit" className="space-y-5">
+    <section id="pursuit" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* workspace header: title, official notice, status */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h2 className="font-display text-[20px] font-bold tracking-tight text-ink">
-          {opp?.title ? humanize(opp.title) : "Pursuit"} Workspace
-        </h2>
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="mk-between" style={{ alignItems: "flex-end", flexWrap: "wrap", gap: 12 }}>
+        <h2 className="mk-h3">{opp?.title ? humanize(opp.title) : "Pursuit"} Workspace</h2>
+        <div className="mk-row">
           {opp?.url && (
-            <a
-              href={opp.url}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-muted transition-colors hover:bg-surface-low"
-            >
-              Review official notice ↗
+            <a className="or-btn or-btn--outline" href={opp.url} target="_blank" rel="noreferrer">
+              Review official notice
+              <Icon name="open_in_new" size={16} />
             </a>
           )}
-          <label className={`flex items-center gap-2 ${LABEL}`}>
-            status
+          <label className="mk-label" style={{ display: "flex", alignItems: "center", gap: 8, textTransform: "uppercase" }}>
+            Status
             <select
+              className="or-field"
+              style={{ width: "auto", padding: "6px 10px", textTransform: "none", letterSpacing: "normal" }}
               value={pursuit?.status ?? "active"}
               onChange={(e) => void setStatus(e.target.value)}
-              className="appearance-none rounded-xl border border-line bg-card px-4 py-2 text-[13.5px] font-medium normal-case tracking-normal text-ink focus:border-accent focus:outline-none"
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
@@ -226,275 +379,139 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
         </div>
       </div>
 
-      {/* progress & tracker card: % ready + target + phase stepper + stat tiles */}
-      <div className="card p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="tnum font-display text-[26px] font-bold tracking-tight text-brand">
-            {pct}% ready{" "}
-            <span className="font-mono text-xs font-medium tracking-normal text-faint">
-              · {done}/{tasks.length} tasks
+      {/* progress card: % ready + target chip + bar + stat tiles */}
+      <Card id="pursuit-progress-card">
+        <div className="mk-between" style={{ flexWrap: "wrap", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <span className="mk-meter__value">{pct}% ready</span>
+            <span className="mk-label">
+              {done}/{tasks.length} TASKS
             </span>
-          </p>
+          </div>
           {target && (
-            <span className="rounded-full bg-soft px-3 py-1 text-[12px] font-semibold text-brand">
-              Target: <span className="font-mono">{monthDay(target)}</span>
-            </span>
+            <Badge tone="primary" pill icon="flag">
+              Target {monthDay(target)}
+            </Badge>
           )}
         </div>
-
-        <div id="pursuit-progress" className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-high">
-          <div
-            className="h-full rounded-full bg-good transition-[width] duration-700"
-            style={{ width: `${pct}%` }}
-          />
+        <div
+          id="pursuit-progress"
+          className="mk-meter__track"
+          style={{ marginTop: 12 }}
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Plan readiness"
+        >
+          <div className="mk-meter__fill" style={{ width: `${pct}%` }} />
         </div>
-
-        {/* stat tiles: fit score (only if a real score exists) + funding */}
-        <div className="mt-4 flex flex-wrap gap-3 border-t border-hairline pt-4">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 16 }}>
           {match && (
-            <div className="flex items-center gap-2.5 rounded-2xl bg-surface-low p-4">
-              <span className="text-good">✓</span>
-              <div>
-                <p className={LABEL}>Fit Score</p>
-                <p className="text-[15px] font-semibold capitalize text-ink">
-                  {match.tier.replace(/_/g, " ")} (<span className="tnum">{match.score}</span>)
-                </p>
-              </div>
-            </div>
+            <StatTile
+              icon="verified"
+              iconColor="var(--color-fit-strong)"
+              label="FIT SCORE"
+              value={`${match.tier.replace(/_/g, " ")} (${match.score})`}
+              style={{ textTransform: "capitalize" }}
+            />
           )}
-          {funding && (
-            <div className="flex items-center gap-2.5 rounded-2xl bg-surface-low p-4">
-              <span className="font-mono font-semibold text-brand">$</span>
-              <div>
-                <p className={LABEL}>Funding</p>
-                <p className="tnum text-[15px] font-semibold text-ink">{funding}</p>
-              </div>
-            </div>
-          )}
+          {funding && <StatTile icon="payments" label="FUNDING" value={funding} />}
         </div>
-      </div>
+      </Card>
 
-      {/* workspace grid: tasks + document panel (8) / warning + timeline rail (4) */}
+      {/* workspace grid: task cards + strategy (8) / warning + timeline rail (4) */}
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-12">
         <div id="pursuit-tasks" className="flex flex-col gap-5 xl:col-span-8">
-          {/* phased task cards, kit "Narrative Tasks" anatomy */}
+          {/* phased task cards: one-line rows, completed collapsed into a counted group */}
           {phases.map((ph) => {
             const phTasks = tasks.filter((t) => t.phase === ph);
-            const phDone = phTasks.filter((t) => t.done).length;
+            const phDone = phTasks.filter((t) => t.done);
+            const phOpen = phTasks.filter((t) => !t.done);
+            const showDone = doneOpen.has(ph);
             return (
-              <div key={ph} className="card p-5">
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="font-display text-[16px] font-bold text-ink">{ph}</h3>
-                  <span className="font-mono text-[12px] text-faint">
-                    {phDone}/{phTasks.length} done
+              <Card flush key={ph}>
+                <div className="mk-cardhead">
+                  {ph}
+                  <span className="mk-num" style={{ fontSize: 12, color: "var(--color-outline)" }}>
+                    {phDone.length}/{phTasks.length} done
                   </span>
                 </div>
-                <div className="space-y-2">
-                  {phTasks.map((t) => {
-                    const overdue = !t.done && t.dueDate != null && t.dueDate < today;
-                    const urgent = !t.done && t.dueDate != null && t.dueDate <= soon;
-                    const current = t.id === firstOpenId;
-                    return (
-                      <div
-                        key={t.id}
-                        id={`task-${t.id}`}
-                        className={`flex items-start gap-3 rounded-xl p-3.5 transition-colors ${
-                          current ? "bg-soft" : "bg-surface-low hover:bg-surface"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={t.done}
-                          onChange={() => void toggle(t)}
-                          className="mt-1 h-4 w-4 accent-brand"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={`text-sm ${
-                              t.done ? "text-muted line-through opacity-70" : "font-medium text-ink"
-                            }`}
-                          >
-                            {t.title}
-                          </p>
-                          <p className="text-xs text-muted">{t.detail}</p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-3">
-                          {t.dueDate && (
-                            <span
-                              className={`rounded-full px-3 py-1 font-mono text-[12px] font-semibold ${
-                                overdue || urgent
-                                  ? "bg-risk-soft text-risk"
-                                  : "bg-surface text-muted"
-                              }`}
-                              title={`due ${t.dueDate}${overdue ? " · overdue" : ""}`}
-                            >
-                              {monthDay(t.dueDate)}
-                            </span>
-                          )}
-                          <button
-                            onClick={() => void assist(t)}
-                            disabled={assistBusy === t.id}
-                            className="rounded-xl border border-line bg-card px-3 py-1.5 text-[12px] font-semibold text-brand transition-colors hover:bg-soft disabled:opacity-50"
-                          >
-                            {assistBusy === t.id
-                              ? "Thinking…"
-                              : t.assist
-                                ? openAssistId === t.id
-                                  ? "Hide"
-                                  : "Help me"
-                                : "Help me"}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                {phOpen.map(renderTask)}
+                {phDone.length > 0 && (
+                  <>
+                    <button
+                      className="mk-donehead"
+                      aria-expanded={showDone}
+                      aria-controls={`done-${ph.replace(/\W+/g, "-")}`}
+                      onClick={() => toggleDone(ph)}
+                    >
+                      Completed ({phDone.length})
+                      <Chevron open={showDone} />
+                    </button>
+                    <div id={`done-${ph.replace(/\W+/g, "-")}`} hidden={!showDone}>
+                      {phDone.map(renderTask)}
+                    </div>
+                  </>
+                )}
+              </Card>
             );
           })}
 
-          {/* document panel: assist guidance when open, plan strategy otherwise */}
-          <div className="card p-6">
-            <div className="flex items-center justify-between gap-3">
-              <p className={`${LABEL} min-w-0 truncate`}>
-                {openTask?.assist ? `How to finish this — ${openTask.title}` : "Strategy"}
-              </p>
-              {openTask?.assist && (
-                <button
-                  onClick={() => setOpenAssistId(null)}
-                  className="shrink-0 text-[12px] font-semibold text-faint transition-colors hover:text-ink"
-                >
-                  Close
-                </button>
-              )}
-            </div>
-            <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
-              {openTask?.assist ??
-                pursuit?.planSummary ??
-                "Pick a task and hit “Help me” for step-by-step guidance."}
-            </div>
-          </div>
+          {/* plan strategy — collapsed disclosure, not an always-open panel */}
+          {pursuit?.planSummary && (
+            <Card flush>
+              <button
+                className="mk-opp__toggle"
+                aria-expanded={strategyOpen}
+                aria-controls="pursuit-strategy"
+                onClick={() => setStrategyOpen((o) => !o)}
+              >
+                <div className="mk-cardhead" style={strategyOpen ? undefined : { borderBottom: 0 }}>
+                  Strategy
+                  <Chevron open={strategyOpen} />
+                </div>
+              </button>
+              <div id="pursuit-strategy" hidden={!strategyOpen} className="mk-cardbody">
+                <p style={{ ...BODY_SM, whiteSpace: "pre-wrap" }}>{pursuit.planSummary}</p>
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* right rail: SAM.gov warning + deadline timeline */}
         <div className="flex flex-col gap-5 xl:col-span-4">
           {samTask && (
-            <div className="rounded-2xl bg-warn-soft p-4">
-              <h4 className="text-[12px] font-semibold uppercase tracking-[0.05em] text-warn">
-                SAM.gov status unconfirmed
-              </h4>
-              <p className="mt-1 text-[13.5px] leading-relaxed text-warn">
-                Active registration is required at time of submission.
-                {samTask.dueDate && (
-                  <>
-                    {" "}
-                    Confirm or update before{" "}
-                    <strong className="font-mono">{monthDay(samTask.dueDate)}</strong>.
-                  </>
-                )}
-              </p>
-              <a
-                href={`#task-${samTask.id}`}
-                className="mt-2 inline-block text-[13px] font-semibold text-warn hover:underline"
-              >
-                Verify now →
-              </a>
-            </div>
+            <AlertCard
+              tone="danger"
+              icon="warning"
+              title="SAM.gov status unconfirmed"
+              action="Verify now"
+              onAction={() => {
+                setExpanded((s) => new Set(s).add(samTask.id));
+                document
+                  .getElementById(`task-${samTask.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            >
+              Active registration is required at time of submission.
+              {samTask.dueDate && (
+                <>
+                  {" "}
+                  Confirm or update before <strong className="mk-num">{monthDay(samTask.dueDate)}</strong>.
+                </>
+              )}
+            </AlertCard>
           )}
 
-          <div className="card p-6 lg:sticky lg:top-20">
-            <h3 className="mb-4 font-display text-[16px] font-bold tracking-tight text-ink">
-              Deadline Timeline
-            </h3>
-            <div className="relative space-y-5">
-              <div aria-hidden className="absolute bottom-2 left-[5px] top-2 border-l-2 border-line" />
-              {pursuit && (
-                <TimelineEntry
-                  date={monthDay(pursuit.createdAt.slice(0, 10))}
-                  label="Pursuit created"
-                  state="done"
-                />
-              )}
-              {timeline.map((t) => {
-                const du = daysUntil(t.dueDate);
-                return (
-                  <TimelineEntry
-                    key={t.id}
-                    date={monthDay(t.dueDate)}
-                    label={t.title}
-                    state={t.done ? "done" : t.id === nextTimelineId ? "current" : "todo"}
-                    chip={
-                      !t.done && du >= 0 && du <= 3
-                        ? du === 0
-                          ? "Due today"
-                          : `In ${du} day${du === 1 ? "" : "s"}`
-                        : undefined
-                    }
-                  />
-                );
-              })}
-              {submitTask && submitTask.dueDate == null && (
-                <TimelineEntry
-                  date="TBD"
-                  label={submitTask.title}
-                  state={submitTask.done ? "done" : "todo"}
-                />
-              )}
+          <Card flush className="xl:sticky xl:top-24">
+            <div className="mk-cardhead">Deadline Timeline</div>
+            <div className="mk-cardbody">
+              <Timeline items={timelineItems} />
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </section>
-  );
-}
-
-function TimelineEntry({
-  date,
-  label,
-  state,
-  chip,
-}: {
-  date: string;
-  label: string;
-  state: "done" | "current" | "todo";
-  chip?: string;
-}) {
-  const dot =
-    state === "done"
-      ? "bg-good"
-      : state === "current"
-        ? "bg-brand ring-2 ring-soft"
-        : "border border-line bg-surface-variant";
-  return (
-    <div className="relative z-10 flex gap-3">
-      <span aria-hidden className={`mt-1 h-3 w-3 shrink-0 rounded-full ${dot}`} />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span
-            className={`font-mono text-[12px] font-semibold ${
-              state === "done" ? "text-good" : state === "current" ? "text-brand" : "text-faint"
-            }`}
-          >
-            {date}
-          </span>
-          <span
-            className={`text-[13.5px] ${
-              state === "current"
-                ? "font-semibold text-ink"
-                : state === "todo"
-                  ? "text-muted"
-                  : "text-ink"
-            }`}
-          >
-            {label}
-          </span>
-          {chip && (
-            <span className="rounded-full bg-risk-soft px-3 py-1 text-[12px] font-semibold text-risk">
-              {chip}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }

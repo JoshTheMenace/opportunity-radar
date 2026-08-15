@@ -1,53 +1,35 @@
 "use client";
 
-// One opportunity match card in the Federal Catalyst anatomy:
-//   header band   — tier chip + ID | title | $ + deadline, short description
-//   body grid     — "Why it fits" / "What could disqualify" bullet columns
-//   evidence      — "Who else got this money" stats + FUNDING TWIN block
-//   footer        — odds/next-step line + Start Pre-flight CTA
-// Collapsibles (plan-backward timeline, program officer preview) and the
-// agent's spotlight/materialize behaviors are preserved.
+// One opportunity match card in the mock's collapsible or-opp anatomy:
+//   toggle head  — tier Badge + ID/agency meta | title | $ + deadline + chev,
+//                  short description lede
+//   body grid    — "Why it fits" / "What could disqualify" / "What to verify"
+//                  auto-fit columns, then the full-width "Who else got this
+//                  money" evidence + YOUR FUNDING TWIN block, then the
+//                  plan-backward and program-officer collapsibles
+//   foot         — odds/next-step line, Save for Later, Start Pre-flight
+// Collapse: data-expanded + mk-opp__toggle (CSS hides body/foot/lede). The
+// agent's spotlight force-expands the card before firing the attention ring.
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CompanyProfile, EvidenceSummary, Opportunity, RankedMatch } from "@/lib/types";
 import { buildTimeline, oddsLabel } from "@/lib/engine/timeline";
 import type { OfficerPreview } from "@/lib/engine/officer";
-import { TIERS, daysUntil, fmtUsd } from "./shared";
-
-/** Prose → short bullet list (the rank LLM writes sentences; the kit shows bullets). */
-function bullets(s: string, max = 4): string[] {
-  return s
-    .split(/(?<=[.!?])\s+/)
-    .map((x) => x.trim())
-    .filter(Boolean)
-    .slice(0, max);
-}
-
-/**
- * Soften ALL-CAPS source strings ("CITY OF SPANISH FORK" → "City of Spanish Fork").
- * Strings that already contain lowercase ("NSF SBIR Phase I") pass through
- * untouched, so real acronyms in human-cased titles are preserved. Within a
- * shouted string, short words (≤3 letters, e.g. "NSF", "US") keep their caps
- * except common connectors, which read as lowercase.
- */
-const CONNECTORS = new Set(["OF", "THE", "AND", "FOR", "TO", "IN", "ON", "AT", "A", "AN"]);
-function humanize(s: string): string {
-  if (/[a-z]/.test(s)) return s;
-  return s
-    .split(/\s+/)
-    .map((w, i) => {
-      const letters = w.replace(/[^A-Za-z]/g, "");
-      if (letters.length <= 3) return i > 0 && CONNECTORS.has(letters) ? w.toLowerCase() : w;
-      return w.charAt(0) + w.slice(1).toLowerCase();
-    })
-    .join(" ");
-}
+import { Badge, Icon } from "./ui";
+import { TIER_META, bullets, daysUntil, dedupeAgency, fmtDate, fmtUsd, humanize, type BulkToggle } from "./shared";
 
 /** Kit-style short ID from our namespaced opportunity ids. */
 function shortId(id: string): string {
   const tail = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
   return tail.length > 18 ? `${tail.slice(0, 18)}…` : tail;
+}
+
+/** Save for Later: point the founder at the standing-watch card below. */
+function goToSaveMonitor() {
+  const el = document.getElementById("save-monitor");
+  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  el?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
 }
 
 export default function MatchCard({
@@ -57,6 +39,8 @@ export default function MatchCard({
   profile,
   index = 0,
   spotlight,
+  defaultExpanded = false,
+  bulk,
 }: {
   match: RankedMatch;
   opp?: Opportunity;
@@ -66,29 +50,48 @@ export default function MatchCard({
   index?: number;
   /** Spotlight nonce: set (and changed) each time the agent points here. */
   spotlight?: number;
+  /** Only the top-scored visible card opens on first paint. */
+  defaultExpanded?: boolean;
+  /** Pagehead collapse/expand-all broadcast. */
+  bulk?: BulkToggle | null;
 }) {
   const close = daysUntil(opp?.closeDate ?? null);
   const odds = opp ? oddsLabel(opp.expectedAwards, opp.expectedApplications) : null;
-  const tier = TIERS.find((t) => t.tier === match.tier);
+  const meta = TIER_META[match.tier];
   const actionable = match.tier === "likely_fit" || match.tier === "verify_eligibility";
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [showPlan, setShowPlan] = useState(false);
   const [officer, setOfficer] = useState<OfficerPreview | null>(null);
   const [officerBusy, setOfficerBusy] = useState(false);
   const [officerErr, setOfficerErr] = useState<string | null>(null);
   const cardRef = useRef<HTMLElement | null>(null);
+  const pendingSpot = useRef<number | null>(null);
+  const bodyId = `opp-body-${match.opportunityId}`;
 
-  // The agent pointed here: scroll into view and (re)fire the attention ring.
-  // Class juggling instead of state so the same card can be pointed at twice;
-  // the class is cleared when the agent points somewhere else.
+  // Pagehead broadcast wins over the per-card default (cards streaming in
+  // while "collapse all" is active arrive collapsed too).
   useEffect(() => {
-    const el = cardRef.current;
-    if (!el) return;
-    el.classList.remove("card-spotlight");
+    if (bulk) setExpanded(bulk.mode === "expand");
+  }, [bulk]);
+
+  // The agent pointed here: force-expand first, then (once the body is in the
+  // DOM) scroll into view and (re)fire the attention ring. Class juggling
+  // instead of state so the same card can be pointed at twice; the class is
+  // cleared when the agent points somewhere else.
+  useEffect(() => {
+    cardRef.current?.classList.remove("card-spotlight");
     if (!spotlight) return;
+    pendingSpot.current = spotlight;
+    setExpanded(true);
+  }, [spotlight]);
+  useLayoutEffect(() => {
+    const el = cardRef.current;
+    if (!el || pendingSpot.current == null || !expanded) return;
+    pendingSpot.current = null;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     void el.offsetWidth; // reflow restarts the animation
     el.classList.add("card-spotlight");
-  }, [spotlight]);
+  }, [expanded, spotlight]);
 
   /** Fetch the officer preview once; cached in state so re-clicks are free. */
   async function loadOfficer() {
@@ -110,9 +113,10 @@ export default function MatchCard({
     }
   }
 
+  // Real award band only: ceiling as-is, floor-only as "from".
   const money =
     opp?.awardCeilingUsd != null
-      ? `up to ${fmtUsd(opp.awardCeilingUsd)}`
+      ? fmtUsd(opp.awardCeilingUsd)
       : opp?.awardFloorUsd != null
         ? `from ${fmtUsd(opp.awardFloorUsd)}`
         : null;
@@ -121,114 +125,134 @@ export default function MatchCard({
   return (
     <article
       ref={cardRef}
-      className={`card-in card overflow-hidden ${
-        match.tier === "likely_fit" ? "!border-accent/40" : ""
-      }`}
+      className="card-in or-opp"
+      data-expanded={expanded}
       style={{ animationDelay: `${Math.min(index * 70, 490)}ms` }}
     >
-      {/* header band */}
-      <div
-        className={`border-b border-hairline p-6 ${
-          match.tier === "likely_fit" ? "bg-soft/60" : "bg-card"
-        }`}
+      <button
+        type="button"
+        className="mk-opp__toggle"
+        aria-expanded={expanded}
+        aria-controls={bodyId}
+        onClick={() => setExpanded((v) => !v)}
       >
-        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-          <div className="min-w-0">
-            <div className="mb-1 flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-full px-3 py-1 text-[12px] font-semibold ${tier?.badge ?? ""}`}
-              >
-                {match.tier === "likely_fit" ? "✓ " : ""}
-                {tier?.label ?? match.tier}
-              </span>
-              <span className="text-[12px] text-faint">
-                ID <span className="font-mono">{shortId(match.opportunityId)}</span> · score{" "}
-                <span className="font-mono font-semibold text-ink/70">{match.score}</span>
-              </span>
+        <div className="or-opp__head">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4, flexWrap: "wrap" }}>
+                <Badge tone={meta.tone} icon={meta.icon}>
+                  {meta.label}
+                </Badge>
+                <span className="or-opp__meta">
+                  ID: {shortId(match.opportunityId)}
+                  {opp ? ` · ${humanize(dedupeAgency(opp.agency))}` : ""}
+                </span>
+              </div>
+              <h4 className="or-opp__title">{opp ? humanize(opp.title) : match.opportunityId}</h4>
             </div>
-            <h4 className="font-display text-[20px] font-bold leading-[1.25] tracking-tight text-ink">
-              <Link
-                href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
-                className="transition-colors hover:text-brand"
-              >
-                {opp ? humanize(opp.title) : match.opportunityId}
-              </Link>
-            </h4>
-            <p className="mt-1 text-[12.5px] text-faint">
-              {opp ? humanize(dedupeAgency(opp.agency)) : "details unavailable"}
-            </p>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+              <div style={{ textAlign: "right" }}>
+                {money && <span className="or-opp__amount">{money}</span>}
+                <span
+                  className="or-opp__meta"
+                  style={
+                    close != null && close <= 30
+                      ? { color: "var(--color-error)", fontWeight: 700 }
+                      : undefined
+                  }
+                >
+                  Deadline: {opp?.closeDate ? fmtDate(opp.closeDate) : "Rolling"}
+                </span>
+              </div>
+              <Icon name="expand_more" className="mk-opp__chev" aria-hidden />
+            </div>
           </div>
-          <div className="text-right">
-            {money && (
-              <span className="tnum block font-display text-[20px] font-bold leading-6 text-brand">
-                {money}
-              </span>
-            )}
-            {opp?.closeDate ? (
-              <span
-                className={`text-[12.5px] ${
-                  close != null && close <= 30 ? "font-semibold text-risk" : "text-faint"
-                }`}
-              >
-                Deadline: {opp.closeDate}
-                {close != null && close >= 0 ? ` (${close}d)` : ""}
-              </span>
-            ) : (
-              <span className="text-[12.5px] text-faint">rolling deadline</span>
-            )}
-          </div>
+          {opp?.description && <p className="or-opp__lede line-clamp-2">{opp.description}</p>}
         </div>
-        {opp?.description && (
-          <p className="mt-2.5 line-clamp-2 text-[14px] leading-relaxed text-muted">
-            {opp.description}
-          </p>
-        )}
-      </div>
+      </button>
 
-      {/* body: why / disqualify columns */}
-      <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2">
+      {/* body: why / disqualify / verify columns (auto-fit → 3, 2, then 1) */}
+      <div
+        className="or-opp__body"
+        id={bodyId}
+        style={{ gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))" }}
+      >
         <div>
-          <h5 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-good">
+          <h5 className="or-opp__h5">
+            <Icon name="done_all" size={18} color="var(--color-primary)" aria-hidden />
             Why it fits
           </h5>
-          <ul className="list-inside list-disc space-y-1.5 text-[14px] leading-relaxed text-muted">
+          <ul className="or-opp__list">
             {bullets(match.whyFit).map((b, i) => (
               <li key={i}>{b}</li>
             ))}
           </ul>
         </div>
         <div>
-          <h5 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-risk">
+          <h5 className="or-opp__h5" style={{ color: "var(--color-error)" }}>
+            <Icon name="warning" size={18} aria-hidden />
             What could disqualify
           </h5>
-          <ul className="list-inside list-disc space-y-1.5 text-[14px] leading-relaxed text-muted">
+          <ul className="or-opp__list">
             {bullets(match.whatCouldDisqualify).map((b, i) => (
               <li key={i}>{b}</li>
             ))}
           </ul>
-          <p className="mt-2.5 text-[13px] leading-relaxed text-faint">
-            <span className="font-semibold text-warn">Verify:</span> {match.whatToVerify}
-          </p>
+        </div>
+        <div>
+          <h5 className="or-opp__h5" style={{ color: "var(--color-caution-text)" }}>
+            <Icon name="fact_check" size={18} aria-hidden />
+            What to verify
+          </h5>
+          <ul className="or-opp__list">
+            {bullets(match.whatToVerify).map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
         </div>
 
         {/* who wins this money + funding twin */}
         {evidence && (twin || (evidence.totalAwards != null && evidence.totalAwards > 0)) && (
-          <div className="border-t border-hairline pt-4 md:col-span-2">
-            <h5 className="mb-2 text-[12px] font-semibold uppercase tracking-[0.07em] text-faint">
+          <div style={{ gridColumn: "1 / -1", paddingTop: 12, borderTop: "1px solid var(--color-border-ice)" }}>
+            <h5 className="or-opp__h5">
+              <Icon name="group" size={18} color="var(--color-outline)" aria-hidden />
               Who else got this money
             </h5>
             <EvidenceStats evidence={evidence} />
             {twin && (
-              <div className="mt-2.5 rounded-2xl bg-twin-soft/45 p-4">
-                <div className="min-w-0">
-                  <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-twin">
-                    Your funding twin
+              <div className="or-opp__twin" style={{ marginTop: 10 }}>
+                <span
+                  style={{
+                    background: "rgba(126,212,253,.2)",
+                    padding: 8,
+                    borderRadius: 9999,
+                    marginTop: 4,
+                    display: "inline-flex",
+                  }}
+                  aria-hidden
+                >
+                  <Icon name="handshake" size={20} color="var(--color-secondary)" />
+                </span>
+                <div>
+                  <span
+                    style={{
+                      font: "500 12px/14px var(--font-label)",
+                      letterSpacing: ".05em",
+                      color: "var(--color-secondary)",
+                      textTransform: "uppercase",
+                      display: "block",
+                      marginBottom: 4,
+                    }}
+                  >
+                    Your Funding Twin
                   </span>
-                  <p className="mt-1 text-[14.5px] font-semibold text-ink">{humanize(twin.recipient)}</p>
-                  <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">
+                  <h6 style={{ margin: 0, font: "500 16px/24px var(--font-body)", color: "var(--color-text-deep)" }}>
+                    {humanize(twin.recipient)}
+                    {twin.state ? ` (${twin.state})` : ""}
+                  </h6>
+                  <p style={{ margin: "4px 0 0", font: "400 14px/20px var(--font-body)", color: "var(--color-on-surface-variant)" }}>
                     Received {fmtUsd(twin.amountUsd)}
-                    {twin.year ? ` in ${twin.year}` : ""} from this program
-                    {twin.state ? ` (${twin.state})` : ""}.{" "}
+                    {twin.year ? ` in ${twin.year}` : ""} from this program.{" "}
                     {twin.link && (
                       <a
                         href={twin.link}
@@ -246,23 +270,31 @@ export default function MatchCard({
           </div>
         )}
 
-        {/* collapsibles: timeline + officer preview */}
+        {/* collapsibles: plan-backward timeline + program-officer preview */}
         {actionable && opp && profile && (
-          <div className="md:col-span-2">
-            <button
-              type="button"
-              onClick={() => setShowPlan((v) => !v)}
-              className="text-[13px] font-semibold text-brand transition-colors hover:text-brand-strong"
-            >
-              {showPlan ? "▾" : "▸"} Plan backward from the deadline
-            </button>
+          <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+              <button type="button" className="or-btn or-btn--text" onClick={() => setShowPlan((v) => !v)}>
+                <Icon name={showPlan ? "expand_more" : "chevron_right"} size={16} aria-hidden />
+                Plan backward from the deadline
+              </button>
+              {!officer && (
+                <button
+                  type="button"
+                  className="or-btn or-btn--text"
+                  disabled={officerBusy}
+                  onClick={() => void loadOfficer()}
+                >
+                  <Icon name="badge" size={16} aria-hidden />
+                  {officerBusy ? "Reviewing…" : "Officer preview"}
+                </button>
+              )}
+            </div>
             {showPlan && (
-              <ol className="mt-3 space-y-2 border-l-2 border-surface pl-4">
+              <ol className="space-y-2 border-l-2 border-surface pl-4">
                 {buildTimeline(opp, profile).map((s) => (
                   <li key={s.title} className="text-[13px]">
-                    <span
-                      className={`font-medium ${s.urgent ? "text-risk" : "text-ink"}`}
-                    >
+                    <span className={`font-medium ${s.urgent ? "text-risk" : "text-ink"}`}>
                       {s.due ?? "rolling"} · {s.title}
                     </span>
                     <span className="text-muted"> — {s.detail}</span>
@@ -273,71 +305,43 @@ export default function MatchCard({
           </div>
         )}
         {officer && (
-          <div className="md:col-span-2">
+          <div style={{ gridColumn: "1 / -1" }}>
             <OfficerPanel preview={officer} />
           </div>
         )}
         {officerErr && (
-          <p className="text-[12px] text-faint md:col-span-2">
+          <p className="text-[12px] text-faint" style={{ gridColumn: "1 / -1" }}>
             Officer preview unavailable ({officerErr})
           </p>
         )}
       </div>
 
       {/* footer / actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-hairline bg-surface-low/50 px-6 py-4">
-        <span className="max-w-[46%] text-[12.5px] leading-snug text-faint">
+      <div className="or-opp__foot" style={{ flexWrap: "wrap" }}>
+        <span
+          className="or-opp__meta line-clamp-2"
+          style={{ color: "var(--color-on-surface-variant)", marginLeft: 8, maxWidth: "40%", whiteSpace: "normal" }}
+        >
           {odds ?? bullets(match.nextSteps, 1)[0] ?? ""}
         </span>
-        <div className="flex flex-wrap items-center gap-2">
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           {opp?.url && (
-            <a
-              href={opp.url}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-muted transition-colors hover:bg-surface-low"
-            >
+            <a className="or-btn or-btn--text" href={opp.url} target="_blank" rel="noreferrer">
               Official notice
+              <Icon name="open_in_new" size={16} aria-hidden />
             </a>
           )}
-          {actionable && profile && !officer && (
-            <button
-              type="button"
-              onClick={() => void loadOfficer()}
-              disabled={officerBusy}
-              className="rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-muted transition-colors hover:bg-surface-low disabled:opacity-50"
-            >
-              {officerBusy ? "Reviewing…" : "Officer preview"}
-            </button>
-          )}
-          <Link
-            href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
-            className="rounded-xl bg-brand px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm transition-colors hover:bg-brand-strong"
-          >
-            Start Pre-flight →
+          <button type="button" className="or-btn or-btn--outline" onClick={goToSaveMonitor}>
+            Save for Later
+          </button>
+          <Link className="or-btn or-btn--filled" href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}>
+            Start Pre-flight
+            <Icon name="arrow_forward" size={18} aria-hidden />
           </Link>
         </div>
       </div>
     </article>
   );
-}
-
-/**
- * Source rows sometimes repeat the agency ("SBA, SBA") — keep unique segments.
- * Also drops inverted-name tails like ", DEPARTMENT OF" left by source data.
- */
-function dedupeAgency(agency: string): string {
-  const seen = new Set<string>();
-  return agency
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => {
-      const k = s.toLowerCase();
-      if (!s || seen.has(k) || /\bof$/i.test(s)) return false;
-      seen.add(k);
-      return true;
-    })
-    .join(", ");
 }
 
 /** Compact awards-history stat line. "0 awards" is absence of signal — omitted. */
@@ -356,15 +360,15 @@ function EvidenceStats({ evidence }: { evidence: EvidenceSummary }) {
 function OfficerPanel({ preview }: { preview: OfficerPreview }) {
   const b = preview.breakdown;
   return (
-    <div className="space-y-2.5 rounded-2xl bg-surface-low p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
+    <div className="or-card or-card--sunken space-y-2.5">
+      <p className="mk-label" style={{ textTransform: "uppercase" }}>
         Program officer preview
       </p>
       <p className="text-sm font-semibold text-ink">
         <span className="font-mono">{preview.score}</span>{" "}
-        <span className="ml-1 rounded-full border border-line px-2 py-0.5 font-mono text-[11px] font-normal text-muted">
+        <Badge tone="outline" className="ml-1">
           {preview.tier}
-        </span>
+        </Badge>
       </p>
       <p className="tnum text-[12.5px] text-faint">
         merit {b.technical_merit} · mission {b.mission_alignment} · stage {b.stage_readiness} ·
