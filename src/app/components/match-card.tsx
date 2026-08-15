@@ -24,6 +24,26 @@ function bullets(s: string, max = 4): string[] {
     .slice(0, max);
 }
 
+/**
+ * Soften ALL-CAPS source strings ("CITY OF SPANISH FORK" → "City of Spanish Fork").
+ * Strings that already contain lowercase ("NSF SBIR Phase I") pass through
+ * untouched, so real acronyms in human-cased titles are preserved. Within a
+ * shouted string, short words (≤3 letters, e.g. "NSF", "US") keep their caps
+ * except common connectors, which read as lowercase.
+ */
+const CONNECTORS = new Set(["OF", "THE", "AND", "FOR", "TO", "IN", "ON", "AT", "A", "AN"]);
+function humanize(s: string): string {
+  if (/[a-z]/.test(s)) return s;
+  return s
+    .split(/\s+/)
+    .map((w, i) => {
+      const letters = w.replace(/[^A-Za-z]/g, "");
+      if (letters.length <= 3) return i > 0 && CONNECTORS.has(letters) ? w.toLowerCase() : w;
+      return w.charAt(0) + w.slice(1).toLowerCase();
+    })
+    .join(" ");
+}
+
 /** Kit-style short ID from our namespaced opportunity ids. */
 function shortId(id: string): string {
   const tail = id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
@@ -131,11 +151,11 @@ export default function MatchCard({
                 href={`/opportunity/${encodeURIComponent(match.opportunityId)}`}
                 className="transition-colors hover:text-brand"
               >
-                {opp?.title ?? match.opportunityId}
+                {opp ? humanize(opp.title) : match.opportunityId}
               </Link>
             </h4>
             <p className="mt-1 text-[12.5px] text-faint">
-              {opp ? dedupeAgency(opp.agency) : "details unavailable"}
+              {opp ? humanize(dedupeAgency(opp.agency)) : "details unavailable"}
             </p>
           </div>
           <div className="text-right">
@@ -204,7 +224,7 @@ export default function MatchCard({
                   <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-twin">
                     Your funding twin
                   </span>
-                  <p className="mt-1 text-[14.5px] font-semibold text-ink">{twin.recipient}</p>
+                  <p className="mt-1 text-[14.5px] font-semibold text-ink">{humanize(twin.recipient)}</p>
                   <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">
                     Received {fmtUsd(twin.amountUsd)}
                     {twin.year ? ` in ${twin.year}` : ""} from this program
@@ -277,7 +297,7 @@ export default function MatchCard({
               rel="noreferrer"
               className="rounded-xl border border-line bg-card px-4 py-2.5 text-[13.5px] font-medium text-muted transition-colors hover:bg-surface-low"
             >
-              Official notice ↗
+              Official notice
             </a>
           )}
           {actionable && profile && !officer && (
@@ -302,7 +322,10 @@ export default function MatchCard({
   );
 }
 
-/** Source rows sometimes repeat the agency ("SBA, SBA") — keep unique segments. */
+/**
+ * Source rows sometimes repeat the agency ("SBA, SBA") — keep unique segments.
+ * Also drops inverted-name tails like ", DEPARTMENT OF" left by source data.
+ */
 function dedupeAgency(agency: string): string {
   const seen = new Set<string>();
   return agency
@@ -310,7 +333,7 @@ function dedupeAgency(agency: string): string {
     .map((s) => s.trim())
     .filter((s) => {
       const k = s.toLowerCase();
-      if (!s || seen.has(k)) return false;
+      if (!s || seen.has(k) || /\bof$/i.test(s)) return false;
       seen.add(k);
       return true;
     })

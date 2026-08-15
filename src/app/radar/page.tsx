@@ -40,6 +40,28 @@ const tierDot: Record<string, string> = {
   verify_eligibility: "bg-warn",
 };
 
+/** ALL-CAPS words longer than 3 chars → Capitalized; short/mixed words unchanged. */
+function humanize(s: string): string {
+  return s.replace(/\b[A-Z]{4,}\b/g, (w) => w[0] + w.slice(1).toLowerCase());
+}
+
+/** "2026-12-14" (or full ISO) → "Dec 14, 2026". */
+function fmtDate(iso: string): string {
+  return new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** "found 3:42 PM" same-day, "found Aug 14" otherwise. */
+function fmtFound(createdAt: string): string {
+  const d = new Date(createdAt + "Z");
+  return d.toDateString() === new Date().toDateString()
+    ? `found ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
+    : `found ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+}
+
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-faint">
@@ -80,7 +102,7 @@ export default function RadarPage() {
       {/* masthead: the brief's title + an ambient scanning scope */}
       <header className="flex items-start justify-between gap-6">
         <div className="space-y-2">
-          <Eyebrow>Proactive monitoring · no buttons</Eyebrow>
+          <Eyebrow>Proactive monitoring</Eyebrow>
           <h1 className="font-display text-[28px] font-bold tracking-tight text-ink">
             {weekday ?? "Today's"} funding brief
           </h1>
@@ -181,22 +203,17 @@ export default function RadarPage() {
                             target="_blank"
                             rel="noreferrer"
                           >
-                            {n.opportunity?.title ?? n.emailSubject}
+                            {humanize(n.opportunity?.title ?? n.emailSubject ?? "")}
                           </a>
                         ) : (
-                          (n.opportunity?.title ?? n.emailSubject)
+                          humanize(n.opportunity?.title ?? n.emailSubject ?? "")
                         )}
                       </p>
                       <p className="text-[13px] text-muted">
                         {n.opportunity?.agency}
-                        {n.opportunity?.closeDate ? (
-                          <>
-                            {" · closes "}
-                            <span className="font-mono">{n.opportunity.closeDate}</span>
-                          </>
-                        ) : null}
+                        {n.opportunity?.closeDate ? ` · Closes ${fmtDate(n.opportunity.closeDate)}` : null}
                         <span className="font-mono text-xs text-faint">
-                          {` · ${new Date(n.createdAt + "Z").toLocaleString()}`}
+                          {` · ${fmtFound(n.createdAt)}`}
                         </span>
                       </p>
                     </div>

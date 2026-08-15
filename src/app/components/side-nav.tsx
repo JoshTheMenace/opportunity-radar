@@ -15,7 +15,7 @@ const LINKS: { href: string; label: string }[] = [
 export default function TopNav() {
   const pathname = usePathname();
   return (
-    <nav className="flex items-center gap-4 sm:gap-6" aria-label="Primary">
+    <nav className="flex min-w-0 items-center gap-4 overflow-x-auto sm:gap-6" aria-label="Primary">
       {LINKS.map((l) => {
         const active = l.href === "/" ? pathname === "/" : pathname.startsWith(l.href);
         return (
@@ -23,10 +23,10 @@ export default function TopNav() {
             key={l.href}
             href={l.href}
             aria-current={active ? "page" : undefined}
-            className={`-mb-px border-b-2 pb-[19px] pt-[21px] text-[14px] font-medium transition-colors ${
+            className={`whitespace-nowrap py-2 text-[13.5px] font-medium transition-colors md:-mb-px md:border-b-2 md:py-0 md:pb-[19px] md:pt-[21px] md:text-[14px] ${
               active
-                ? "border-brand font-semibold text-brand"
-                : "border-transparent text-muted hover:text-ink"
+                ? "font-semibold text-brand md:border-brand"
+                : "text-muted hover:text-ink md:border-transparent"
             }`}
           >
             {l.label}

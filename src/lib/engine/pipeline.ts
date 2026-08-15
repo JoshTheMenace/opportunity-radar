@@ -188,10 +188,12 @@ export async function runAnalysis(
           })),
         };
         const bits: string[] = [];
-        if (ev.similarAwards.length) bits.push(`${ev.similarAwards.length} similar awards`);
+        if (ev.similarAwards.length)
+          bits.push(`${ev.similarAwards.length} similar award${ev.similarAwards.length === 1 ? "" : "s"}`);
         if (ev.alnStats?.medianUsd != null)
           bits.push(`${formatUsdCompact(ev.alnStats.medianUsd)} median award`);
-        if (ev.nearbyWinners.length) bits.push(`${ev.nearbyWinners.length} nearby winners`);
+        if (ev.nearbyWinners.length)
+          bits.push(`${ev.nearbyWinners.length} nearby winner${ev.nearbyWinners.length === 1 ? "" : "s"}`);
         if (bits.length) {
           emit({ type: "activity", message: `Evidence: ${bits.join(", ")} for ${opp.title}` });
         }

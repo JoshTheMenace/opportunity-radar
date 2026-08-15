@@ -63,11 +63,24 @@ export default function OpportunityMap() {
         if (latest?.profile && !profileRef.current) {
           profileRef.current = latest.profile;
           setProfileView(latest.profile);
-          setText((t) => t || latest.profile.description || "");
+          // show only the founder's own words — interview follow-ups live in
+          // the profile card, not the textarea
+          const desc = (latest.profile.description ?? "").split("\nFounder follow-up:")[0].trim();
+          setText((t) => t || desc);
           setRestored(true);
         }
       })
       .catch(() => {});
+    // Restore the last finished report so nav round-trips don't lose the scan.
+    try {
+      const raw = sessionStorage.getItem("or:lastReport");
+      if (raw) {
+        const r = JSON.parse(raw) as UiReport;
+        setReport(r);
+        setMeter(r.meter);
+        setQuestions(r.questions);
+      }
+    } catch {}
   }, []);
 
   /** Debounced autosave to the companies API (durable across refreshes). */
@@ -103,6 +116,10 @@ export default function OpportunityMap() {
         profileRef.current = ev.report.profile;
         setProfileView(ev.report.profile);
         persist(ev.report.profile);
+        // a scan is expensive — survive navigation (issue: report evaporated)
+        try {
+          sessionStorage.setItem("or:lastReport", JSON.stringify(ev.report));
+        } catch {}
         break;
       case "error":
         setError(ev.message);
@@ -167,7 +184,10 @@ export default function OpportunityMap() {
     // (appended follow-ups). A rewritten description is a different company;
     // carrying the old answers leaks stale employees/revenue into the run.
     let p = profileRef.current;
-    if (p && !(p.description && text.trim().startsWith(p.description.trim().slice(0, 80)))) {
+    // compare against the founder's own words (pre-follow-up) — the textarea
+    // never shows appended interview answers anymore
+    const ownWords = p?.description?.split("\nFounder follow-up:")[0].trim() ?? "";
+    if (p && !(ownWords && text.trim().startsWith(ownWords.slice(0, 80)))) {
       p = null;
       profileRef.current = null;
       setRestored(false);
@@ -264,7 +284,7 @@ export default function OpportunityMap() {
             onText={setText}
             onAnalyze={analyze}
           />
-          {!started && <HowItWorks />}
+          {!started && !profileView && <HowItWorks />}
           {report && busy && (
             <p className="animate-pulse font-mono text-[11px] text-faint">
               Matches below update live as scoring finishes…
@@ -275,7 +295,7 @@ export default function OpportunityMap() {
             (report.honestNo ? (
               <HonestNoPanel report={report} spotlight={spotlight} />
             ) : (
-              <ReportView report={report} spotlight={spotlight} />
+              <ReportView report={report} spotlight={spotlight} busy={busy} />
             ))}
           {report && !busy && <SaveMonitor profile={report.profile} />}
         </div>

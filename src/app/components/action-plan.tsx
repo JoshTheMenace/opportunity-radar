@@ -33,7 +33,7 @@ export default function ActionPlan({ report }: { report: UiReport | null }) {
             />
             <span
               className={`mb-0.5 block text-[12px] font-semibold ${
-                s.urgent ? "text-risk" : i === 0 ? "text-brand" : "text-faint"
+                s.urgent ? "text-risk" : "text-muted"
               }`}
             >
               {s.due ?? "Rolling"}

@@ -5,6 +5,7 @@
 // "Held — Missing Data" dashed card for the readiness hold, the honest-no
 // determination, plus loading/empty states.
 
+import { useState } from "react";
 import type { GatedOpportunity, Opportunity } from "@/lib/types";
 import { profileReadiness } from "@/lib/engine/readiness";
 import { meterValueUsd } from "@/lib/engine/gates";
@@ -17,10 +18,13 @@ const MIN_SCORE = 50;
 export function ReportView({
   report,
   spotlight,
+  busy = false,
 }: {
   report: UiReport;
   spotlight?: Spotlight | null;
+  busy?: boolean;
 }) {
+  const [showWeak, setShowWeak] = useState(false);
   const opps = report.opportunities ?? {};
   const visible = [...report.matches]
     .filter((m) => m.score >= MIN_SCORE)
@@ -37,7 +41,9 @@ export function ReportView({
   // Ranking hasn't run yet: the required basics aren't known. Rendered as the
   // kit's "Held — Missing Data" dashed card; Resolve points at the Unlock rail.
   const readiness = profileReadiness(report.profile);
-  if (report.matches.length === 0 && !readiness.ready) {
+  // While a run is LIVE the hold card would contradict the working rail —
+  // the scoring state below covers it instead.
+  if (report.matches.length === 0 && !readiness.ready && !busy) {
     return (
       <section id="report">
         <article className="rounded-[1.25rem] border-2 border-dashed border-line bg-surface-low/70 p-6">
@@ -130,9 +136,33 @@ export function ReportView({
         />
       ))}
       {hidden > 0 && (
-        <p className="text-[12.5px] text-faint">
-          {hidden} weaker {hidden === 1 ? "match" : "matches"} (score below {MIN_SCORE}) hidden.
-        </p>
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowWeak((v) => !v)}
+            className="text-[13px] font-medium text-muted transition-colors hover:text-ink"
+          >
+            {showWeak ? "Hide" : "Show"} {hidden} weaker {hidden === 1 ? "match" : "matches"}
+            {showWeak ? "" : " ▸"}
+          </button>
+          {showWeak && (
+            <ul className="mt-2 space-y-1">
+              {report.matches
+                .filter((m) => m.score < MIN_SCORE)
+                .map((m) => (
+                  <li
+                    key={m.opportunityId}
+                    className="flex items-baseline justify-between gap-3 rounded-xl bg-surface-low px-4 py-2 text-[13px]"
+                  >
+                    <span className="min-w-0 truncate text-muted">
+                      {opps[m.opportunityId]?.title ?? m.opportunityId}
+                    </span>
+                    <span className="tnum shrink-0 text-faint">score {m.score}</span>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </div>
       )}
     </section>
   );

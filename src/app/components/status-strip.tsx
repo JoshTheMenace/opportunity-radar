@@ -113,11 +113,11 @@ export default function StatusStrip({ lines, busy }: { lines: string[]; busy: bo
       aria-live="polite"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.09em] text-ink">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
           <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-accent align-middle" />
           {phase.label}…
         </p>
-        <p className="font-mono text-[11px] text-muted">{eta}</p>
+        <p className="tnum text-[12px] text-faint">{eta}</p>
       </div>
       <div className="h-[3px] overflow-hidden rounded-full bg-hairline">
         <div

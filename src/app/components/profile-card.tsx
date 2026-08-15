@@ -1,10 +1,10 @@
 "use client";
 
 // Region: the company dossier — Federal Catalyst "founder profile" card.
-// Completeness bar across the top, initials avatar, name + location,
-// confidence chip, then ledger rows. Unknown rows pulse red (the kit's
-// "Ownership: Unknown" treatment) so the founder can SEE what answering
-// is still worth. Lives in the left column of the Opportunity Map.
+// Initials avatar, name + location, confidence chip, then ledger rows.
+// Unknown critical rows get a quiet hollow-dot marker so the founder can
+// see what answering is still worth. Lives in the left column of the
+// Opportunity Map.
 
 import type { CompanyProfile } from "@/lib/types";
 import { profileReadiness } from "@/lib/engine/readiness";
@@ -13,7 +13,7 @@ import { fmtUsd } from "./shared";
 interface Row {
   label: string;
   value: string | null;
-  /** Unknowns on required-for-ranking fields get the red treatment. */
+  /** Unknowns on required-for-ranking fields get a hollow-dot marker. */
   critical?: boolean;
 }
 
@@ -64,8 +64,6 @@ function initials(name: string | null): string {
 export default function ProfileCard({ profile }: { profile: CompanyProfile | null }) {
   if (!profile) return null;
   const rs = rows(profile);
-  const filled = rs.filter((r) => r.value != null).length;
-  const pct = Math.round((filled / rs.length) * 100);
   const readiness = profileReadiness(profile);
   const confidence = readiness.ready ? "High" : readiness.knownCount >= 3 ? "Medium" : "Low";
   const loc = profile.location?.state ? `${profile.location.state}, USA` : "Location unknown";
@@ -75,14 +73,6 @@ export default function ProfileCard({ profile }: { profile: CompanyProfile | nul
       id="dossier"
       className="card relative flex flex-col items-center overflow-hidden p-6 text-center"
     >
-      {/* completeness bar (kit: thin brand bar across the card top) */}
-      <div className="absolute left-0 top-0 h-1 w-full bg-surface">
-        <div
-          className="h-full bg-brand transition-[width] duration-700"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-
       <div className="mb-2 mt-1 flex h-16 w-16 items-center justify-center rounded-full border-2 border-soft bg-soft font-display text-xl font-bold text-brand">
         {initials(profile.name)}
       </div>
@@ -103,19 +93,11 @@ export default function ProfileCard({ profile }: { profile: CompanyProfile | nul
       <dl className="w-full space-y-2 text-left">
         {rs.map((r) => {
           const missing = r.value == null;
-          const hot = missing && r.critical;
           return (
             <div key={r.label} className="flex items-baseline justify-between gap-3 border-b border-hairline pb-1 last:border-0">
-              <dt
-                className={`flex items-center gap-1.5 text-[12.5px] ${
-                  hot ? "text-risk" : "text-faint"
-                }`}
-              >
-                {hot && (
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-risk opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-risk" />
-                  </span>
+              <dt className="flex items-center gap-1.5 text-[12.5px] text-faint">
+                {missing && r.critical && (
+                  <span className="h-2 w-2 rounded-full border border-line" />
                 )}
                 {r.label}
               </dt>
@@ -125,9 +107,7 @@ export default function ProfileCard({ profile }: { profile: CompanyProfile | nul
                   {r.value}
                 </dd>
               ) : (
-                <dd className={`text-[13.5px] font-medium ${hot ? "text-risk" : "text-faint"}`}>
-                  Unknown
-                </dd>
+                <dd className="text-[13.5px] font-medium italic text-faint">Unknown</dd>
               )}
             </div>
           );

@@ -109,12 +109,12 @@ export default function RadarScope({
 
         <circle cx="100" cy="100" r="2" fill="var(--color-brand)" />
       </svg>
-      <figcaption className="font-mono text-[10px] tracking-wide text-faint">
+      <figcaption className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
         {blips.length
-          ? `${blips.length} PROGRAMS · ${agencies} AGENCIES · CENTER = BEST FIT`
+          ? `${blips.length} programs · ${agencies} agencies · center = best fit`
           : busy
-            ? "SCANNING…"
-            : "AWAITING RUN"}
+            ? "Scanning…"
+            : "Awaiting scan"}
       </figcaption>
     </figure>
   );

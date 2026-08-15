@@ -2,7 +2,7 @@
 
 // The pursuit workspace: turn interest into an actual submission. One click
 // builds an AI + rules submission plan; after that this renders the full
-// Federal Catalyst workspace — header + progress/stepper card, phased task
+// Federal Catalyst workspace — header + progress card, phased task
 // cards, a document-style strategy/assist panel, SAM.gov warning, and a
 // deadline timeline rail.
 
@@ -34,6 +34,11 @@ function fmtUsd(n: number): string {
 }
 
 const LABEL = "text-[11px] font-semibold uppercase tracking-[0.08em] text-faint";
+
+/** ALL-CAPS words longer than 3 chars → Capitalized; short/mixed words unchanged. */
+function humanize(s: string): string {
+  return s.replace(/\b[A-Z]{4,}\b/g, (w) => w[0] + w.slice(1).toLowerCase());
+}
 
 export default function PursuitPanel({ opportunityId }: { opportunityId: string }) {
   const [phase, setPhase] = useState<Phase>("loading");
@@ -186,28 +191,12 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
 
   const openTask = openAssistId != null ? tasks.find((t) => t.id === openAssistId) : undefined;
 
-  /** Stepper state per phase: done = every task finished, current = first phase
-   *  with open tasks, todo = the rest. */
-  const currentPhaseIdx = phases.findIndex((ph) =>
-    tasks.some((t) => t.phase === ph && !t.done),
-  );
-  function phaseState(i: number): "done" | "current" | "todo" {
-    if (currentPhaseIdx === -1 || i < currentPhaseIdx) return "done";
-    return i === currentPhaseIdx ? "current" : "todo";
-  }
-
-  const DOT: Record<"done" | "current" | "todo", string> = {
-    done: "bg-good text-white",
-    current: "border-2 border-brand bg-card text-brand ring-4 ring-soft",
-    todo: "border border-hairline bg-card text-faint",
-  };
-
   return (
     <section id="pursuit" className="space-y-5">
       {/* workspace header: title, official notice, status */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <h2 className="font-display text-[20px] font-bold tracking-tight text-ink">
-          {opp?.title ?? "Pursuit"} Workspace
+          {opp?.title ? humanize(opp.title) : "Pursuit"} Workspace
         </h2>
         <div className="flex flex-wrap items-center gap-3">
           {opp?.url && (
@@ -225,7 +214,7 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
             <select
               value={pursuit?.status ?? "active"}
               onChange={(e) => void setStatus(e.target.value)}
-              className="rounded-xl border border-line bg-card px-4 py-2.5 text-[14px] font-medium normal-case tracking-normal text-ink focus:border-accent focus:outline-none"
+              className="appearance-none rounded-xl border border-line bg-card px-4 py-2 text-[13.5px] font-medium normal-case tracking-normal text-ink focus:border-accent focus:outline-none"
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
@@ -253,44 +242,11 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
           )}
         </div>
 
-        <div id="pursuit-progress" className="mt-3 h-2 overflow-hidden rounded-full bg-surface">
+        <div id="pursuit-progress" className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-high">
           <div
-            className="h-full rounded-full bg-brand transition-[width] duration-700"
+            className="h-full rounded-full bg-good transition-[width] duration-700"
             style={{ width: `${pct}%` }}
           />
-        </div>
-
-        {/* phase stepper — ✓ good when complete, brand when active, faint upcoming */}
-        <div id="pursuit-phases" className="mt-5 flex items-center overflow-x-auto pb-1">
-          {phases.map((ph, i) => {
-            const st = phaseState(i);
-            return (
-              <span key={ph} className="contents">
-                {i > 0 && (
-                  <span
-                    aria-hidden
-                    className={`-mx-3 mb-5 h-[3px] min-w-4 flex-1 rounded-full ${
-                      phaseState(i - 1) === "done" ? "bg-good" : "bg-surface"
-                    }`}
-                  />
-                )}
-                <span className="flex w-20 flex-none flex-col items-center gap-1.5">
-                  <span
-                    className={`tnum grid size-8 place-items-center rounded-full text-xs font-semibold shadow-sm ${DOT[st]}`}
-                  >
-                    {st === "done" ? "✓" : i + 1}
-                  </span>
-                  <span
-                    className={`text-center text-[12px] font-semibold ${
-                      st === "done" ? "text-good" : st === "current" ? "text-brand" : "text-faint"
-                    }`}
-                  >
-                    {ph}
-                  </span>
-                </span>
-              </span>
-            );
-          })}
         </div>
 
         {/* stat tiles: fit score (only if a real score exists) + funding */}
@@ -385,7 +341,7 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
                               : t.assist
                                 ? openAssistId === t.id
                                   ? "Hide"
-                                  : "Help"
+                                  : "Help me"
                                 : "Help me"}
                           </button>
                         </div>
@@ -446,7 +402,7 @@ export default function PursuitPanel({ opportunityId }: { opportunityId: string 
             </div>
           )}
 
-          <div className="card p-6">
+          <div className="card p-6 lg:sticky lg:top-20">
             <h3 className="mb-4 font-display text-[16px] font-bold tracking-tight text-ink">
               Deadline Timeline
             </h3>
