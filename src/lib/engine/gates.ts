@@ -52,6 +52,35 @@ export function meterValueUsd(opp: Opportunity): number {
 // 22 = for-profit (non-small), 23 = small business, 25 = other, 99 = unrestricted.
 const BUSINESS_FRIENDLY = new Set(["22", "23", "25", "99"]);
 
+// ---- institution-restricted detection (prose fallback) ----
+// Code 25 means "Others (see text)" — permissive-looking, but the real
+// restriction lives in prose we otherwise never read. That gap ranked a
+// land-grant-universities-only program #1 for a startup that categorically
+// cannot apply. So: when the eligibility prose reads institutional AND
+// offers no business escape hatch, say so.
+const INSTITUTION_RE =
+  /institutions? of higher education|colleges and universities|land[- ]grant|tribal college|degree[- ]granting|academic institution|accredited (?:university|college)|school district/i;
+// Any of these means a company has a path in — the restriction doesn't bite.
+const BUSINESS_ESCAPE_RE =
+  /small business|for[- ]profit|commercial organization|business concern|private industry|industry partner|\bfirms?\b|\bcompanies\b|small business concern/i;
+
+/** True when eligibility prose is institution-flavored with no business path. */
+export function isInstitutionRestricted(opp: Opportunity): boolean {
+  const text = opp.eligibilityText ?? "";
+  if (text.length < 40) return false; // too thin to conclude anything
+  return INSTITUTION_RE.test(text) && !BUSINESS_ESCAPE_RE.test(text);
+}
+
+// Prose-eligibility patterns for the institution gate. Kept blunt on purpose:
+// false hard-fails would silently shrink the corpus, so RESTRICTION_PHRASE
+// must be an explicit limiter, and any business-inclusive term wins outright.
+const INSTITUTION_TERMS =
+  /land[- ]grant|institutions? of higher education|\bIHEs?\b|universit|\bcolleges?\b|academic institution|K-12|local educational agenc|state educational agenc|school district|state governments?|local governments?|municipalit|county governments?|federally recognized tribe|tribal government|non-?profit/i;
+const BUSINESS_TERMS =
+  /small business|for[- ]profit|business(es)?\b|industry|commercial|private sector|compan(y|ies)|\bfirms?\b|entrepreneurs?/i;
+const RESTRICTION_PHRASE =
+  /(limited to|restricted to|must be an?\b|only the following|eligible applicants?\s*(are|is|:))/i;
+
 function gate(
   name: string,
   verdict: GateVerdict,
@@ -119,6 +148,22 @@ export function evaluateGates(profile: CompanyProfile, opp: Opportunity): GatedO
     } else {
       gates.push(gate("eligibility:for_profit", "pass", "Non-profit applicant fits listed codes"));
     }
+  }
+
+  // ---- eligibility:institution_only (prose fallback for code 25 etc.) ----
+  // Never a hard fail: the prose is unstructured and a company sometimes has
+  // a path in via a partner. But it must never read as a clean pass — an
+  // unknown here also reaches the ranker via gateSummary, so the LLM sees the
+  // restriction too.
+  if (isInstitutionRestricted(opp)) {
+    gates.push(
+      gate(
+        "eligibility:institution_only",
+        "unknown",
+        "Eligibility text names universities/colleges as the applicants and never mentions companies — verify whether a business can apply at all, or only as a subawardee",
+        null,
+      ),
+    );
   }
 
   // ---- eligibility:small_business ----
@@ -248,6 +293,31 @@ export function evaluateGates(profile: CompanyProfile, opp: Opportunity): GatedO
         );
       }
     }
+  }
+
+  // ---- eligibility:institution_hard (explicit prose restriction = fail) ----
+  // Complements eligibility:institution_only above: that gate DEMOTES when
+  // prose merely reads institutional; this one HARD-FAILS only when the
+  // prose is unambiguous — an explicit limiter phrase tied to institution
+  // terms (or "land-grant" anywhere) with no business escape hatch. Codes
+  // that admit businesses skip it — machine-readable beats prose.
+  const prose = opp.eligibilityText ?? "";
+  const codesAdmitBusiness = opp.eligibilityCodes.some((c) => BUSINESS_FRIENDLY.has(c));
+  if (
+    prose &&
+    !codesAdmitBusiness &&
+    profile.isForProfit !== false &&
+    !BUSINESS_TERMS.test(prose) &&
+    INSTITUTION_TERMS.test(prose) &&
+    (RESTRICTION_PHRASE.test(prose) || /land[- ]grant/i.test(prose + " " + opp.title))
+  ) {
+    gates.push(
+      gate(
+        "eligibility:institution_hard",
+        "fail",
+        "Eligibility is explicitly limited to institutions (universities, governments, or nonprofits) — a company cannot apply directly",
+      ),
+    );
   }
 
   // ---- geo:utah ----

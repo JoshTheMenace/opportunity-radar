@@ -179,6 +179,14 @@ export async function runAnalysis(
     });
   }
 
+  // Ranked results paint NOW — evidence lookups below take ~10s and the
+  // final (facade-owned) report replaces this one when they land. Absent
+  // `evidence` is the UI's "still finishing" signal.
+  emit({
+    type: "report",
+    report: { profile, matches, rejected, honestNo, honestNoExplanation, meter, questions, futureFits },
+  });
+
   // Historical-award evidence for the top matches: surfaced live as
   // activity lines AND attached to the report (MatchReport.evidence).
   const byId = new Map(gated.map((g) => [g.opportunity.id, g.opportunity]));

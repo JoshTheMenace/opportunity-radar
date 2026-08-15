@@ -319,7 +319,10 @@ export async function rankOpportunities(
         .then((items) => {
           scored.push(...items);
           scoredCount += batch.length;
-          if (onProgress && scoredCount < candidates.length) {
+          // Emit after EVERY batch — including the only batch of a small run,
+          // where the old `scoredCount < total` guard left the UI blank until
+          // evidence finished (the ≤15-candidate streaming gap).
+          if (onProgress) {
             onProgress(toMatches(scored, byId, today, profile), scoredCount, candidates.length);
           }
         }),
