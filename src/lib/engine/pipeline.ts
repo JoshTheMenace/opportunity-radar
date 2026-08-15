@@ -22,6 +22,7 @@ import { profileReadiness, sortQuestionsRequiredFirst } from "./readiness";
 import { rankOpportunities } from "./rank";
 import { injectUtif } from "./utif";
 import { getEvidence } from "./evidence";
+import { getUtahContext } from "./utah-intelligence";
 
 const EVIDENCE_TOP_N = 5;
 const REJECTED_MAX = 8;
@@ -208,6 +209,13 @@ export async function runAnalysis(
     }),
   );
 
+  // Context comes after ranking. It answers “who in Utah has walked a similar
+  // path or can help?” without turning a past award, contract, or helper into
+  // an apparent open opportunity.
+  const utahContext = getUtahContext(profile);
+  const contextCount = utahContext.grantPrecedents.length + utahContext.contractPrecedents.length + utahContext.navigators.length;
+  if (contextCount) emit({ type: "activity", message: `Added ${contextCount} Utah precedent and navigator connections.` });
+
   // NOTE: the API facade owns the final {type:"report"} SSE event.
   return {
     profile,
@@ -218,5 +226,6 @@ export async function runAnalysis(
     meter,
     questions,
     evidence,
+    utahContext,
   };
 }

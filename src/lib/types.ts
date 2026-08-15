@@ -137,6 +137,8 @@ export interface MatchReport {
   questions: InterviewQuestion[]; // next questions worth asking (may be empty)
   /** Historical-award evidence keyed by opportunityId (top matches only). */
   evidence?: Record<string, EvidenceSummary>;
+  /** Utah people and documented precedent paths, attached after ranking. */
+  utahContext?: UtahPathContext;
 }
 
 /** Serializable subset of the evidence module's bundle for the report/UI. */
@@ -152,6 +154,52 @@ export interface EvidenceSummary {
     state: string | null;
     link: string | null;
   }>;
+}
+
+// ---------- Utah precedent and navigator context ----------
+
+/** Supporting local context. It is never a ranked, open opportunity. */
+export interface UtahPathContext {
+  grantPrecedents: UtahPrecedent[];
+  contractPrecedents: UtahPrecedent[];
+  navigators: UtahNavigator[];
+  exactCompanyPaths: UtahCompanyPath[];
+}
+
+export interface UtahPrecedent {
+  id: string;
+  pathKind: "grant" | "contract";
+  company: string;
+  city: string | null;
+  website: string | null;
+  industryTags: string[];
+  agencies: string[];
+  summary: string | null;
+  awardCount: number;
+  totalAmountUsd: number | null;
+  representativeRecords: Array<Record<string, unknown>>;
+  publicPeople: Array<{ name?: string; title?: string; role?: string }>;
+  sourceUrl: string | null;
+}
+
+export interface UtahNavigator {
+  id: string;
+  name: string;
+  organization: string;
+  title: string | null;
+  resourceKind: string;
+  helpTopics: string[];
+  summary: string | null;
+  publicContact: { email?: string; url?: string } | null;
+  sourceUrl: string | null;
+}
+
+export interface UtahCompanyPath {
+  pathKind: "grant" | "contract";
+  company: string;
+  sharedTags: string[];
+  explanation: string;
+  representativeRecords: Array<Record<string, unknown>>;
 }
 
 // ---------- Eligibility meter + interview ----------

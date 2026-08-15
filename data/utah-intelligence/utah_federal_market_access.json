@@ -1,0 +1,134 @@
+{
+  "resource": "Utah Federal Market Access",
+  "purpose": "Route Utah companies toward federal customers, certifications, defense buyers, export support, and government-contract readiness—not just grants.",
+  "retrieved_on": "2026-08-14",
+  "records": [
+    {
+      "id": "federal-utah-apex",
+      "name": "Utah APEX Accelerator",
+      "organization": "Governor's Office of Economic Development",
+      "resource_type": "government-contracting technical assistance",
+      "help_topics": ["federal contracting", "DoD", "SAM registration", "RFP/RFQ review", "certifications", "bid matching", "procurement readiness"],
+      "recommended_for": "Any Utah company seeking federal, state, local, or defense contracts. This should be the default first routing step before pursuing a specific agency buyer.",
+      "public_contact": {"email": "apex@utah.gov", "phone": "801-538-8655", "program_url": "https://business.utah.gov/apex/"},
+      "source_url": "https://business.utah.gov/apex/",
+      "confidence": "high"
+    },
+    {
+      "id": "federal-hill-afb-small-business-office",
+      "name": "Hill Air Force Base / Ogden Air Logistics Complex Small Business Office",
+      "organization": "U.S. Air Force",
+      "resource_type": "federal buyer-side small-business office",
+      "help_topics": ["Air Force acquisition", "DoD prime and subcontracting", "depot maintenance", "aerospace and defense supply chain"],
+      "recommended_for": "A company with an offering relevant to aircraft sustainment, logistics, maintenance/overhaul, engineering, defense manufacturing, or Hill AFB procurement. Engage through APEX first if the company is new to federal contracting.",
+      "public_contact": {"email": "AFSC.OL.SB@us.af.mil", "phone": "801-777-4143"},
+      "source_url": "https://www.hill.af.mil/Portals/58/documents/OO-ALC/OO-ALC_Business_Guideline_Jan23.pdf",
+      "confidence": "medium",
+      "verification_note": "The public business guideline is dated January 2023; confirm contact details before an outreach action."
+    },
+    {
+      "id": "federal-sba-utah-marla-trollan",
+      "name": "Marla Trollan",
+      "organization": "U.S. Small Business Administration — Utah District Office",
+      "title": "District Director",
+      "resource_type": "federal small-business resource",
+      "help_topics": ["SBA funding programs", "federal contracting certifications", "small-business counseling", "lender and partner referrals"],
+      "recommended_for": "A Utah small business that needs the federal entry point for SBA programs, certification pathways, capital, or partner referrals.",
+      "public_contact": {"office_phone": "801-524-3209", "office_url": "https://www.sba.gov/district/utah"},
+      "source_url": "https://www.sba.gov/district/utah",
+      "confidence": "high"
+    },
+    {
+      "id": "federal-uscs-shelby-daiek",
+      "name": "Shelby Daiek",
+      "organization": "U.S. Commercial Service Salt Lake City",
+      "title": "Director",
+      "resource_type": "federal export and international market assistance",
+      "help_topics": ["export strategy", "market intelligence", "international buyer matchmaking", "government advocacy", "international sales"],
+      "recommended_for": "A Utah company looking to export or compete for overseas public-sector business, especially in energy, ICT, transportation, environmental technology, consumer products, or health-related products.",
+      "public_contact": {"email": "Shelby.Daiek@trade.gov", "phone": "801-524-3091", "office_url": "https://www.trade.gov/index.php/salt-lake-city-contact-us"},
+      "source_url": "https://www.trade.gov/index.php/salt-lake-city-contact-us",
+      "confidence": "high"
+    },
+    {
+      "id": "federal-uscs-daniel-bruner",
+      "name": "Daniel Bruner",
+      "organization": "U.S. Commercial Service Salt Lake City",
+      "title": "International Trade Specialist",
+      "resource_type": "federal export and international market assistance",
+      "help_topics": ["export counseling", "market intelligence", "international trade", "buyer/distributor search"],
+      "recommended_for": "A Utah small or mid-sized company that is export-ready and needs practical international-market support.",
+      "public_contact": {"email": "Daniel.Bruner@trade.gov", "phone": "801-524-3070", "office_url": "https://www.trade.gov/index.php/salt-lake-city-contact-us"},
+      "source_url": "https://www.trade.gov/index.php/salt-lake-city-contact-us",
+      "confidence": "high"
+    },
+    {
+      "id": "federal-47g-ian-robertson",
+      "name": "Ian Robertson",
+      "organization": "47G",
+      "title": "Senior Director of Academic and Government Relations",
+      "resource_type": "Utah aerospace, defense, and dual-use ecosystem connector",
+      "help_topics": ["government relations", "academic partnerships", "aerospace", "defense", "dual-use technology"],
+      "recommended_for": "An aerospace, defense, or hard-tech company needing ecosystem introductions across Utah industry, academic, and government partners. 47G is not a government funder or contracting office.",
+      "public_contact": {"program_url": "https://www.47g.org/contact"},
+      "source_url": "https://www.47g.org/about",
+      "confidence": "high"
+    },
+    {
+      "id": "federal-47g-gerritt-vander-linden",
+      "name": "Gerritt Vander Linden",
+      "organization": "47G",
+      "title": "VP, Commercial Partnerships & Growth",
+      "resource_type": "Utah aerospace, defense, and dual-use ecosystem connector",
+      "help_topics": ["commercial partnerships", "aerospace and defense growth", "government-industry-academic networks", "international business development"],
+      "recommended_for": "An established or scaling aerospace/defense company seeking commercial partners, member-network connections, or international business-development support.",
+      "public_contact": {"program_url": "https://www.47g.org/contact"},
+      "source_url": "https://www.47g.org/people/gerritt-vander-linden/",
+      "confidence": "high"
+    },
+    {
+      "id": "federal-utah-sbdc-aaron-griffiths",
+      "name": "Aaron Griffiths",
+      "organization": "Utah Small Business Development Center",
+      "title": "Director, Technology & Innovation",
+      "resource_type": "SBA-partnered small-business technical assistance",
+      "help_topics": ["technology commercialization", "business planning", "financial analysis", "market strategy", "government contracting readiness"],
+      "recommended_for": "A technology-oriented Utah small business that needs to become capital- and contract-ready before approaching SBA, APEX, lenders, or federal agencies.",
+      "public_contact": {"program_url": "https://utahsbdc.org/about/"},
+      "source_url": "https://utahsbdc.org/about/",
+      "confidence": "high"
+    },
+    {
+      "id": "federal-utah-sbdc-michael-finnerty",
+      "name": "Michael Finnerty",
+      "organization": "Utah Small Business Development Center",
+      "title": "State Director",
+      "resource_type": "SBA-partnered small-business technical assistance",
+      "help_topics": ["statewide small-business advising", "capital readiness", "business planning", "referrals to local SBDC centers"],
+      "recommended_for": "A Utah founder needing a broad small-business advisory entry point or a referral to the correct regional SBDC center.",
+      "public_contact": {"program_url": "https://utahsbdc.org/about/"},
+      "source_url": "https://utahsbdc.org/about/",
+      "confidence": "high"
+    },
+    {
+      "id": "federal-erdcwerx-via-utah-apex",
+      "name": "ERDCWERX via Utah APEX Accelerator",
+      "organization": "U.S. Army Engineer Research and Development Center / Utah APEX",
+      "resource_type": "federal innovation-to-contract pathway",
+      "help_topics": ["U.S. Army ERDC", "Other Transaction Authority", "Commercial Solutions Openings", "technology challenges", "federal R&D collaboration"],
+      "recommended_for": "A company with a relevant engineering, infrastructure, environmental, materials, or defense technology that may fit an Army innovation challenge or nontraditional contracting vehicle.",
+      "public_contact": {"program_url": "https://business.utah.gov/apex/"},
+      "source_url": "https://business.utah.gov/wp-content/uploads/EDRX-FLYER-v3.pdf",
+      "confidence": "medium",
+      "verification_note": "The cited Utah APEX workshop is historical; use APEX to identify current ERDCWERX opportunities."
+    }
+  ],
+  "agent_routing_rules": [
+    {"if": "new to government contracts", "route": "Utah APEX Accelerator first; ask about SAM registration, NAICS codes, capability statement, certifications, target agencies, and bid readiness."},
+    {"if": "Air Force, Hill AFB, sustainment, aerospace manufacturing, logistics, or defense supply chain", "route": "Utah APEX followed by Hill AFB/OO-ALC Small Business Office."},
+    {"if": "defense or dual-use company needing regional partners", "route": "47G plus Utah APEX."},
+    {"if": "small business needs federal certifications or SBA program/capital navigation", "route": "SBA Utah District Office."},
+    {"if": "exporting or pursuing overseas commercial/public-sector buyers", "route": "U.S. Commercial Service Salt Lake City."},
+    {"if": "Army R&D or innovation challenge", "route": "Utah APEX to assess ERDCWERX/OTA/CSO fit."}
+  ]
+}

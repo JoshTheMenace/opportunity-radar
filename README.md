@@ -68,8 +68,19 @@ Environment (`.env.local`): `LLM_BACKEND` (codex | anthropic | mock),
 | Voice tool bridge | `src/lib/voice/` |
 | Monitoring (watch cycle, notifications, emails) | `src/lib/monitor/`, `scripts/watch.ts` |
 | Ingest + data | `scripts/ingest/`, `data/radar.db` |
+| Utah path intelligence | `data/utah-intelligence/`, `scripts/ingest/utah-intelligence.ts`, `src/lib/engine/utah-intelligence.ts` |
 | Eval + smoke tests | `eval/`, `scripts/smoke/` |
 
 Conventions and agent rules: [CLAUDE.md](CLAUDE.md). Verified external API
 quirks: [docs/api-notes.md](docs/api-notes.md). Cross-module contract notes:
 `NOTES-*.md` in the repo root.
+
+## Utah path intelligence
+
+Run `pnpm tsx scripts/ingest/utah-intelligence.ts` after refreshing the JSON
+source packs. It imports five separate contextual datasets into SQLite: grant
+precedent companies, federal-contract precedent companies, public Utah
+navigators/programs, the 222-company local index, and precomputed peer links.
+They are retrieved only **after** live opportunities are screened and ranked;
+the UI labels them as documented precedents and public routing options, never
+as currently open funding or promised introductions.

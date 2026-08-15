@@ -80,6 +80,67 @@ function migrate(db: Database.Database) {
       row_count INTEGER NOT NULL,
       notes TEXT
     );
+
+    -- Utah intelligence is deliberately separate from live opportunities.
+    -- These records supply precedent and routing context after an opportunity
+    -- is ranked; they must never be mistaken for an open funding opportunity.
+    CREATE TABLE IF NOT EXISTS utah_precedents (
+      id TEXT PRIMARY KEY,
+      path_kind TEXT NOT NULL,         -- grant | contract
+      company TEXT NOT NULL,
+      uei TEXT,
+      city TEXT,
+      website TEXT,
+      profile_icon TEXT NOT NULL,
+      industry_tags TEXT NOT NULL,
+      agencies TEXT NOT NULL,
+      summary TEXT,
+      award_count INTEGER NOT NULL,
+      total_amount_usd REAL,
+      representative_records TEXT NOT NULL,
+      public_people TEXT NOT NULL,
+      source_url TEXT,
+      imported_on TEXT NOT NULL
+    );
+    CREATE VIRTUAL TABLE IF NOT EXISTS utah_precedents_fts USING fts5(
+      id UNINDEXED, company, search_text
+    );
+
+    CREATE TABLE IF NOT EXISTS utah_navigators (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      organization TEXT NOT NULL,
+      title TEXT,
+      resource_kind TEXT NOT NULL,     -- person | program | market_access | research_partner
+      help_topics TEXT NOT NULL,
+      summary TEXT,
+      public_contact TEXT NOT NULL,
+      source_url TEXT,
+      confidence TEXT,
+      imported_on TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS utah_company_profiles (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      website TEXT,
+      sector TEXT,
+      similarity_tags TEXT NOT NULL,
+      profile_icon TEXT NOT NULL,
+      imported_on TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS utah_company_peer_links (
+      company_profile_id TEXT NOT NULL,
+      path_kind TEXT NOT NULL,         -- grant | contract
+      precedent_company_id TEXT NOT NULL,
+      similarity_score REAL NOT NULL,
+      shared_tags TEXT NOT NULL,
+      explanation TEXT NOT NULL,
+      representative_records TEXT NOT NULL,
+      PRIMARY KEY (company_profile_id, path_kind, precedent_company_id)
+    );
   `);
 }
 
