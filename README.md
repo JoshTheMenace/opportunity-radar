@@ -1,72 +1,97 @@
 # Opportunity Radar
 
-AI system matching startups to US government funding (Startup State hackathon).
-A founder describes their company in a sentence; the app extracts a profile,
-screens ~4,600 cached opportunities through deterministic eligibility gates,
-LLM-ranks the survivors with a skeptical rubric, and renders an Opportunity Map
-with real historical-award evidence — then keeps watching for new money.
+**A personal government-funding analyst for every startup.**
+Built for the Startup State hackathon.
+
+A founder describes their company in a sentence (typed or spoken). Radar
+extracts a profile, screens **4,630 cached federal and Utah programs** through
+deterministic eligibility gates, LLM-ranks the survivors with a skeptical
+rubric, and renders an Opportunity Map with real historical-award evidence —
+then keeps watching for new money every week.
 
 Two principles shape everything:
 
 - **Honesty over hype.** If nothing genuinely fits, the report says so
-  (`honestNo`) and shows near-misses with the reason they fail. One eval case
-  exists purely to enforce this.
+  (`honestNo`) and shows near-misses with the reason each one fails.
+  Institution-restricted programs (land-grant universities, state agencies)
+  are hard-failed or demoted by prose-level gates so a startup is never shown
+  money it categorically cannot win. Eval cases exist purely to enforce this.
 - **The LLM never invents numbers.** Dollar amounts, dates, and IDs come from
-  the database; the LLM only writes judgment and prose around them.
+  the database; the LLM only writes judgment and prose around them — in plain
+  founder language, with every acronym explained on first use.
 
-## Capabilities
+## The product
 
-- **Analysis pipeline** — profile extraction → FTS retrieval → deterministic
-  gates → eligibility meter → parallel LLM ranking → USAspending evidence.
-  Matches stream into the UI live as each scoring batch lands (SSE).
-- **Eligibility meter + interview** — "answer X to unlock $Y." Questions are
-  ranked by *simulated unlock* (how much money an answer actually moves),
-  derivable facts are never asked, and per-opportunity dollar values are capped
-  at $5M (`METER_CAP_USD`) to keep totals believable.
-- **Three ways to answer** — one-tap Yes/No buttons (no LLM); freeform chat
-  where one message can settle several fields at once; and quick-reply chips
-  suggested by a cheap/fast model (GPT 5.6 Luna) that only offers taps that can
-  truly settle a question (thresholds yes, exact values no).
-- **Voice mode** — Gemini Live conversation whose tool calls drive the same
-  engine (run analysis, apply answers, read back matches).
-- **Proactive monitoring ("the radar")** — saved company profiles are scanned
-  each watch cycle against newly ingested opportunities; strong matches become
-  notifications with drafted outreach emails (`data/outbox/`); dashboard at
-  `/radar`.
-- **Eval harness** — five judged founder scenarios (`pnpm tsx eval/run.ts`)
-  scoring coverage, honesty, dead-opportunity avoidance, and explanation
-  quality.
+| Screen | What it does |
+| --- | --- |
+| **Opportunity Map** (`/`) | Conversational onboarding for a first visit; after the scan, a live dashboard — tiered match cards with four-part explanations (why it fits · what could disqualify · what to verify · next steps), award evidence, deadlines, and a Rescan button. |
+| **Profile** (`/profile`) | The persistent, editable company dossier. Manual edits are sticky and always win over extraction. |
+| **Screening** (`/radar`) | The eligibility control room: every rule checked, what each answer unlocks, notifications from the weekly watch. |
+| **Utah Connections** (`/utah`) | 1,425 documented Utah federal-award winners, the navigators who help founders apply, and Utah-only programs. |
+| **Pursuits** (`/pursuits`) | Application workspace per opportunity: checklist, requirements, deadlines, and "Help me" buttons wired to the assistant. |
+
+Everywhere in the app, an **assistant drawer** answers questions with the
+context of the page you're on — including a live **voice mode** (Gemini Live)
+whose mic and transcription live inside the same chat, and whose tool calls
+drive the same engine.
+
+## How a scan works
+
+```
+founder's words ──► profile extraction ──► FTS retrieval (4,630 programs)
+                                                 │
+                              deterministic eligibility gates
+                              (SBA size, ownership, R&D, geography,
+                               institution-restriction prose checks)
+                                                 │
+                    eligibility meter — "answer X to unlock +$Y"
+                                                 │
+                   parallel LLM ranking (streams live via SSE)
+                   SBIR/STTR prioritized as the primary small-
+                   business vehicle; UTIF microgrant rides along
+                                                 │
+                  historical evidence (USAspending, SBIR.gov):
+                  who else got this money, median award, Utah winners
+```
+
+Data sources: Grants.gov (search2), SAM.gov Assistance Listings, SBIR.gov,
+USAspending, plus a curated Utah state layer.
 
 ## Quickstart
 
 ```bash
 pnpm install
-pnpm tsx scripts/ingest/grants-gov.ts            # fill data/radar.db (also: assistance-listings, utah)
-pnpm dev                                         # http://localhost:3000
+pnpm tsx scripts/ingest/grants-gov.ts     # also: assistance-listings.ts, dsip.ts, utah.ts, utah-intelligence.ts
+pnpm dev                                  # http://localhost:3000
 ```
 
 Useful commands:
 
 ```bash
-pnpm tsx scripts/smoke/gates.test.ts             # fast deterministic engine tests
-pnpm tsx eval/run.ts --json                      # full judged eval
-pnpm tsx scripts/watch.ts --loop 15              # radar daemon (watch cycle every 15 min)
+pnpm tsx scripts/smoke/gates.test.ts      # fast deterministic engine tests
+pnpm tsx eval/run.ts --json               # judged eval: the 5 brief cases + 4 held-out honesty cases
+pnpm tsx scripts/watch.ts --loop 15       # the radar daemon (watch cycle every 15 min)
+pnpm tsx scripts/demo-reset.ts            # wipe founder state, keep the corpus (demo prep)
+pnpm tsx scripts/bench/journey.ts <url>   # SSE latency waterfall of the full user journey
 ```
 
 Environment (`.env.local`): `LLM_BACKEND` (codex | anthropic | mock),
 `CODEX_MODEL` (default gpt-5.6-sol), `SUGGEST_MODEL` (default gpt-5.6-luna),
-`ANTHROPIC_API_KEY` (fallback backend), `GEMINI_API_KEY` (voice mode).
+`ANTHROPIC_API_KEY` (fallback backend), `GEMINI_API_KEY` (voice mode),
+`RESEND_API_KEY` (monitoring emails).
 
 ## Where things live
 
 | Area | Path |
 | --- | --- |
-| Engine (profile, gates, meter, rank, evidence, suggest) | `src/lib/engine/` |
+| Engine (profile, gates, meter, rank, evidence, utif, pipeline) | `src/lib/engine/` |
 | LLM switchboard (the only door to any model) | `src/lib/llm.ts` + `llm-*.ts` |
-| API routes (analyze/answer SSE, suggest, companies, voice, notifications) | `src/app/api/` |
+| API routes (analyze/answer SSE, assistant, companies, voice, notifications) | `src/app/api/` |
 | UI (one file per visual region; `opportunity-map.tsx` orchestrates) | `src/app/components/` |
+| Assistant drawer + page context | `src/app/components/assistant/` |
+| Design system (vendored kit — keep byte-identical) + extras | `src/app/styles/` |
 | Voice tool bridge | `src/lib/voice/` |
-| Monitoring (watch cycle, notifications, emails) | `src/lib/monitor/`, `scripts/watch.ts` |
+| Monitoring (watch cycle, notifications, Resend emails) | `src/lib/monitor/`, `scripts/watch.ts` |
 | Ingest + data | `scripts/ingest/`, `data/radar.db` |
 | Eval + smoke tests | `eval/`, `scripts/smoke/` |
 
